@@ -51,7 +51,7 @@ def test_multiplier_ripple_gidney_mod[n: nat](n: int, a: int, b: int) -> None:
         output("mult_meas", collect_measurements(measure_array(multiplier)))
         output("prod_meas", collect_measurements(measure_array(product)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == a_bits
     assert result["mult_meas"] == b_bits
@@ -98,7 +98,7 @@ def test_cntrl_multiplier_ripple_gidney_mod[n: nat](
 
         discard(ctrl)
 
-    res = main.emulator(n_qubits=5 * n + 1).run()
+    res = main.emulator(n_qubits=4 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == a_bits
     assert result["mult_meas"] == b_bits
@@ -144,7 +144,7 @@ def test_multiplier_ripple_gidney_mod_superposition[n: nat](
         output("mult_meas", collect_measurements(measure_array(multiplier)))
         output("prod_meas", collect_measurements(measure_array(product)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == a_bits
     assert result["mult_meas"] == b_bits
@@ -178,7 +178,7 @@ def test_multiplier_ripple_gidney_mod_full_superposition[n: nat](n: int) -> None
         output("mult_meas", collect_measurements(measure_array(multiplier)))
         output("prod_meas", collect_measurements(measure_array(product)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     zero_bits = [False] * n
     assert result["a_meas"] == zero_bits
@@ -206,7 +206,7 @@ def test_in_place_multiplier_ripple_gidney_mod[n: nat](
 
         output("a_meas", collect_measurements(measure_array(a_reg)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == int_to_bits((a * b) % 2**n, n)
 
@@ -231,7 +231,7 @@ def test_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
             h(a_reg[i])
         output("a_meas", collect_measurements(measure_array(a_reg)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == [False] * n
 
@@ -263,7 +263,7 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod[n: nat](
         output("a_meas", collect_measurements(measure_array(a_reg)))
         discard(ctrl)
 
-    res = main.emulator(n_qubits=5 * n + 1).run()
+    res = main.emulator(n_qubits=4 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == int_to_bits(expected, n)
 
@@ -292,7 +292,7 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
         output("a_meas", collect_measurements(measure_array(a_reg)))
         output("ctrl_meas", measure(ctrl).read())
 
-    res = main.emulator(n_qubits=5 * n + 1).run()
+    res = main.emulator(n_qubits=4 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == [False] * n
     assert result["ctrl_meas"] == 0
