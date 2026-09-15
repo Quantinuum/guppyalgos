@@ -134,7 +134,6 @@ def hhl_conditional_rotation[n_clock: nat](
     For the specified sequence of angles ``a_k``, acts on an ancilla qubit initialized
     to ``|0>`` as: ``|k> |0> -> |k> (cos(a_k * pi / 2) |0> + sin(a_k * pi / 2) |1>)``.
 
-
     Args:
         n_qpe: Number of clock qubits.
         angles: List of half-turn rotation angles indexed by clock basis state.
