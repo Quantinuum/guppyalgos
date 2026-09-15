@@ -40,6 +40,11 @@ def hhl_power_oracles[n_input: nat](
 ]:
     """Build the forward and inverse powered controlled-evolution oracles for HHL.
 
+    For input matrix ``A`` and ``t = time_step * n_trotter_steps``, let
+    ``U = exp(i * A * t)``. For a user-specified power, this method constructs
+    (approximately) the controlled Hamiltonian simulation
+    ``|ctrl> |psi> -> |ctrl> U^(power * ctrl) |psi>`` and its inverse.
+
     Args:
         input_matrix: The Hamiltonian matrix represented as a real Pauli term sum.
         time_step: Trotter evolution time step.
@@ -55,7 +60,7 @@ def hhl_power_oracles[n_input: nat](
         input_matrix, n_state_qubits=n_qubits
     )
 
-    def _make_power_oracle(
+    def make_power_oracle(
         time_direction: float,
     ) -> GuppyFunctionDefinition[[qubit, array[qubit, n_input], int], None]:
         sim_step = cntrl_ham_sim_trotter(
@@ -67,7 +72,7 @@ def hhl_power_oracles[n_input: nat](
 
         @guppy
         @no_type_check
-        def _power_oracle(
+        def power_oracle(
             ctrl: qubit,
             unitary_regs: array[qubit, n_qubits],
             power: int,
@@ -75,9 +80,9 @@ def hhl_power_oracles[n_input: nat](
             for _ in range(power):
                 sim_step(ctrl, unitary_regs)
 
-        return _power_oracle
+        return power_oracle
 
-    return _make_power_oracle(1.0), _make_power_oracle(-1.0)
+    return make_power_oracle(1.0), make_power_oracle(-1.0)
 
 
 def eigenvalue_inversion_angles(
@@ -124,26 +129,11 @@ def hhl_conditional_rotation[n_clock: nat](
     n_qpe: int,
     angles: list[float],
 ) -> GuppyFunctionDefinition[[array[qubit, n_clock], qubit], None]:
-    r"""Build the clock-conditioned Ry rotation acting on the ancilla qubit.
+    """Build the clock-conditioned Ry rotation acting on the ancilla qubit.
 
-    The unitary applies a state-dependent rotation around the Y axis:
+    For the specified sequence of angles ``a_k``, acts on an ancilla qubit initialized
+    to ``|0>`` as: ``|k> |0> -> |k> (cos(a_k * pi / 2) |0> + sin(a_k * pi / 2) |1>)``.
 
-    .. math::
-
-        U = \sum_{k=0}^{2^{n_{\text{qpe}}} - 1} |k\rangle\langle k|_{\text{clock}}
-        \otimes R_y(a_k \pi)_{\text{ancilla}}
-
-    where $a_k = \text{angles}[k]$ is the rotation angle in half-turns.
-    Acting on an ancilla initialized in $|0\rangle$, this implements the
-    transformation:
-
-    .. math::
-
-        |k\rangle_{\text{clock}} |0\rangle_{\text{ancilla}} \mapsto
-        |k\rangle_{\text{clock}} \left(
-            \cos\left(\frac{a_k \pi}{2}\right) |0\rangle_{\text{ancilla}}
-            + \sin\left(\frac{a_k \pi}{2}\right) |1\rangle_{\text{ancilla}}
-        \right).
 
     Args:
         n_qpe: Number of clock qubits.
