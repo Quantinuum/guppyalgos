@@ -16,7 +16,7 @@ from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import h, measure, qubit
 
 from guppyalgos.algorithms.phase_estimation import iqpe, qpe
-from guppyalgos.algorithms.linear_systems.hhl_utils import _register_size
+from guppyalgos.algorithms.linear_systems.hhl_utils import register_size
 from guppyalgos.primitives.measurement import discard_array_zero
 from guppyalgos.utils import qarray, transversal
 
@@ -41,8 +41,8 @@ def hhl[n_input: nat, n_clock: nat](
         the algorithm succeeded (ancilla measured 1).
 
     """
-    n_input_qubits = _register_size(controlled_hamiltonian_simulation, 1)
-    n_clock_qubits = _register_size(eigenvalue_inversion, 0)
+    n_input_qubits = register_size(controlled_hamiltonian_simulation, 1)
+    n_clock_qubits = register_size(eigenvalue_inversion, 0)
 
     @guppy
     @no_type_check
