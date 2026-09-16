@@ -14,9 +14,32 @@ from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard_array, h, qubit, ry, x
 from selene_sim import Quest
 
-from guppyalgos.algorithms.linear_systems import hhl
+from guppyalgos.algorithms.linear_systems import (
+    create_controlled_hamiltonian_simulation,
+    create_eigenvalue_inversion,
+    hhl,
+)
+from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_angles
 from guppyalgos.utils import qarray
 from tests.helpers import assert_allclose_ignorephase, switch_endianness
+
+
+def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
+    """The inversion angles encode C divided by each signed clock label."""
+    angles = eigenvalue_inversion_angles(n_qpe=3, rotation_scalar=1.0)
+
+    expected = [
+        0.0,
+        1.0,
+        1.0 / 3.0,
+        2.0 / np.pi * np.arcsin(1.0 / 3.0),
+        -2.0 / np.pi * np.arcsin(1.0 / 4.0),
+        -2.0 / np.pi * np.arcsin(1.0 / 3.0),
+        -1.0 / 3.0,
+        -1.0,
+    ]
+
+    assert angles == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(
@@ -72,7 +95,12 @@ def test_hhl_rus(
     """Test HHL across 1-, 2-, and 3-qubit linear systems with repeat-until-success."""
     ham_op = zqp.RealTermSum.from_str(ham_str)
 
-    n_sim_qubits = n_qpe + n_input_qubits + 3
+    n_sim_qubits = n_qpe + n_input_qubits + 1
+    controlled_hamiltonian_simulation = create_controlled_hamiltonian_simulation(
+        ham_op, time_step, n_input_qubits=n_input_qubits
+    )
+    eigenvalue_inversion = create_eigenvalue_inversion(n_qpe, rotation_scalar)
+    hhl_op = hhl(controlled_hamiltonian_simulation, eigenvalue_inversion)
 
     if n_input_qubits == 1:
         if prep_kind == "ry":
@@ -101,21 +129,13 @@ def test_hhl_rus(
 
             b_vec = np.array([1.0, 1.0], dtype=np.complex128) / np.sqrt(2)
 
-        hhl_op_1 = hhl(
-            input_matrix=ham_op,
-            n_qpe=n_qpe,
-            rotation_scalar=rotation_scalar,
-            time_step=time_step,
-            n_input_qubits=1,
-        )
-
         @guppy
         @no_type_check
         def run_hhl_rus_1() -> None:
             while True:
                 qs = qarray(1)
                 prepare_b_1(qs)
-                success = hhl_op_1(qs)
+                success = hhl_op(qs)
                 if success:
                     state_output("solution", qs)
                     discard_array(qs)
@@ -167,21 +187,13 @@ def test_hhl_rus(
 
             b_vec = np.array([1.0, 0.0, 1.0, 0.0], dtype=np.complex128) / np.sqrt(2)
 
-        hhl_op_2 = hhl(
-            input_matrix=ham_op,
-            n_qpe=n_qpe,
-            rotation_scalar=rotation_scalar,
-            time_step=time_step,
-            n_input_qubits=2,
-        )
-
         @guppy
         @no_type_check
         def run_hhl_rus_2() -> None:
             while True:
                 qs = qarray(2)
                 prepare_b_2(qs)
-                success = hhl_op_2(qs)
+                success = hhl_op(qs)
                 if success:
                     state_output("solution", qs)
                     discard_array(qs)
@@ -221,21 +233,13 @@ def test_hhl_rus(
             b_vec = np.zeros(8, dtype=np.complex128)
             b_vec[1] = 1.0
 
-        hhl_op_3 = hhl(
-            input_matrix=ham_op,
-            n_qpe=n_qpe,
-            rotation_scalar=rotation_scalar,
-            time_step=time_step,
-            n_input_qubits=3,
-        )
-
         @guppy
         @no_type_check
         def run_hhl_rus_3() -> None:
             while True:
                 qs = qarray(3)
                 prepare_b_3(qs)
-                success = hhl_op_3(qs)
+                success = hhl_op(qs)
                 if success:
                     state_output("solution", qs)
                     discard_array(qs)
