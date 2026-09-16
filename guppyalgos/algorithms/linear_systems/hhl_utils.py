@@ -24,7 +24,7 @@ from guppyalgos.algorithms.time_evolution.trotter import (
 )
 
 
-def _register_size(function: GuppyFunctionDefinition, parameter_index: int) -> int:
+def register_size(function: GuppyFunctionDefinition, parameter_index: int) -> int:
     """Determine the size of a fixed-size array parameter in a Guppy function."""
     package = function.compile_function().to_model()
     function_node = package.modules[0].root.children[0]
