@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import no_type_check
 
 import numpy as np
@@ -10,26 +9,25 @@ import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, comptime, frozenarray, nat
 from guppylang.std.quantum import cx, qubit, ry
 
-from guppyalgos.algorithms.state_preparation.multiplexor_prep import (
-    _CommandType,
-    _multiplexed_rotation_commands,
-)
 from guppyalgos.algorithms.time_evolution.trotter import (
     cntrl_ham_sim_trotter,
     cntrl_trotter_first_order,
 )
 
 
-def multiplexed_ry[n_controls: nat](
-    angles: Sequence[float],
-    n_control_qubits: int,
-) -> GuppyFunctionDefinition[[array[qubit, n_controls], qubit], None]:
-    r"""Construct an ancilla-free uniformly controlled ``Ry`` rotation.
+@guppy
+@no_type_check
+def multiplexed_ry[n_controls: nat, n_angles: nat](
+    angles: frozenarray[float, n_angles],
+    controls: array[qubit, n_controls],
+    target: qubit,
+) -> None:
+    r"""Apply an ancilla-free uniformly controlled ``Ry`` rotation.
 
-    For ``angles[k]`` in half-turns, the returned function applies
+    For ``angles[k]`` in half-turns, this applies
 
     .. math::
 
@@ -37,47 +35,38 @@ def multiplexed_ry[n_controls: nat](
         R_y(\pi\,\mathrm{angles}[k])_{\mathrm{target}}.
 
     The controls are little-endian and the implementation uses a Gray-code
-    decomposition containing only ``Ry`` and ``CX`` gates.
+    decomposition containing only ``Ry`` and ``CX`` gates. ``angles`` must hold one
+    entry per control-register basis state, i.e. ``n_angles == 2**n_controls``.
 
     Args:
         angles: One half-turn rotation angle for every control-register basis state.
-        n_control_qubits: Number of qubits in the control register.
-
-    Returns:
-        A function accepting the control register and rotation target.
-
-    Raises:
-        ValueError: If the number of angles does not match the control-register size.
+        controls: Little-endian control register.
+        target: Qubit the multiplexed rotation acts on.
 
     """
-    if len(angles) != 2**n_control_qubits:
-        raise ValueError(
-            "The number of multiplexed rotation angles must be a power of two."
-        )
-
-    command_angles = [
-        angles[
-            sum(
-                ((basis_state >> bit_index) & 1) << (n_control_qubits - bit_index - 1)
-                for bit_index in range(n_control_qubits)
-            )
-        ]
-        for basis_state in range(2**n_control_qubits)
-    ]
-    commands = _multiplexed_rotation_commands(command_angles)
-
-    @guppy.comptime
-    @no_type_check
-    def multiplexed_ry_fn(
-        controls: array[qubit, n_control_qubits], target: qubit
-    ) -> None:
-        for command, value in commands:
-            if command == _CommandType.ROTATION:
-                ry(target, angle(value))
+    dim = 2**n_controls
+    for gray_index in range(dim):
+        gray_code = gray_index ^ (gray_index >> 1)
+        rotation = 0.0
+        for basis_state in range(dim):
+            parity = 0
+            for bit in range(n_controls):
+                parity += ((gray_code >> bit) & 1) & (
+                    (basis_state >> (n_controls - 1 - bit)) & 1
+                )
+            if parity % 2 == 0:
+                rotation += angles[basis_state]
             else:
-                cx(controls[value], target)
+                rotation -= angles[basis_state]
+        ry(target, angle(rotation / float(dim)))
 
-    return multiplexed_ry_fn
+        # Index of the single control bit that differs between consecutive Gray codes.
+        toggled_bit = 0
+        counter = gray_index + 1
+        while counter % 2 == 0 and toggled_bit < n_controls - 1:
+            counter //= 2
+            toggled_bit += 1
+        cx(controls[n_controls - 1 - toggled_bit], target)
 
 
 def eigenvalue_inversion_angles(
@@ -171,4 +160,10 @@ def create_eigenvalue_inversion[n_clock: nat](
 
     """
     angles = eigenvalue_inversion_angles(n_qpe, rotation_scalar)
-    return multiplexed_ry(angles, n_qpe)
+
+    @guppy
+    @no_type_check
+    def eigenvalue_inversion(clock_reg: array[qubit, n_qpe], ancilla: qubit) -> None:
+        multiplexed_ry(comptime(angles), clock_reg, ancilla)
+
+    return eigenvalue_inversion
