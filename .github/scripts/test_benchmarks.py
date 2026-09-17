@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
-BENCHMARKS = Path("test_benchmarks.json")
+BENCHMARKS = Path("tests/test_benchmarks.json")
 
 
 def read_timings(reports: list[Path], n_pytest_workers: int = 4) -> dict[str, float]:
@@ -62,7 +62,7 @@ def read_timings(reports: list[Path], n_pytest_workers: int = 4) -> dict[str, fl
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Update the repository's test_benchmarks.json from a report directory.
+    """Update tests/test_benchmarks.json from a report directory.
 
     Parse the directory from argv, or the command line when argv is None, and
     recursively read its XML reports. Replace measured file estimates while

@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v7.6.0
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           version: "0.11.3"
           python-version: "3.13"
@@ -47,10 +47,10 @@ jobs:
         with:
           persist-credentials: false
       - name: Restore timings from successful main CI
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         continue-on-error: true
         with:
-          path: test_benchmarks.json
+          path: tests/test_benchmarks.json
           key: test-benchmarks-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: test-benchmarks-v1-
       - name: Discover test paths
@@ -88,15 +88,15 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: test-benchmarks
-          path: test_benchmarks.json
+          path: tests/test_benchmarks.json
           if-no-files-found: error
       # Only successful main CI trains future batches; PRs only read the cache.
       - name: Save timings for future CI runs
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         continue-on-error: true
         with:
-          path: test_benchmarks.json
+          path: tests/test_benchmarks.json
           key: test-benchmarks-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
   notebooks:
@@ -107,28 +107,12 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v7.6.0
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           version: "0.11.3"
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --all-extras
-      - name: Expose checkout test helpers to notebook kernels
-        run: |
-          uv run python - <<'PY'
-          import os
-          import sysconfig
-          from pathlib import Path
-
-          # Preserve legacy notebook imports without adding tests to the package.
-          compat = Path(os.environ["RUNNER_TEMP"]) / "notebook-imports"
-          compat.mkdir(exist_ok=True)
-          (compat / "tests").symlink_to(Path.cwd() / "tests", target_is_directory=True)
-          site_packages = Path(sysconfig.get_paths()["purelib"])
-          (site_packages / "guppyalgos_notebook_tests.pth").write_text(
-              f"import guppyalgos; guppyalgos.__path__.append({str(compat)!r})\n"
-          )
-          PY
       - name: Execute notebooks sequentially
         run: uv run pytest tests/notebooks -v --tb=short
 
@@ -140,7 +124,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v7.6.0
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           version: "0.11.3"
           python-version: "3.12"

@@ -32,7 +32,7 @@ from guppyalgos.primitives.arithmetic import (
     cntrl_subtractor_ripple_gidney_mod,
 )
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
-from tests.helpers import project_state_onto_bitstring
+from guppyalgos.testing import project_state_onto_bitstring
 
 
 @pytest.mark.parametrize(

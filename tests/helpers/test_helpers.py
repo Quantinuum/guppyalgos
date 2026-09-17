@@ -29,7 +29,7 @@ from selene_quest_plugin import SeleneQuestState
 from selene_sim import Quest, build
 
 from guppyalgos.utils import qarray
-from tests.helpers import (
+from guppyalgos.testing import (
     SubQuestState,
     _statevector_with_zeroed_ancilla,
     assert_allclose_ignorephase,

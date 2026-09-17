@@ -20,7 +20,11 @@ from guppylang.std.quantum import qubit
 from guppylang.defs import GuppyFunctionDefinition
 
 from guppyalgos.algorithms.block_encoding.qsvt import QSVT
-from tests.helpers import get_unitary_projected, assert_allclose_ignorephase, Endianness
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    get_unitary_projected,
+)
 from guppyalgos.algorithms.block_encoding.lcu import (
     LCU,
     LCUData,

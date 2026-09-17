@@ -20,7 +20,7 @@ from guppyalgos.algorithms.block_encoding.lcu import (
 from guppyalgos.algorithms.block_encoding.qubitization import QubitizationCntrl
 from guppyalgos.primitives.subroutines.reflection import ReflectionCntrl
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
-from tests.helpers import (
+from guppyalgos.testing import (
     Endianness,
     assert_cntrl_unitary,
     chebyshev_power_matrix,

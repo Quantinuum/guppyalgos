@@ -16,7 +16,7 @@ authors = [
 ]
 
 dependencies = [
-    "guppylang>=1.0,<1.1",
+    "guppylang>=1.1",
     "pandas",
     "numpy",
     "scipy",
@@ -62,10 +62,10 @@ where = ["."]
 include = ["guppyalgos", "guppyalgos.*"]
 
 [project.urls]
-Repository = "https://github.com/Quantinuum/guppy-algorithms"
-Documentation = "https://github.com/Quantinuum/guppy-algorithms/tree/main/docs"
-Issues = "https://github.com/Quantinuum/guppy-algorithms/issues"
-Changelog = "https://github.com/Quantinuum/guppy-algorithms/blob/main/CHANGELOG.md"
+Repository = "https://github.com/Quantinuum/guppyalgos"
+Documentation = "https://github.com/Quantinuum/guppyalgos/tree/main/docs"
+Issues = "https://github.com/Quantinuum/guppyalgos/issues"
+Changelog = "https://github.com/Quantinuum/guppyalgos/blob/main/CHANGELOG.md"
 
 
 [tool.pytest.ini_options]

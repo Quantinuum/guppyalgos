@@ -16,7 +16,7 @@ from selene_sim import Quest
 from guppyalgos.algorithms.select.pauli_select import pauli_select_unary_iteration
 from guppyalgos.utils import int_to_bits, qarray, transversal
 from guppyalgos.primitives.pauli import pauli_to_gate
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     project_state_onto_bitstring,
     get_total_state_on_only_specified_registers,

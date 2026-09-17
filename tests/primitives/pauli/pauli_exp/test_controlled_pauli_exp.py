@@ -21,7 +21,7 @@ from guppyalgos.primitives.subroutines.ladders import (
     CXLadderLog,
 )
 from guppyalgos.utils import qarray
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     get_unitary_projected,

@@ -91,7 +91,7 @@ def balance_test_paths(
 
 
 def main() -> None:
-    """Build six test batches from test_benchmarks.json in the repository root.
+    """Build six test batches from tests/test_benchmarks.json.
 
     Always print the matrix as batches=<JSON> for local inspection. In CI, also
     append it to GITHUB_OUTPUT and write a workload table to GITHUB_STEP_SUMMARY
@@ -101,7 +101,7 @@ def main() -> None:
     to inspect the batches. CI uses the JSON list as a matrix: each batch and
     Python version gets its own runner, which receives that batch's paths.
     """
-    benchmark = json.loads(Path("test_benchmarks.json").read_text())
+    benchmark = json.loads(Path("tests/test_benchmarks.json").read_text())
     batches = balance_test_paths(discover_test_paths(), benchmark["files"])
     value = json.dumps(batches)
     line = f"batches={value}\n"

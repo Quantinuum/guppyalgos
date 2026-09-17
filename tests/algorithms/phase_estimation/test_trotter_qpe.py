@@ -15,7 +15,7 @@ from selene_sim import Quest
 
 from guppyalgos.algorithms.time_evolution.trotter import cntrl_trotter_first_order
 from guppyalgos.utils import phase_distance_mod_2, trotterized_eigenphases
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 from tests.algorithms.phase_estimation.qpe_test_helpers import (
     dominant_trotter_measured_phase,
     exact_kickback_state,

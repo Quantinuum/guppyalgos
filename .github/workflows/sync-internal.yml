@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   sync:
-    if: github.repository == 'Quantinuum/guppy-algorithms' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Quantinuum/guppyalgos' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -21,7 +21,7 @@ from guppyalgos.primitives.state_preparation.phase_gradient import (
     phase_gradient,
 )
 from guppyalgos.utils import qarray
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 
 
 def _axis_expected_state(theta: float, axis: str) -> np.ndarray:

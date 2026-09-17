@@ -3,8 +3,8 @@
 from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
 from guppylang import guppy
 from guppylang.std.builtins import array
-from tests.helpers import get_unitary
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import get_unitary
+from guppyalgos.testing import assert_allclose_ignorephase
 from guppyalgos.utils import trotter_step_matrix
 from guppylang.std.quantum import qubit
 import pytest

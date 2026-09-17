@@ -9,7 +9,7 @@ from guppyalgos.algorithms.state_preparation.diagonal import (
     diagonal_unitary_walsh,
     fast_walsh_hadamard_transform,
 )
-from tests.helpers import Endianness, assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
 
 
 # ---------------------------------------------------------------------------

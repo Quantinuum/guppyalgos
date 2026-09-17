@@ -1,7 +1,7 @@
 """Alias Sampling Test."""
 
 from selene_sim import Quest
-from tests.helpers import project_state_onto_bitstring
+from guppyalgos.testing import project_state_onto_bitstring
 
 from math import ceil, log2
 import numpy as np

@@ -33,7 +33,7 @@ from guppyalgos.utils import (
     int_to_bits,
     qarray,
 )
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
 )

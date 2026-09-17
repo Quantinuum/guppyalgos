@@ -15,7 +15,7 @@ from guppyalgos.primitives.state_preparation.phase_gradient import (
     phase_gradient,
 )
 from guppyalgos.utils import qarray
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     switch_endianness,

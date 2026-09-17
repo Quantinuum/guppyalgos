@@ -22,7 +22,7 @@ from guppyalgos.primitives.arithmetic.hamming_weight import (
     num_hamming_weight_bits,
 )
 from guppyalgos.utils import int_to_bits, qarray, transversal
-from tests.helpers import assert_allclose_ignorephase, switch_endianness
+from guppyalgos.testing import assert_allclose_ignorephase, switch_endianness
 
 
 @pytest.mark.parametrize(

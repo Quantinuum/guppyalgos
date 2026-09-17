@@ -1,7 +1,7 @@
 # User guide
 
 This guide introduces the design of
-[guppy-algorithms](https://github.com/Quantinuum/guppy-algorithms) and the patterns used to
+[guppyalgos](https://github.com/Quantinuum/guppyalgos) and the patterns used to
 build programs from its components. It is aimed at users who have completed
 the getting-started example and want to understand how to choose, combine, and
 adapt the library's algorithms and primitives.

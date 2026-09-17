@@ -23,10 +23,10 @@ outcomes. These checks help catch errors that output bit counts alone can miss.
 
 ## Set up
 
-The examples below use the helpers in `tests/helpers.py` from a source checkout.
-Install the development dependencies, then save the Python snippets in a file
-at the repository root and run it with `uv run python your_file.py`. Run the
-snippets in order; later examples reuse earlier imports.
+The examples below use the helpers in `guppyalgos.testing`. Install the
+development dependencies, then save the Python snippets in a file at the
+repository root and run it with `uv run python your_file.py`. Run the snippets
+in order; later examples reuse earlier imports.
 
 ```console
 uv sync --extra dev-dependencies
@@ -40,7 +40,7 @@ from guppylang.std.debug import state_output
 from guppylang.std.quantum import cx, discard_array, h, qubit, x, z
 
 from guppyalgos.utils import qarray
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     get_statevector_projected,

@@ -89,6 +89,11 @@ marked with `!` or a `BREAKING CHANGE:` footer increments the minor version.
 
 ### Publishing a release
 
+The PyPI project is `guppyalgos`. Configure its GitHub Actions trusted publisher
+with owner `Quantinuum`, repository `guppyalgos`, workflow `build_wheels.yml`,
+and environment `pypi`. When renaming the GitHub repository, update the trusted
+publisher in PyPI's project publishing settings before publishing another release.
+
 1. Review and merge the Release Please PR. It creates the version tag and GitHub
    release.
 2. `Build wheels` validates the universal wheel and source archive. It starts from

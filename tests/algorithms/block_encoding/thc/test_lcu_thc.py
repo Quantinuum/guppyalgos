@@ -4,10 +4,10 @@ from typing import no_type_check
 
 import numpy as np
 from guppylang import guppy
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, comptime
 from guppylang.std.quantum import discard, discard_array, qubit
 
-from guppyalgos.primitives.gate_decompositions.cnx import cnx
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.algorithms.block_encoding.lcu import LCUCntrl
 from guppyalgos.primitives.rotations import GivensCascadePhaseGradient
 from guppyalgos.algorithms.state_preparation.alias_sampling import (
@@ -92,7 +92,7 @@ def test_built_thc_cntrl_lcu_compiles() -> None:
             False,
         )
         load_select_registers(
-            select_qrom,
+            select_qrom[array[qubit, comptime(2 * N_INDEX_QUBITS + 2)]],
             regs.alias_sampling.index,
             regs.select,
         )
@@ -104,9 +104,11 @@ def test_built_thc_cntrl_lcu_compiles() -> None:
         prep_regs: THCPrepareRegs,
         target_regs: THCWalkTargetRegs[n_modes],
     ) -> None:
-        cascade = GivensCascadePhaseGradient(prep_regs.phase_gradient)
+        cascade = GivensCascadePhaseGradient[n_phase_qubits, N_GIVENS, n_modes](
+            prep_regs.phase_gradient
+        )
         select = SelectTHCCntrl(
-            qrom_1_and_2_body,
+            qrom_1_and_2_body[array[array[qubit, n_phase_qubits], N_GIVENS]],
             qrom_2_body,
             cascade,
             cnx,
@@ -118,7 +120,7 @@ def test_built_thc_cntrl_lcu_compiles() -> None:
     @no_type_check
     def unprepare(regs: THCPrepareRegs) -> None:
         load_select_registers(
-            select_qrom,
+            select_qrom[array[qubit, comptime(2 * N_INDEX_QUBITS + 2)]],
             regs.alias_sampling.index,
             regs.select,
         )
@@ -180,4 +182,4 @@ def test_built_thc_cntrl_lcu_compiles() -> None:
         discard_array(target_regs.spin_down)
         discard_array(prep_regs.phase_gradient)
 
-    main.check()
+    main.compile()

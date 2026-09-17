@@ -33,7 +33,7 @@ from guppyalgos.primitives.subroutines.ladders.toffoli_ladder import (
 from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 
 
 @pytest.mark.parametrize(

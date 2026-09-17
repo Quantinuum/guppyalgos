@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in guppy-algorithms
+description: Report a bug in guppyalgos
 labels: ["bug", "status/needs-triage"]
 body:
   - type: markdown

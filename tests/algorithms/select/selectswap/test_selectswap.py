@@ -26,7 +26,7 @@ from selene_sim import Quest
 from guppyalgos.primitives.measurement import discard_nested_array
 from guppyalgos.algorithms.select.selectswap import selectswap
 from guppyalgos.utils import int_to_bits, qarray
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     extract_state_branches_in_superposition,
 )

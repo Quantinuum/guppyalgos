@@ -1,1 +1,1 @@
-"""Init file for guppy-algorithms."""
+"""Init file for guppyalgos."""

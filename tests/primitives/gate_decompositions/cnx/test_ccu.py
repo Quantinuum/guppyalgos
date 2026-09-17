@@ -16,7 +16,7 @@ from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
     ccry_toffoli,
     ccry_cx,
 )
-from tests.helpers import get_statevector, get_unitary, assert_allclose_ignorephase
+from guppyalgos.testing import get_statevector, get_unitary, assert_allclose_ignorephase
 
 
 from typing import no_type_check

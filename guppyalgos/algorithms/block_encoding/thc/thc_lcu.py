@@ -57,11 +57,11 @@ class THCData:
 
 @guppy
 @no_type_check
-def load_select_registers[n_alias_q: nat, n_index_q: nat](
+def load_select_registers[n_alias_q: nat, n_index_q: nat, n_select_data: nat](
     select_data_loader: Function[
         [
             array[qubit, n_alias_q],
-            array[qubit, comptime((2 * n_index_q) + 2)],  # ty: ignore[unsupported-operator]
+            array[qubit, n_select_data],
         ],
         None,
     ],
@@ -81,8 +81,6 @@ def load_select_registers[n_alias_q: nat, n_index_q: nat](
         select_regs: Named THC Select fields loaded by the QROM.
 
     """
-    n_select_tail_q = comptime(n_index_q + 2)
-    n_select_q = comptime((2 * n_index_q) + 2)
     flags = join_arrays(
         array(select_regs.one_body_flag),
         array(select_regs.coefficient_sign),
@@ -91,18 +89,18 @@ def load_select_registers[n_alias_q: nat, n_index_q: nat](
     select_tail = join_arrays(
         select_regs.second_index_qreg,
         flags,
-        n_select_tail_q,
+        comptime(n_index_q + 2),
     )
     select_data = join_arrays(
         select_regs.first_index_qreg,
         select_tail,
-        n_select_q,
+        n_select_data,
     )
     select_data_loader(alias_index, select_data)
     select_regs.first_index_qreg, select_tail = split_array(
         select_data,
         n_index_q,
-        n_select_tail_q,
+        comptime(n_index_q + 2),
     )
     select_regs.second_index_qreg, flags = split_array(
         select_tail,

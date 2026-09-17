@@ -9,7 +9,7 @@ from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, qubit
 from selene_sim import Quest
-from tests.helpers import project_state_onto_bitstring
+from guppyalgos.testing import project_state_onto_bitstring
 
 import numpy as np
 

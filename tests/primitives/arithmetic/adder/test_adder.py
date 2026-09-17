@@ -30,7 +30,7 @@ from guppyalgos.primitives.arithmetic import (
     adder_ripple_gidney_mod_dagger,
 )
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
-from tests.helpers import (
+from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )

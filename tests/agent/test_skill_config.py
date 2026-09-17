@@ -19,22 +19,22 @@ def test_agents_md_references_repo_skill() -> None:
     """Assert AGENTS.md points to the repo-local skill path."""
     repo_root = Path(__file__).resolve().parents[2]
     agents_md = repo_root / "AGENTS.md"
-    skill_md = repo_root / "agents" / "skills" / "guppy-algorithms" / "SKILL.md"
+    skill_md = repo_root / "agents" / "skills" / "guppyalgos" / "SKILL.md"
 
     assert agents_md.exists(), "Expected AGENTS.md at repository root."
     assert skill_md.exists(), (
-        "Expected skill file at agents/skills/guppy-algorithms/SKILL.md."
+        "Expected skill file at agents/skills/guppyalgos/SKILL.md."
     )
 
     agents_text = agents_md.read_text(encoding="utf-8")
     assert "## Skills" in agents_text
-    assert "./agents/skills/guppy-algorithms/SKILL.md" in agents_text
+    assert "./agents/skills/guppyalgos/SKILL.md" in agents_text
 
 
 def test_skill_md_has_required_frontmatter_fields() -> None:
     """Assert skill frontmatter includes required trigger metadata."""
     repo_root = Path(__file__).resolve().parents[2]
-    skill_md = repo_root / "agents" / "skills" / "guppy-algorithms" / "SKILL.md"
+    skill_md = repo_root / "agents" / "skills" / "guppyalgos" / "SKILL.md"
     skill_text = skill_md.read_text(encoding="utf-8")
     frontmatter = _frontmatter_block(skill_text)
 

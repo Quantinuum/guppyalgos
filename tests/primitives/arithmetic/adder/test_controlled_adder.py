@@ -32,7 +32,7 @@ from guppyalgos.primitives.arithmetic import (
     cntrl_adder_ripple_gidney_carry_out_dagger,
 )
 from guppyalgos.utils import qarray, int_to_bits, apply_bitstring
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,

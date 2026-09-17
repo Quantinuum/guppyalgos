@@ -19,7 +19,7 @@ from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
 
 from scipy.linalg import expm
 import numpy as np
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 from guppyalgos.primitives.rotations import (
     comparator_based_rz_cascade,
     n_comparator_based_rz_cascade_ancillas,

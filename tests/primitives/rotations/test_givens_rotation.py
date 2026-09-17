@@ -18,7 +18,7 @@ from guppyalgos.primitives.rotations import (
 )
 from guppyalgos.primitives.state_preparation.phase_gradient import phase_gradient
 from guppyalgos.utils import qarray
-from tests.helpers import Endianness, assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
 
 
 def _expected_givens_state(theta: float, target_bits: tuple[bool, bool]) -> np.ndarray:

@@ -1,4 +1,4 @@
-# guppy-algorithms
+# guppyalgos
 
 A library of reusable primitives for composing abstract quantum algorithms,
 written in [guppy](https://github.com/Quantinuum/guppylang).
@@ -17,8 +17,8 @@ Requires Python 3.12 or newer and [uv](https://docs.astral.sh/uv/).
 Install from a source checkout:
 
 ```sh
-git clone https://github.com/Quantinuum/guppy-algorithms.git
-cd guppy-algorithms
+git clone https://github.com/Quantinuum/guppyalgos.git
+cd guppyalgos
 uv sync
 ```
 

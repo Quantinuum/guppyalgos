@@ -62,7 +62,7 @@ def accumulator_unary_iteration[
 
     The construction follows Fig. 8 of https://arxiv.org/pdf/1805.03662 and
     reuses the unary cascade logic from the select_unary_iteration routine
-    implemented in guppy-algorithms. Work qubits and the accumulator qubit are
+    implemented in guppyalgos. Work qubits and the accumulator qubit are
     discarded at the end of the procedure.
 
     Args:

@@ -14,7 +14,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
-from tests.helpers import (
+from guppyalgos.testing import (
     get_unitary_projected,
     assert_allclose_ignorephase,
     Endianness,

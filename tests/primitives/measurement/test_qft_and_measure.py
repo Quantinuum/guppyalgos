@@ -11,7 +11,7 @@ from guppyalgos.primitives.subroutines.qft import iqft, qft
 from guppyalgos.utils import qarray, apply_bitstring, int_to_bits, bits_to_int
 from guppylang.std.quantum import discard_array, h, cx, s, qubit
 from guppylang.std.debug import state_output
-from tests.helpers import get_statevector, switch_endianness
+from guppyalgos.testing import get_statevector, switch_endianness
 
 
 @pytest.mark.parametrize("n_qubits", [1, 2, 3, 4, 5])

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12, <3.15"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -670,7 +670,7 @@ numba = [
 [package.metadata]
 requires-dist = [
     { name = "furo", marker = "extra == 'dev-dependencies'", specifier = ">=2024.8.6" },
-    { name = "guppylang", specifier = ">=1.0,<1.1" },
+    { name = "guppylang", specifier = ">=1.1" },
     { name = "ipykernel", marker = "extra == 'dev-dependencies'", specifier = ">=7.3.0" },
     { name = "jupyter", marker = "extra == 'dev-dependencies'", specifier = ">=1.1.0" },
     { name = "matplotlib", marker = "extra == 'dev-dependencies'", specifier = ">=3.11.1" },
@@ -700,7 +700,7 @@ provides-extras = ["dev-dependencies", "numba"]
 
 [[package]]
 name = "guppylang"
-version = "1.0.4"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "guppylang-internals" },
@@ -711,26 +711,27 @@ dependencies = [
     { name = "tqdm" },
     { name = "types-tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/03/24d5a079e27e6ea1e5393ecbaa1ba0dce88ad2ac21d427f4ae42e00850e6/guppylang-1.0.4.tar.gz", hash = "sha256:633099d72b6a3ef5d4d6bcdd0b4941ff1e0f1ab4bed7645b258abc80cacaa0fc", size = 91223, upload-time = "2026-09-08T15:52:41.869Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/39/f4/623ff3ae5e8e18c4a6ed7777b123b3aae790490c2c6ab96f087ad147c691/guppylang-1.1.1.tar.gz", hash = "sha256:b1b4957dfa36be326ac529756db8440ecf14dfbc16e86bd37150295cb1de31b6", size = 100009, upload-time = "2026-09-14T14:26:01.452Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/d9/b783e5cd4d064b6b3b8802dcca6cb61f50a0f83579f2cb8cc644c282cf9f/guppylang-1.0.4-py3-none-any.whl", hash = "sha256:8a49dc409f0d0adaf5f6e4a10b0c7646067d4165374304fb0919c9053c53344b", size = 88277, upload-time = "2026-09-08T15:52:40.51Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/06/33681f8c015c6e47f6a8055b50a68843fd82c4f77402ad1ffc2197addea7/guppylang-1.1.1-py3-none-any.whl", hash = "sha256:eb68dc2a417ee1156fc3c99b034bc1e984eb96c53e5a9769abbdc655b0af2bb3", size = 96995, upload-time = "2026-09-14T14:26:00.163Z" },
 ]
 
 [[package]]
 name = "guppylang-internals"
-version = "1.0.4"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "hugr" },
+    { name = "networkx" },
     { name = "pytket" },
     { name = "tket", extra = ["pytket"] },
     { name = "tket-exts" },
     { name = "typing-extensions" },
     { name = "wasmtime" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/49/83/d05917968a79573fc0e65a7e65a07435d4834309438d3a1b9d57de70606d/guppylang_internals-1.0.4.tar.gz", hash = "sha256:cd5676e62c952cc7868c72e467a787b8b06d1925e9daefd677936c46cd6523b3", size = 242189, upload-time = "2026-09-08T16:12:51.46Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/e5/004582f07d5ac092e775255ed5bf5e114615fa599f5106c06f0d781d0ec6/guppylang_internals-1.1.1.tar.gz", hash = "sha256:647e811a133282448738ebac9cc31fd21d0dc3a26a466c9fcae8ac1839e6285d", size = 271191, upload-time = "2026-09-14T14:23:34.21Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/84/ef9e218954e24a921c0a549daa8d655c9e5faf5084180c23f8144a270022/guppylang_internals-1.0.4-py3-none-any.whl", hash = "sha256:54594ebde647d4eff42a48a806efb5a98590298ba1f445be10eae729e03fe026", size = 296938, upload-time = "2026-09-08T16:12:49.904Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/d5/5911411ca44c9bb4776fd4a50d9e241dbff98949f4c50b07517207ba93f9/guppylang_internals-1.1.1-py3-none-any.whl", hash = "sha256:6b13919cd13c17d3e5d226c5e78877bed3d921c8b1703cc43fc7fe1d7b1faaf4", size = 329801, upload-time = "2026-09-14T14:23:32.535Z" },
 ]
 
 [[package]]
@@ -1770,9 +1771,9 @@ resolution-markers = [
     "python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "llvmlite", version = "0.45.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "numpy" },
-    { name = "setuptools" },
+    { name = "llvmlite", version = "0.45.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "setuptools", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b0/2a/975f49e156dae4edd3ab5afc60e2b3d65add014db2ddbbc23b9bb89882a4/numba-0.47.0.tar.gz", hash = "sha256:c0703df0a0ea2e29fbef7937d9849cc4734253066cb5820c5d6e0851876e3b0a", size = 1935290, upload-time = "2020-01-03T17:03:47.391Z" }
 
@@ -1789,8 +1790,8 @@ resolution-markers = [
     "(python_full_version < '3.14' and platform_machine != 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'win32')",
 ]
 dependencies = [
-    { name = "llvmlite", version = "0.49.0", source = { registry = "https://pypi.org/simple" } },
-    { name = "numpy" },
+    { name = "llvmlite", version = "0.49.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
+    { name = "numpy", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7a/90/2544f4e3a61e501d6c9a5418fd4b905323222693d54a02cab0106a0af865/numba-0.67.0.tar.gz", hash = "sha256:cd75aa535b33fa05d9d930b1ae8af9f97a2881e96d72dfb38ec9b78284d9f851", size = 2836515, upload-time = "2026-08-11T23:04:00.174Z" }
 wheels = [
@@ -1954,7 +1955,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -2717,14 +2718,14 @@ wheels = [
 
 [[package]]
 name = "selene-hugr-qis-compiler"
-version = "0.4.3"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/8f/9e0bafa85e0ba170886f771a333fee4d28adc2a1264a27e30593ed4d527a/selene_hugr_qis_compiler-0.4.3-cp310-abi3-macosx_15_0_arm64.whl", hash = "sha256:be65ad772415daf5c57ccf0a9bb40abb503ca29b021e3e7301ed871490ab41f4", size = 24743713, upload-time = "2026-09-07T10:13:05.287Z" },
-    { url = "https://files.pythonhosted.org/packages/3a/b0/5cd13932db301a694c50ca48bf2aa06bb459aa477d5d2180987b74ffcf68/selene_hugr_qis_compiler-0.4.3-cp310-abi3-macosx_15_0_x86_64.whl", hash = "sha256:4dc92ab8a171f3de144e3af3963432e9540ae813440972ee68509ec7f0104b6a", size = 26298009, upload-time = "2026-09-07T10:13:08.003Z" },
-    { url = "https://files.pythonhosted.org/packages/dd/03/e548a38b76e859d838e4ca9a88e7689fac1a7739b04f14d75718d0ab8120/selene_hugr_qis_compiler-0.4.3-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:c193f04c968c485eea4432adcaf66f9a12c523cc5273cf504fbe1af0d6f4aef0", size = 33740177, upload-time = "2026-09-07T10:13:10.421Z" },
-    { url = "https://files.pythonhosted.org/packages/42/e7/94833e2c7c189d6280583775e022c5bcde0cf1256918d8ca5469034a8109/selene_hugr_qis_compiler-0.4.3-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:4ee51009bddaff8dd330e4abf99ecc48eebd4535b36e34118bbf5cae99dd379e", size = 34558873, upload-time = "2026-09-07T10:13:13.161Z" },
-    { url = "https://files.pythonhosted.org/packages/4a/79/a9502cbfcdfd486f2b75b85ae9c0ba296db63db902de1ff3bb43fddd0e3d/selene_hugr_qis_compiler-0.4.3-cp310-abi3-win_amd64.whl", hash = "sha256:e20ae29860e47191885d5053d2815e21beabbd12ccb8ad012870af67b06e32a3", size = 24535671, upload-time = "2026-09-07T10:13:15.711Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/95/13a9c0def8fdaa2bd8bbdd2576595112d96b04b7bd42544ee1a2d6bdc222/selene_hugr_qis_compiler-0.5.0-cp310-abi3-macosx_15_0_arm64.whl", hash = "sha256:84d0df9ebbc4a39ab94aabe3453d26f086d8037f518bdd2150cacb1ad640fc2a", size = 25094323, upload-time = "2026-09-04T18:00:02.433Z" },
+    { url = "https://files.pythonhosted.org/packages/09/c5/71cd3f3b4f54ee5635c4a6d2df04ce71fac0addb007a45719d1cb41869b3/selene_hugr_qis_compiler-0.5.0-cp310-abi3-macosx_15_0_x86_64.whl", hash = "sha256:79cdedc84502e71598f32d3c8ad31a0f518f428b21c2d33dd8435934ef923591", size = 26646686, upload-time = "2026-09-04T18:00:06.154Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/27/3c0e456b4f1fa1e7f679a26a442d0238c5f45835f4a4ff2db9a2ca791c5b/selene_hugr_qis_compiler-0.5.0-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:dd2d8615c9c1236bff943622ad6a448527e8ff5233820d776a1ec6b1348b6425", size = 34121867, upload-time = "2026-09-04T18:00:10.188Z" },
+    { url = "https://files.pythonhosted.org/packages/49/b7/9afa450ac4986143f09fcff2b43695be0364eab39914fc14e0ba7ea414c6/selene_hugr_qis_compiler-0.5.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:472aa6210a77ddb7415f580c274b622dde7d0b02dd5029173b7bef4519f641cb", size = 34890587, upload-time = "2026-09-04T18:00:15.128Z" },
+    { url = "https://files.pythonhosted.org/packages/09/73/9de490846c3ade96265ceaafaf2a7935a7393cbe7667bbd45fb45e7026c3/selene_hugr_qis_compiler-0.5.0-cp310-abi3-win_amd64.whl", hash = "sha256:9b36046eb0e1eb5999057cbacc9c8bdb93cff5ec669883b52d3a5e513d3828d0", size = 25156431, upload-time = "2026-09-04T18:00:19.436Z" },
 ]
 
 [[package]]
