@@ -16,9 +16,8 @@ from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import h, measure, qubit
 
 from guppyalgos.algorithms.phase_estimation import iqpe, qpe
-from guppyalgos.algorithms.linear_systems.hhl_utils import register_size
 from guppyalgos.primitives.measurement import discard_array_zero
-from guppyalgos.utils import qarray, transversal
+from guppyalgos.utils import qarray, transversal, register_size
 
 
 def hhl[n_input: nat, n_clock: nat](
