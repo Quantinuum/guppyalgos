@@ -30,11 +30,14 @@ def hhl[n_input: nat, n_clock: nat](
     """Construct a Guppy function for the HHL algorithm.
 
     Args:
-        controlled_hamiltonian_simulation: Controlled Hamiltonian simulation taking
-            a control qubit, the system register, and a signed integer power. Positive
-            powers are used for phase estimation and negative powers for uncomputation.
-        eigenvalue_inversion: Conditional eigenvalue-inversion rotation taking the
-            clock register and a zero-initialized ancilla qubit.
+        controlled_hamiltonian_simulation: Guppy function enacting controlled
+        Hamiltonian simulation. Explicitly, needs to perform the transformation:
+            ``|ctrl⟩|input_state⟩ → |ctrl⟩e^{i * t * ctrl * A}|input_state⟩``
+            for some ``t``, where ``A`` is the matrix to be inverted.
+        eigenvalue_inversion: Eigenvalue inversion function. Needs to effect:
+            ``|λ⟩|0⟩ → |λ⟩(√(1 - |C/λ|^2)|0⟩ + (C/λ)|1⟩)``
+            for some scaling factor ``C``.
+
 
     Returns:
         A Guppy function that applies HHL to an input state register and returns whether
