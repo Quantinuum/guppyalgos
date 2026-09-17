@@ -163,7 +163,7 @@ def test_eigenvalue_inversion[n_clock: nat](
     clock_reg_state: float,
     n_ancillas: int,
 ) -> None:
-    """Test that the eigenvalue inversion function has the expected behaviour.
+    """Test that the eigenvalue inversion function has the expected behavior.
 
     For an n-qubit clock basis state |k⟩, interpret k as the signed integer label
     λ = k for k < 2^(n - 1), and λ = k - 2^n otherwise. The inversion should perform
