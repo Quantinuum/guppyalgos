@@ -47,7 +47,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Restore timings from successful main CI
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         continue-on-error: true
         with:
           path: tests/test_benchmarks.json
@@ -93,7 +93,7 @@ jobs:
       # Only successful main CI trains future batches; PRs only read the cache.
       - name: Save timings for future CI runs
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         continue-on-error: true
         with:
           path: tests/test_benchmarks.json
