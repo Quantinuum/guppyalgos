@@ -36,7 +36,9 @@ def hhl[n_input: nat, n_clock: nat](
             for some ``t``, where ``A`` is the matrix to be inverted.
         eigenvalue_inversion: Eigenvalue inversion function. Needs to effect:
             ``|λ⟩|0⟩ → |λ⟩(√(1 - |C/λ|^2)|0⟩ + (C/λ)|1⟩)``
-            for some scaling factor ``C``.
+            for some scaling factor ``C``, where ``λ`` is the signed eigenvalue
+            estimate decoded from the clock register. ``C`` and ``λ`` must use the
+            same units, with ``|C/λ| <= 1`` for every supported nonzero ``λ``.
 
 
     Returns:
