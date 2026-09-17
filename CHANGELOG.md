@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.1](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.1.1) (2026-09-17)
+
+
+### Features
+
+* Add testing module to package ([#30](https://github.com/Quantinuum/guppyalgos/issues/30)) ([7a2cc17](https://github.com/Quantinuum/guppyalgos/commit/7a2cc17f2bab9b4c0c6f625e7b17daabbcad7906))
+
+
+### Documentation
+
+* clarify library structure ([94ab7ac](https://github.com/Quantinuum/guppyalgos/commit/94ab7ace78daef83b851a23ade5b2891bc50a3d4))
+* expand algorithm guides ([b010cfd](https://github.com/Quantinuum/guppyalgos/commit/b010cfdc88d20defdb76a1179091c41f2eb2b3b4))
+* improve block encoding demo ([13efd85](https://github.com/Quantinuum/guppyalgos/commit/13efd85ff58e347c30d51a5131642dc87165d2e5))
+* polish phase estimation examples ([72d4892](https://github.com/Quantinuum/guppyalgos/commit/72d4892611b1cff35350ce7cc49241375e7672ac))
+
 ## 0.1.0 (2026-09-11)
 
 
