@@ -20,11 +20,8 @@ from guppyalgos.algorithms.linear_systems import (
     create_eigenvalue_inversion,
     hhl,
 )
-from guppyalgos.algorithms.linear_systems.hhl_utils import (
-    eigenvalue_inversion_angles,
-    register_size,
-)
-from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
+from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_angles
+from guppyalgos.utils import apply_bitstring, int_to_bits, qarray, register_size
 from guppyalgos.primitives.measurement import discard_array_zero
 from tests.helpers import assert_allclose_ignorephase, switch_endianness
 
