@@ -1,6 +1,7 @@
 """Tests for the HHL algorithm."""
 
 from __future__ import annotations
+from guppylang.defs import GuppyFunctionDefinition
 
 from typing import no_type_check
 
@@ -9,9 +10,9 @@ import pytest
 import zixy.qubit.pauli as zqp
 from guppylang import comptime, guppy
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, nat
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard_array, h, qubit, ry, x
+from guppylang.std.quantum import discard, discard_array, h, qubit, ry, x
 from selene_sim import Quest
 
 from guppyalgos.algorithms.linear_systems import (
@@ -19,8 +20,12 @@ from guppyalgos.algorithms.linear_systems import (
     create_eigenvalue_inversion,
     hhl,
 )
-from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_angles
-from guppyalgos.utils import qarray
+from guppyalgos.algorithms.linear_systems.hhl_utils import (
+    eigenvalue_inversion_angles,
+    register_size,
+)
+from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
+from guppyalgos.primitives.measurement import discard_array_zero
 from tests.helpers import assert_allclose_ignorephase, switch_endianness
 
 
@@ -258,3 +263,59 @@ def test_hhl_rus(
     expected_x /= np.linalg.norm(expected_x)
 
     assert_allclose_ignorephase(actual_state, expected_x, threshold=1e-5)
+
+
+@pytest.mark.parametrize(
+    ("eigenvalue_inversion", "scaling_factor", "clock_reg_state", "n_ancillas"),
+    [
+        (create_eigenvalue_inversion(2, 1.0), 1.0, 0.5, 0),
+        (create_eigenvalue_inversion(3, 0.1), 0.1, 0.6, 0),
+    ],
+)
+def test_eigenvalue_inversion[n_clock: nat](
+    eigenvalue_inversion: GuppyFunctionDefinition[[array[qubit, n_clock], qubit], None],
+    scaling_factor: float,
+    clock_reg_state: float,
+    n_ancillas: int,
+) -> None:
+    """Test that the eigenvalue inversion function has the expected behaviour.
+
+    For an n-qubit clock basis state |k⟩, interpret k as the signed integer label
+    λ = k for k < 2^(n - 1), and λ = k - 2^n otherwise. The inversion should perform
+    |k⟩|0⟩ → |k⟩(√(1 - |C/λ|^2)|0⟩ + (C/λ)|1⟩), where C is expressed in the same
+    integer-label units as λ.
+
+    """
+    clock_reg_size = register_size(eigenvalue_inversion, 0)
+    clock_reg_state_int = int(clock_reg_state * (2**clock_reg_size))
+    clock_reg_state_bits = int_to_bits(clock_reg_state_int, clock_reg_size)
+    signed_clock_label = (
+        clock_reg_state_int
+        if clock_reg_state_int < 2 ** (clock_reg_size - 1)
+        else clock_reg_state_int - 2**clock_reg_size
+    )
+    expected_amplitude = scaling_factor / signed_clock_label
+    expected_state = np.array(
+        [np.sqrt(1.0 - expected_amplitude**2), expected_amplitude]
+    )
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        clock_reg = qarray(clock_reg_size)
+        apply_bitstring(clock_reg, clock_reg_state_bits)
+
+        ancilla = qubit()
+        eigenvalue_inversion(clock_reg, ancilla)
+
+        apply_bitstring(clock_reg, clock_reg_state_bits)
+        discard_array_zero(clock_reg)
+
+        state_output("ancilla", ancilla)
+        discard(ancilla)
+
+    sim_result = main.emulator(n_qubits=clock_reg_size + n_ancillas + 1).run()
+    states = Quest.extract_states_dict(sim_result.results[0].entries)
+    actual_state = states["ancilla"].get_state_vector_distribution()[0].state
+
+    assert_allclose_ignorephase(actual_state, expected_state)
