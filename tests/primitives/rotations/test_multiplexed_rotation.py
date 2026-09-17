@@ -17,7 +17,7 @@ from guppyalgos.primitives.rotations import (
     multiplexed_rotation,
 )
 from guppyalgos.utils import qarray
-from tests.helpers import assert_allclose_ignorephase
+from tests.helpers.test_helpers import assert_allclose_ignorephase
 
 
 def _expected_state(theta: float, axis: str) -> np.ndarray:

@@ -23,7 +23,7 @@ from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray, register_size
 from guppyalgos.primitives.measurement import discard_array_zero
-from tests.helpers import assert_allclose_ignorephase, switch_endianness
+from tests.helpers.test_helpers import assert_allclose_ignorephase, switch_endianness
 
 
 def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
