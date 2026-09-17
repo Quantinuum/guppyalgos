@@ -6,7 +6,7 @@ from typing import cast, no_type_check
 
 from guppylang import comptime, guppy
 from guppylang.std.array import frozenarray
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, nat, control
 from guppylang.std.quantum import cx, qubit
 
 
@@ -116,15 +116,51 @@ class CXLadderLog:
         )
 
 
-@guppy
-@no_type_check
-def _cx_ladder_apply_from_inds[n_qubits: nat, n_gates: nat](
-    q: array[qubit, n_qubits],
-    gate_indices: frozenarray[tuple[int, int], n_gates],
-) -> None:
-    """Apply CX gates based on the provided indices."""
-    for i, j in gate_indices:
-        cx(q[i], q[j])
+@guppy.unitary
+class _cx_ladder_apply_from_inds:
+    @guppy
+    def __call__[n_qubits: nat, n_gates: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: frozenarray[tuple[int, int], n_gates],
+    ) -> None:
+        """Apply CX gates based on the provided indices."""
+        for i, j in gate_indices:
+            cx(q[i], q[j])
+
+    @guppy
+    def daggered[n_qubits: nat, n_gates: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: frozenarray[tuple[int, int], n_gates],
+    ) -> None:
+        """Apply CX gates based on the provided indices."""
+        reversed_inds = gate_indices.mutable_copy()
+        reversed_inds.reverse_in_place()
+        for i, j in reversed_inds:
+            cx(q[i], q[j])
+
+    @guppy
+    def controlled[n_qubits: nat, n_gates: nat, n_ctrls: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: frozenarray[tuple[int, int], n_gates],
+        ctrls: array[qubit, n_ctrls]
+    ) -> None:
+        """Apply CX gates based on the provided indices."""
+        for i, j in gate_indices:
+            with control(ctrls):
+                cx(q[i], q[j])
+
+    @guppy
+    def ctrl_daggered[n_qubits: nat, n_gates: nat, n_ctrls: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: frozenarray[tuple[int, int], n_gates],
+        ctrls: array[qubit, n_ctrls]
+    ) -> None:
+        """Apply CX gates based on the provided indices."""
+        reversed_inds = gate_indices.mutable_copy()
+        reversed_inds.reverse_in_place()
+        for i, j in reversed_inds:
+            with control(ctrls):
+                cx(q[i], q[j])
 
 
 def ladder_inds_from_ascending(
