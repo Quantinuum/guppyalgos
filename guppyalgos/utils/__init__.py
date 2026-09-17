@@ -1,6 +1,7 @@
 """Classical and Guppy utility functions."""
 
 from .guppy.array import discard_nested_arrays
+from .guppy.functions import register_size
 from .guppy.math import floor, get_bit, tan
 from .guppy.unsafe_borrow import _unsafe_array_borrow, _unsafe_array_unborrow
 from .guppy.gates import (
@@ -82,6 +83,7 @@ __all__ = [
     "phase_to_energy_qubitized_qpe",
     "qarray",
     "qsp_phase_reflection",
+    "register_size",
     "t_state",
     "tan",
     "transversal",
