@@ -11,7 +11,7 @@ import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.std.builtins import array, nat
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard, discard_array, qubit
+from guppylang.std.quantum import discard, discard_array, measure, qubit
 from selene_sim import Quest
 
 from guppyalgos.algorithms.linear_systems import (
@@ -21,7 +21,7 @@ from guppyalgos.algorithms.linear_systems import (
 )
 from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_angles
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
-from guppyalgos.utils import apply_bitstring, int_to_bits, qarray, register_size
+from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
 from guppyalgos.primitives.measurement import discard_array_zero
 from tests.helpers.test_helpers import assert_allclose_ignorephase, switch_endianness
 
@@ -120,7 +120,6 @@ def test_hhl_rus(
         ham_op, time_step, n_input_qubits=n_input_qubits
     )
     eigenvalue_inversion = create_eigenvalue_inversion(n_qpe, rotation_scalar)
-    hhl_op = hhl(controlled_hamiltonian_simulation, eigenvalue_inversion)
     prepare_b = multiplexor_prep(input_vector)
 
     @guppy
@@ -129,11 +128,22 @@ def test_hhl_rus(
         while True:
             qs = qarray(n_input_qubits)
             prepare_b(qs)
-            success = hhl_op(qs)
+            clock_reg = qarray(n_qpe)
+            ancilla = qubit()
+            hhl(
+                qs,
+                clock_reg,
+                ancilla,
+                controlled_hamiltonian_simulation,
+                eigenvalue_inversion,
+            )
+            success = measure(ancilla).read()
             if success:
                 state_output("solution", qs)
+                discard_array(clock_reg)
                 discard_array(qs)
                 break
+            discard_array(clock_reg)
             discard_array(qs)
 
     sim_result = run_hhl_rus.emulator(n_qubits=n_sim_qubits).run()
@@ -151,14 +161,21 @@ def test_hhl_rus(
 
 
 @pytest.mark.parametrize(
-    ("eigenvalue_inversion", "scaling_factor", "clock_reg_state", "n_ancillas"),
+    (
+        "eigenvalue_inversion",
+        "clock_reg_size",
+        "scaling_factor",
+        "clock_reg_state",
+        "n_ancillas",
+    ),
     [
-        (create_eigenvalue_inversion(2, 1.0), 1.0, 0.5, 0),
-        (create_eigenvalue_inversion(3, 0.1), 0.1, 0.6, 0),
+        (create_eigenvalue_inversion(2, 1.0), 2, 1.0, 0.5, 0),
+        (create_eigenvalue_inversion(3, 0.1), 3, 0.1, 0.6, 0),
     ],
 )
 def test_eigenvalue_inversion[n_clock: nat](
     eigenvalue_inversion: GuppyFunctionDefinition[[array[qubit, n_clock], qubit], None],
+    clock_reg_size: int,
     scaling_factor: float,
     clock_reg_state: float,
     n_ancillas: int,
@@ -171,7 +188,6 @@ def test_eigenvalue_inversion[n_clock: nat](
     integer-label units as λ.
 
     """
-    clock_reg_size = register_size(eigenvalue_inversion, 0)
     clock_reg_state_int = int(clock_reg_state * (2**clock_reg_size))
     clock_reg_state_bits = int_to_bits(clock_reg_state_int, clock_reg_size)
     signed_clock_label = (

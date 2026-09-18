@@ -11,68 +11,46 @@ from __future__ import annotations
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import h, measure, qubit, discard_array
+from guppylang.std.builtins import array, nat, Function
+from guppylang.std.quantum import h, qubit
 
-from guppyalgos.algorithms.phase_estimation import iqpe, qpe
-from guppyalgos.utils import qarray, transversal, register_size
+from guppyalgos.primitives.subroutines.qft import iqft, qft
+from guppyalgos.utils import transversal
 
 
-def hhl[n_input: nat, n_clock: nat](
-    controlled_hamiltonian_simulation: GuppyFunctionDefinition[
-        [qubit, array[qubit, n_input], int], None
-    ],
-    eigenvalue_inversion: GuppyFunctionDefinition[[array[qubit, n_clock], qubit], None],
-) -> GuppyFunctionDefinition[[array[qubit, n_input]], bool]:
-    """Construct a Guppy function for the HHL algorithm.
+@guppy
+@no_type_check
+def hhl[n_clock: nat, SystemReg](
+    system_reg: SystemReg,
+    clock_reg: array[qubit, n_clock],
+    ancilla: qubit,
+    power_oracle: Function[[qubit, SystemReg, int], None],
+    eigenvalue_inversion: Function[[array[qubit, n_clock], qubit], None],
+) -> None:
+    """Circuit construction for the HHL algorithm.
 
     Args:
-        controlled_hamiltonian_simulation: Guppy function enacting controlled
-        Hamiltonian simulation. Explicitly, needs to perform the transformation:
-            ``|ctrl⟩|input_state⟩ → |ctrl⟩e^{i * t * ctrl * A}|input_state⟩``
-            for some ``t``, where ``A`` is the matrix to be inverted.
-        eigenvalue_inversion: Eigenvalue inversion function. Needs to effect:
-            ``|λ⟩|0⟩ → |λ⟩(√(1 - |C/λ|^2)|0⟩ + (C/λ)|1⟩)``
-            for some scaling factor ``C``, where ``λ`` is the signed eigenvalue
-            estimate decoded from the clock register. ``C`` and ``λ`` must use the
-            same units, with ``|C/λ| <= 1`` for every supported nonzero ``λ``.
-
+        system_reg: The quantum register which stores the state vector of the linear
+            system. Should be initialized to the quantum state representing the input
+            vector for the linear system.
+        clock_reg: The clock register used for phase estimation.
+        ancilla: The ancilla qubit used for eigenvalue inversion. Should be initialized
+            to zero, and can be used as a flag qubit for amplitude amplification.
+        power_oracle: The power oracle for QPE, performing controlled Hamiltonian
+            simulation on the input matrix.
+        eigenvalue_inversion: The conditional rotation implementing eigenvalue
+            inversion.
 
     Returns:
-        A Guppy function that applies HHL to an input state register and returns whether
-        the algorithm succeeded (ancilla measured 1).
+        None
 
     """
-    n_input_qubits = register_size(controlled_hamiltonian_simulation, 1)
-    n_clock_qubits = register_size(eigenvalue_inversion, 0)
-
-    @guppy
-    @no_type_check
-    def inverse_hamiltonian_simulation(
-        ctrl: qubit,
-        input_state: array[qubit, n_input_qubits],
-        power: int,
-    ) -> None:
-        controlled_hamiltonian_simulation(ctrl, input_state, -power)
-
-    @guppy
-    @no_type_check
-    def hhl_fn(input_state: array[qubit, n_input_qubits]) -> bool:
-        clock_reg = qarray(n_clock_qubits)
-
-        transversal(h, clock_reg)
-        qpe(clock_reg, input_state, controlled_hamiltonian_simulation)
-
-        ancilla = qubit()
-        eigenvalue_inversion(clock_reg, ancilla)
-
-        iqpe(clock_reg, input_state, inverse_hamiltonian_simulation)
-        transversal(h, clock_reg)
-
-        discard_array(clock_reg)
-        success = measure(ancilla).read()
-
-        return success
-
-    return hhl_fn
+    transversal(h, clock_reg)
+    for n_index in range(n_clock):
+        power_oracle(clock_reg[n_index], system_reg, 2**n_index)
+    iqft(clock_reg)
+    eigenvalue_inversion(clock_reg, ancilla)
+    qft(clock_reg)
+    for n_index in range(n_clock):
+        power_oracle(clock_reg[n_index], system_reg, -(2**n_index))
+    transversal(h, clock_reg)
