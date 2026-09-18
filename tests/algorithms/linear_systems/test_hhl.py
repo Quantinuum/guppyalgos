@@ -22,6 +22,9 @@ from guppyalgos.algorithms.time_evolution.trotter import (
     cntrl_ham_sim_trotter,
     cntrl_trotter_first_order,
 )
+from guppyalgos.algorithms.time_evolution.trotter.trotter_sequence import (
+    cntrl_trotter_from_sequence,
+)
 from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_angles
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
@@ -122,11 +125,17 @@ def test_hhl_rus(
     controlled_trotter_step = cntrl_trotter_first_order(
         ham_op, n_state_qubits=n_input_qubits
     )
+    ham_terms = list(ham_op.to_terms())
+    inverse_trotter_step = cntrl_trotter_from_sequence(
+        ham_terms,
+        [(term_index, 1.0) for term_index in reversed(range(len(ham_terms)))],
+        n_input_qubits,
+    )
     forward_simulation = cntrl_ham_sim_trotter(
         controlled_trotter_step, 1, time_step, n_input_qubits
     )
     inverse_simulation = cntrl_ham_sim_trotter(
-        controlled_trotter_step, 1, -time_step, n_input_qubits
+        inverse_trotter_step, 1, -time_step, n_input_qubits
     )
 
     @guppy
