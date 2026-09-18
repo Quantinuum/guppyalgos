@@ -65,10 +65,11 @@ def multiplexed_rotation[n_controls: nat, n_angles: nat, Axis: RotationAxis](
             coefficient_index = (coefficient_index << 1) | ((gray_code >> bit) & 1)
         rz(target, angle(coefficients[coefficient_index] / float(dim)))
 
-        toggled_bit = 0
-        counter = gray_index + 1
-        while counter % 2 == 0 and toggled_bit < n_controls - 1:
-            counter //= 2
-            toggled_bit += 1
-        cx(controls[n_controls - 1 - toggled_bit], target)
+        if n_controls > 0:
+            toggled_bit = 0
+            counter = gray_index + 1
+            while counter % 2 == 0 and toggled_bit < n_controls - 1:
+                counter //= 2
+                toggled_bit += 1
+            cx(controls[n_controls - 1 - toggled_bit], target)
     axis.restore_basis(target)
