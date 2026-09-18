@@ -15,9 +15,12 @@ from guppylang.std.quantum import discard, discard_array, measure, qubit
 from selene_sim import Quest
 
 from guppyalgos.algorithms.linear_systems import (
-    create_controlled_hamiltonian_simulation,
     create_eigenvalue_inversion,
     hhl,
+)
+from guppyalgos.algorithms.time_evolution.trotter import (
+    cntrl_ham_sim_trotter,
+    cntrl_trotter_first_order,
 )
 from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_angles
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
@@ -116,9 +119,30 @@ def test_hhl_rus(
     ham_op = zqp.RealTermSum.from_str(ham_str)
 
     n_sim_qubits = n_qpe + n_input_qubits + 1
-    controlled_hamiltonian_simulation = create_controlled_hamiltonian_simulation(
-        ham_op, time_step, n_input_qubits=n_input_qubits
+    controlled_trotter_step = cntrl_trotter_first_order(
+        ham_op, n_state_qubits=n_input_qubits
     )
+    forward_simulation = cntrl_ham_sim_trotter(
+        controlled_trotter_step, 1, time_step, n_input_qubits
+    )
+    inverse_simulation = cntrl_ham_sim_trotter(
+        controlled_trotter_step, 1, -time_step, n_input_qubits
+    )
+
+    @guppy
+    @no_type_check
+    def controlled_hamiltonian_simulation(
+        control: qubit,
+        state_register: array[qubit, n_input_qubits],
+        power: int,
+    ) -> None:
+        if power >= 0:
+            for _ in range(power):
+                forward_simulation(control, state_register)
+        else:
+            for _ in range(-power):
+                inverse_simulation(control, state_register)
+
     eigenvalue_inversion = create_eigenvalue_inversion(n_qpe, rotation_scalar)
     prepare_b = multiplexor_prep(input_vector)
 
