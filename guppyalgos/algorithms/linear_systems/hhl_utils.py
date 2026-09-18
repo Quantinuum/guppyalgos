@@ -40,7 +40,10 @@ def eigenvalue_inversion_angles(
             continue
         k_signed = k if k < dim // 2 else k - dim
         ratio = rotation_scalar / k_signed
-        ratio = max(-1.0, min(1.0, ratio))
+        if abs(ratio) > 1.0:
+            raise ValueError(
+                f"rotation_scalar is too large for signed clock label {k_signed}"
+            )
         half_turn = (2.0 / np.pi) * np.arcsin(ratio)
         angles.append(float(half_turn))
     return angles
