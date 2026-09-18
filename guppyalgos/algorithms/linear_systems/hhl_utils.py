@@ -6,7 +6,6 @@ from typing import no_type_check
 
 import numpy as np
 from guppylang import guppy
-from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import qubit
 
@@ -44,25 +43,13 @@ def eigenvalue_inversion_angles(
     return angles
 
 
-def create_eigenvalue_inversion[n_clock: nat](
-    n_qpe: int,
-    rotation_scalar: float,
-) -> GuppyFunctionDefinition[[array[qubit, n_clock], qubit], None]:
-    """Build the clock-conditioned eigenvalue-inversion rotation for HHL.
-
-    Args:
-        n_qpe: Number of clock qubits in QPE.
-        rotation_scalar: Constant C scaling the inversion factor C / lambda.
-
-    Returns:
-        A Guppy function applying the conditioned rotation to a zeroed ancilla.
-
-    """
-    angles = eigenvalue_inversion_angles(n_qpe, rotation_scalar)
-
-    @guppy
-    @no_type_check
-    def eigenvalue_inversion(clock_reg: array[qubit, n_qpe], ancilla: qubit) -> None:
-        multiplexed_rotation(RotationAxisY(), comptime(angles), clock_reg, ancilla)
-
-    return eigenvalue_inversion
+@guppy
+@no_type_check
+def eigenvalue_inversion[n_qpe: nat](
+    clock_reg: array[qubit, n_qpe],
+    ancilla: qubit,
+    rotation_scalar: float @ comptime,
+) -> None:
+    """Apply the eigenvalue-dependent inversion rotation to an ancilla."""
+    angles = comptime(eigenvalue_inversion_angles(n_qpe, rotation_scalar))
+    multiplexed_rotation(RotationAxisY(), angles, clock_reg, ancilla)

@@ -1,21 +1,19 @@
 """Tests for the HHL algorithm."""
 
 from __future__ import annotations
-from guppylang.defs import GuppyFunctionDefinition
-
 from typing import no_type_check
 
 import numpy as np
 import pytest
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, measure, qubit
 from selene_sim import Quest
 
 from guppyalgos.algorithms.linear_systems import (
-    create_eigenvalue_inversion,
+    eigenvalue_inversion,
     hhl,
 )
 from guppyalgos.algorithms.time_evolution.trotter import (
@@ -152,7 +150,11 @@ def test_hhl_rus(
             for _ in range(-power):
                 inverse_simulation(control, state_register)
 
-    eigenvalue_inversion = create_eigenvalue_inversion(n_qpe, rotation_scalar)
+    @guppy
+    @no_type_check
+    def eigenvalue_transform(clock_reg: array[qubit, n_qpe], ancilla: qubit) -> None:
+        eigenvalue_inversion(clock_reg, ancilla, comptime(rotation_scalar))
+
     prepare_b = multiplexor_prep(input_vector)
 
     @guppy
@@ -168,7 +170,7 @@ def test_hhl_rus(
                 clock_reg,
                 ancilla,
                 controlled_hamiltonian_simulation,
-                eigenvalue_inversion,
+                eigenvalue_transform,
             )
             success = measure(ancilla).read()
             if success:
@@ -195,19 +197,17 @@ def test_hhl_rus(
 
 @pytest.mark.parametrize(
     (
-        "eigenvalue_inversion",
         "clock_reg_size",
         "scaling_factor",
         "clock_reg_state",
         "n_ancillas",
     ),
     [
-        (create_eigenvalue_inversion(2, 1.0), 2, 1.0, 0.5, 0),
-        (create_eigenvalue_inversion(3, 0.1), 3, 0.1, 0.6, 0),
+        (2, 1.0, 0.5, 0),
+        (3, 0.1, 0.6, 0),
     ],
 )
 def test_eigenvalue_inversion[n_clock: nat](
-    eigenvalue_inversion: GuppyFunctionDefinition[[array[qubit, n_clock], qubit], None],
     clock_reg_size: int,
     scaling_factor: float,
     clock_reg_state: float,
@@ -240,7 +240,7 @@ def test_eigenvalue_inversion[n_clock: nat](
         apply_bitstring(clock_reg, clock_reg_state_bits)
 
         ancilla = qubit()
-        eigenvalue_inversion(clock_reg, ancilla)
+        eigenvalue_inversion(clock_reg, ancilla, comptime(scaling_factor))
 
         apply_bitstring(clock_reg, clock_reg_state_bits)
         discard_array_zero(clock_reg)
