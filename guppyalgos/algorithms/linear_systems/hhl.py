@@ -13,10 +13,9 @@ from typing import no_type_check
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import h, measure, qubit
+from guppylang.std.quantum import h, measure, qubit, discard_array
 
 from guppyalgos.algorithms.phase_estimation import iqpe, qpe
-from guppyalgos.primitives.measurement import discard_array_zero
 from guppyalgos.utils import qarray, transversal, register_size
 
 
@@ -71,7 +70,7 @@ def hhl[n_input: nat, n_clock: nat](
         iqpe(clock_reg, input_state, inverse_hamiltonian_simulation)
         transversal(h, clock_reg)
 
-        discard_array_zero(clock_reg)
+        discard_array(clock_reg)
         success = measure(ancilla).read()
 
         return success
