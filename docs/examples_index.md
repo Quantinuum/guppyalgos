@@ -16,7 +16,7 @@ example_indexes/rotation_synthesis_index.md
 example_indexes/gate_decompositions_index.md
 example_indexes/block_encoding_index.md
 example_indexes/phase_estimation_index.md
-example_indexes/linear_systems_index.md
+example_indexes/linear_algebra_index.md
 example_indexes/measurement_index.md
 example_indexes/hamiltonian_simulation_index.md
 ```

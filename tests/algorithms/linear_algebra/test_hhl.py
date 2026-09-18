@@ -12,7 +12,7 @@ from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, measure, qubit
 from selene_sim import Quest
 
-from guppyalgos.algorithms.linear_systems import (
+from guppyalgos.algorithms.linear_algebra import (
     eigenvalue_inversion,
     hhl,
 )
@@ -23,7 +23,7 @@ from guppyalgos.algorithms.time_evolution.trotter import (
 from guppyalgos.algorithms.time_evolution.trotter.trotter_sequence import (
     cntrl_trotter_from_sequence,
 )
-from guppyalgos.algorithms.linear_systems.hhl_utils import eigenvalue_inversion_angles
+from guppyalgos.algorithms.linear_algebra.hhl_utils import eigenvalue_inversion_angles
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
 from guppyalgos.primitives.measurement import discard_array_zero
