@@ -6,15 +6,16 @@ from typing import Any, no_type_check
 
 import numpy as np
 import pytest
-from guppylang import guppy
-from guppylang.std.builtins import array
+from guppylang import comptime, guppy
+from guppylang.std.builtins import array, control, dagger
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard_array, qubit
+from guppylang.std.quantum import discard_array, h, qubit
 from selene_sim import Quest
 
 from guppyalgos.primitives.subroutines.ladders.cx_ladder import (
     CXLadderLinear,
     CXLadderLog,
+    _cx_ladder_apply_from_inds,
     ladder_inds_from_ascending,
     _lin_cx_ladder_indices,
     log_cx_ladder_indices,
@@ -23,7 +24,12 @@ from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.utils import qarray
 
-from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import (
+    align_phase,
+    assert_allclose_ignorephase,
+    assert_cntrl_unitary,
+    get_unitary,
+)
 
 
 @pytest.mark.parametrize(
@@ -114,6 +120,55 @@ def test_linear_and_log_depth_unitary_equivalence(n_qubits: int) -> None:
         CXLadderLog().ascending(qs)
 
     assert_allclose_ignorephase(get_unitary(lin, n_qubits), get_unitary(log, n_qubits))
+
+
+def test_cx_ladder_inverse() -> None:
+    """Test the custom inverse implementation of the CX ladder."""
+    n_qubits = 4
+    gate_indices = log_cx_ladder_indices(n_qubits)
+
+    @guppy
+    @no_type_check
+    def ladder(qs: array[qubit, n_qubits]) -> None:
+        _cx_ladder_apply_from_inds(qs, comptime(gate_indices))
+
+    @guppy
+    @no_type_check
+    def inverse_ladder(qs: array[qubit, n_qubits]) -> None:
+        with dagger:
+            _cx_ladder_apply_from_inds(qs, comptime(gate_indices))
+
+    ladder_unitary = get_unitary(ladder, n_qubits)
+    inverse_unitary = get_unitary(inverse_ladder, n_qubits)
+
+    assert_allclose_ignorephase(inverse_unitary, ladder_unitary.conj().T)
+
+
+def test_controlled_cx_ladder() -> None:
+    """Test the custom controlled implementation of the CX ladder."""
+    n_qubits = 4
+    gate_indices = log_cx_ladder_indices(n_qubits)
+
+    @guppy
+    @no_type_check
+    def ladder(qs: array[qubit, n_qubits]) -> None:
+        _cx_ladder_apply_from_inds(qs, comptime(gate_indices))
+
+    @guppy
+    @no_type_check
+    def controlled_ladder(ctrl: array[qubit, 1], qs: array[qubit, n_qubits]) -> None:
+        h(ctrl[0])
+        with control(ctrl):
+            _cx_ladder_apply_from_inds(qs, comptime(gate_indices))
+        h(ctrl[0])
+
+    assert_cntrl_unitary(
+        controlled_ladder,
+        align_phase(get_unitary(ladder, n_qubits)),
+        n_qubits,
+        {},
+        control_name="ctrl",
+    )
 
 
 @pytest.mark.parametrize(
