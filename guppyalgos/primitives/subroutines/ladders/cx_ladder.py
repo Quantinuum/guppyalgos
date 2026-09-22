@@ -18,6 +18,7 @@ class CXLadderLinear:
     """
 
     @guppy
+    @no_type_check
     def ascending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ascending linear CX ladder."""
         _cx_ladder_apply_from_inds(
@@ -26,6 +27,7 @@ class CXLadderLinear:
         )
 
     @guppy
+    @no_type_check
     def ascending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ascending linear CX ladder dagger."""
         _cx_ladder_apply_from_inds(
@@ -38,6 +40,7 @@ class CXLadderLinear:
         )
 
     @guppy
+    @no_type_check
     def descending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply descending linear CX ladder."""
         _cx_ladder_apply_from_inds(
@@ -50,6 +53,7 @@ class CXLadderLinear:
         )
 
     @guppy
+    @no_type_check
     def descending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply descending linear CX ladder dagger."""
         _cx_ladder_apply_from_inds(
@@ -72,6 +76,7 @@ class CXLadderLog:
     """
 
     @guppy
+    @no_type_check
     def ascending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ascending log-depth CX ladder."""
         _cx_ladder_apply_from_inds(
@@ -80,6 +85,7 @@ class CXLadderLog:
         )
 
     @guppy
+    @no_type_check
     def ascending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ascending log-depth CX ladder dagger."""
         _cx_ladder_apply_from_inds(
@@ -92,6 +98,7 @@ class CXLadderLog:
         )
 
     @guppy
+    @no_type_check
     def descending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply descending log-depth CX ladder."""
         _cx_ladder_apply_from_inds(
@@ -104,6 +111,7 @@ class CXLadderLog:
         )
 
     @guppy
+    @no_type_check
     def descending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply descending log-depth CX ladder dagger."""
         _cx_ladder_apply_from_inds(
@@ -119,6 +127,7 @@ class CXLadderLog:
 @guppy.unitary
 class _cx_ladder_apply_from_inds:
     @guppy
+    @no_type_check
     def __call__[n_qubits: nat, n_gates: nat](
         q: array[qubit, n_qubits],
         gate_indices: frozenarray[tuple[int, int], n_gates],
@@ -128,6 +137,7 @@ class _cx_ladder_apply_from_inds:
             cx(q[i], q[j])
 
     @guppy
+    @no_type_check
     def daggered[n_qubits: nat, n_gates: nat](
         q: array[qubit, n_qubits],
         gate_indices: frozenarray[tuple[int, int], n_gates],
@@ -139,10 +149,11 @@ class _cx_ladder_apply_from_inds:
             cx(q[i], q[j])
 
     @guppy
+    @no_type_check
     def controlled[n_qubits: nat, n_gates: nat, n_ctrls: nat](
         q: array[qubit, n_qubits],
         gate_indices: frozenarray[tuple[int, int], n_gates],
-        ctrls: array[qubit, n_ctrls]
+        ctrls: array[qubit, n_ctrls],
     ) -> None:
         """Apply CX gates based on the provided indices."""
         for i, j in gate_indices:
@@ -150,10 +161,11 @@ class _cx_ladder_apply_from_inds:
                 cx(q[i], q[j])
 
     @guppy
+    @no_type_check
     def ctrl_daggered[n_qubits: nat, n_gates: nat, n_ctrls: nat](
         q: array[qubit, n_qubits],
         gate_indices: frozenarray[tuple[int, int], n_gates],
-        ctrls: array[qubit, n_ctrls]
+        ctrls: array[qubit, n_ctrls],
     ) -> None:
         """Apply CX gates based on the provided indices."""
         reversed_inds = gate_indices.mutable_copy()
