@@ -1,7 +1,15 @@
 # Contributing
 
-Open an issue for a bug, feature, or proposed algorithm before starting substantial
-work. Include a minimal reproducer for bugs and a paper reference for new algorithms.
+We welcome contributions to guppyalgos! To report a bug, request a feature, or
+propose an algorithm, open [an issue](https://github.com/Quantinuum/guppyalgos/issues/new).
+To contribute code, [fork](https://github.com/Quantinuum/guppyalgos/fork) the
+repository and open a pull request against the `main` branch. Pull requests must
+pass all CI checks before they are merged, including the
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) check for
+the pull request title.
+
+Open an issue before starting substantial work. Include a minimal reproducer for
+bugs and a paper reference for new algorithms.
 
 ## Development setup
 
