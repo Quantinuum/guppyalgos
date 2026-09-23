@@ -10,7 +10,7 @@ from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, measure, qubit
-from selene_sim import Quest
+from selene_sim import QuantumReplay, Quest
 
 from guppyalgos.algorithms.linear_algebra import (
     eigenvalue_inversion,
@@ -181,18 +181,28 @@ def test_hhl_rus(
             discard_array(clock_reg)
             discard_array(qs)
 
-    sim_result = run_hhl_rus.emulator(n_qubits=n_sim_qubits).run()
-
-    states = Quest.extract_states_dict(sim_result.results[0].entries)
-    actual_state = switch_endianness(
-        states["solution"].get_state_vector_distribution()[0].state
-    )
-
     a_mat = ham_op.to_sparse_matrix(False).toarray()
     expected_x = np.linalg.solve(a_mat, input_vector)
     expected_x /= np.linalg.norm(expected_x)
 
-    assert_allclose_ignorephase(actual_state, expected_x, threshold=1e-5)
+    n_shots = 20
+    desired_measurements = [[False] * n + [True] for n in range(n_shots)]
+    replay_simulator = QuantumReplay(
+        simulator=Quest(), measurements=desired_measurements
+    )
+    replay_result = (
+        run_hhl_rus.emulator(n_qubits=n_sim_qubits)
+        .with_simulator(replay_simulator)
+        .with_shots(n_shots)
+        .run()
+    )
+
+    for shot_result in replay_result.results:
+        states = Quest.extract_states_dict(shot_result)
+        actual_state = switch_endianness(
+            states["solution"].get_state_vector_distribution()[0].state
+        )
+        assert_allclose_ignorephase(actual_state, expected_x, threshold=1e-5)
 
 
 @pytest.mark.parametrize(
