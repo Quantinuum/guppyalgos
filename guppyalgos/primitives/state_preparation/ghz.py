@@ -13,7 +13,7 @@ from guppyalgos.primitives.subroutines.ladders.cx_ladder import (
 )
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ghz_state[n: nat](
     q: array[qubit, n],
