@@ -15,7 +15,7 @@ Any release before version 1.0.0 is experimental, and the API may change between
 releases. Pin the package version for reproducible projects and check the
 release notes before upgrading.
 
-Guppy Algorithms is built on the Guppy language framework. If Guppy is new to
+guppyalgos is built on the Guppy language framework. If Guppy is new to
 you, start with the
 [Guppy language guide](https://docs.quantinuum.com/guppy/language_guide/language_guide_index.html)
 for an introduction to the language, type system, and programming model.
