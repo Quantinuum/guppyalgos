@@ -9,8 +9,8 @@ from guppylang import guppy
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import crz, discard, discard_array, measure, qubit
-from selene_sim import QuantumReplay, Quest
+from guppylang.std.quantum import crz, discard, discard_array, qubit
+from selene_sim import Quest
 
 from guppyalgos.algorithms.linear_algebra import (
     eigenvalue_inversion,
@@ -24,9 +24,10 @@ from guppyalgos.primitives.rotations import (
     RotationAxisY,
     RotationAxisZ,
 )
+from guppyalgos.testing import project_state_onto_bitstring
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
 from guppyalgos.primitives.measurement import discard_array_zero
-from tests.helpers.test_helpers import assert_allclose_ignorephase, switch_endianness
+from tests.helpers.test_helpers import assert_allclose_ignorephase
 
 
 def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
@@ -101,7 +102,7 @@ def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
         ),
     ],
 )
-def test_hhl_rus(
+def test_hhl_statevector_success_branch(
     rotation_axis: type[RotationAxis],
     coefficient: float,
     input_vector: np.ndarray,
@@ -109,7 +110,7 @@ def test_hhl_rus(
     simulation_time: float,
     rotation_scalar: float,
 ) -> None:
-    """Test HHL on one-qubit linear systems with repeat-until-success."""
+    """Test HHL by projecting the statevector onto its successful branch."""
     n_input_qubits = 1
     n_sim_qubits = n_qpe + n_input_qubits + 1
 
@@ -143,27 +144,22 @@ def test_hhl_rus(
 
     @guppy
     @no_type_check
-    def run_hhl_rus() -> None:
-        while True:
-            qs = qarray(n_input_qubits)
-            prepare_b(qs)
-            clock_reg = qarray(n_qpe)
-            ancilla = qubit()
-            hhl(
-                qs,
-                clock_reg,
-                ancilla,
-                controlled_hamiltonian_simulation,
-                eigenvalue_transform,
-            )
-            success = measure(ancilla).read()
-            if success:
-                state_output("solution", qs)
-                discard_array(clock_reg)
-                discard_array(qs)
-                break
-            discard_array(clock_reg)
-            discard_array(qs)
+    def run_hhl() -> None:
+        qs = qarray(n_input_qubits)
+        prepare_b(qs)
+        clock_reg = qarray(n_qpe)
+        ancilla = qarray(1)
+        hhl(
+            qs,
+            clock_reg,
+            ancilla[0],
+            controlled_hamiltonian_simulation,
+            eigenvalue_transform,
+        )
+        state_output("solution", ancilla[0], qs[0])
+        discard_array(ancilla)
+        discard_array(clock_reg)
+        discard_array(qs)
 
     pauli_matrices = {
         RotationAxisX: np.array([[0.0, 1.0], [1.0, 0.0]]),
@@ -174,24 +170,18 @@ def test_hhl_rus(
     expected_x = np.linalg.solve(a_mat, input_vector)
     expected_x /= np.linalg.norm(expected_x)
 
-    n_shots = 20
-    desired_measurements = [[False] * n + [True] for n in range(n_shots)]
-    replay_simulator = QuantumReplay(
-        simulator=Quest(), measurements=desired_measurements
+    result = run_hhl.emulator(n_qubits=n_sim_qubits).run()
+    states = Quest.extract_states_dict(result.results[0].entries)
+    solution_state = states["solution"]
+    solution_state.specified_qubits = list(range(1, n_qpe + n_input_qubits + 1))
+    projected_solution = project_state_onto_bitstring(
+        solution_state,
+        [False] * n_qpe + [True],
+        new_specified_qubits=[],
     )
-    replay_result = (
-        run_hhl_rus.emulator(n_qubits=n_sim_qubits)
-        .with_simulator(replay_simulator)
-        .with_shots(n_shots)
-        .run()
-    )
+    actual_state = projected_solution.state.state
 
-    for shot_result in replay_result.results:
-        states = Quest.extract_states_dict(shot_result)
-        actual_state = switch_endianness(
-            states["solution"].get_state_vector_distribution()[0].state
-        )
-        assert_allclose_ignorephase(actual_state, expected_x, threshold=1e-5)
+    assert_allclose_ignorephase(actual_state, expected_x, threshold=1e-5)
 
 
 @pytest.mark.parametrize(
