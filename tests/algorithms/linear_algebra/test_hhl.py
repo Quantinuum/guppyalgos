@@ -31,18 +31,20 @@ from tests.helpers.test_helpers import assert_allclose_ignorephase, switch_endia
 
 
 def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
-    """The inversion angles encode C divided by each signed clock label."""
-    angles = eigenvalue_inversion_angles(n_qpe=3, rotation_scalar=1.0)
+    """The inversion angles encode C divided by each inferred eigenvalue."""
+    angles = eigenvalue_inversion_angles(
+        n_qpe=3, rotation_scalar=0.25, simulation_time=np.pi / 2
+    )
 
     expected = [
         0.0,
-        1.0,
         1.0 / 3.0,
-        2.0 / np.pi * np.arcsin(1.0 / 3.0),
+        2.0 / np.pi * np.arcsin(1.0 / 4.0),
+        2.0 / np.pi * np.arcsin(1.0 / 6.0),
+        -2.0 / np.pi * np.arcsin(1.0 / 8.0),
+        -2.0 / np.pi * np.arcsin(1.0 / 6.0),
         -2.0 / np.pi * np.arcsin(1.0 / 4.0),
-        -2.0 / np.pi * np.arcsin(1.0 / 3.0),
         -1.0 / 3.0,
-        -1.0,
     ]
 
     assert angles == pytest.approx(expected)
@@ -54,7 +56,7 @@ def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
         "n_input_qubits",
         "input_vector",
         "n_qpe",
-        "time_step",
+        "simulation_time",
         "rotation_scalar",
     ),
     [
@@ -113,7 +115,7 @@ def test_hhl_rus(
     n_input_qubits: int,
     input_vector: np.ndarray,
     n_qpe: int,
-    time_step: float,
+    simulation_time: float,
     rotation_scalar: float,
 ) -> None:
     """Test HHL across 1-, 2-, and 3-qubit linear systems with repeat-until-success."""
@@ -130,10 +132,10 @@ def test_hhl_rus(
         n_input_qubits,
     )
     forward_simulation = cntrl_ham_sim_trotter(
-        controlled_trotter_step, 1, time_step, n_input_qubits
+        controlled_trotter_step, 1, simulation_time, n_input_qubits
     )
     inverse_simulation = cntrl_ham_sim_trotter(
-        inverse_trotter_step, 1, -time_step, n_input_qubits
+        inverse_trotter_step, 1, -simulation_time, n_input_qubits
     )
 
     @guppy
@@ -153,7 +155,12 @@ def test_hhl_rus(
     @guppy
     @no_type_check
     def eigenvalue_transform(clock_reg: array[qubit, n_qpe], ancilla: qubit) -> None:
-        eigenvalue_inversion(clock_reg, ancilla, comptime(rotation_scalar))
+        eigenvalue_inversion(
+            clock_reg,
+            ancilla,
+            comptime(rotation_scalar),
+            comptime(simulation_time),
+        )
 
     prepare_b = multiplexor_prep(input_vector)
 
@@ -209,26 +216,27 @@ def test_hhl_rus(
     (
         "clock_reg_size",
         "scaling_factor",
+        "simulation_time",
         "clock_reg_state",
         "n_ancillas",
     ),
     [
-        (2, 1.0, 0.5, 0),
-        (3, 0.1, 0.6, 0),
+        (2, 1.0, np.pi / 2, 0.5, 0),
+        (3, 0.1, -np.pi, 0.6, 0),
     ],
 )
 def test_eigenvalue_inversion[n_clock: nat](
     clock_reg_size: int,
     scaling_factor: float,
+    simulation_time: float,
     clock_reg_state: float,
     n_ancillas: int,
 ) -> None:
     """Test that the eigenvalue inversion function has the expected behavior.
 
-    For an n-qubit clock basis state |k⟩, interpret k as the signed integer label
-    λ = k for k < 2^(n - 1), and λ = k - 2^n otherwise. The inversion should perform
-    |k⟩|0⟩ → |k⟩(√(1 - |C/λ|^2)|0⟩ + (C/λ)|1⟩), where C is expressed in the same
-    integer-label units as λ.
+    For an n-qubit clock basis state |k⟩, interpret k as a signed integer label and
+    infer λ = 2πk / (t 2^n). The inversion should perform
+    |k⟩|0⟩ → |k⟩(√(1 - |C/λ|^2)|0⟩ + (C/λ)|1⟩).
 
     """
     clock_reg_state_int = int(clock_reg_state * (2**clock_reg_size))
@@ -238,7 +246,10 @@ def test_eigenvalue_inversion[n_clock: nat](
         if clock_reg_state_int < 2 ** (clock_reg_size - 1)
         else clock_reg_state_int - 2**clock_reg_size
     )
-    expected_amplitude = scaling_factor / signed_clock_label
+    eigenvalue = (
+        2.0 * np.pi * signed_clock_label / (simulation_time * 2**clock_reg_size)
+    )
+    expected_amplitude = scaling_factor / eigenvalue
     expected_state = np.array(
         [np.sqrt(1.0 - expected_amplitude**2), expected_amplitude]
     )
@@ -250,7 +261,12 @@ def test_eigenvalue_inversion[n_clock: nat](
         apply_bitstring(clock_reg, clock_reg_state_bits)
 
         ancilla = qubit()
-        eigenvalue_inversion(clock_reg, ancilla, comptime(scaling_factor))
+        eigenvalue_inversion(
+            clock_reg,
+            ancilla,
+            comptime(scaling_factor),
+            comptime(simulation_time),
+        )
 
         apply_bitstring(clock_reg, clock_reg_state_bits)
         discard_array_zero(clock_reg)
