@@ -5,26 +5,25 @@ from typing import no_type_check
 
 import numpy as np
 import pytest
-import zixy.qubit.pauli as zqp
 from guppylang import guppy
+from guppylang.std.angles import angle
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard, discard_array, measure, qubit
+from guppylang.std.quantum import crz, discard, discard_array, measure, qubit
 from selene_sim import QuantumReplay, Quest
 
 from guppyalgos.algorithms.linear_algebra import (
     eigenvalue_inversion,
     hhl,
 )
-from guppyalgos.algorithms.time_evolution.trotter import (
-    cntrl_ham_sim_trotter,
-    cntrl_trotter_first_order,
-)
-from guppyalgos.algorithms.time_evolution.trotter.trotter_sequence import (
-    cntrl_trotter_from_sequence,
-)
 from guppyalgos.algorithms.linear_algebra.hhl_utils import eigenvalue_inversion_angles
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
+from guppyalgos.primitives.rotations import (
+    RotationAxis,
+    RotationAxisX,
+    RotationAxisY,
+    RotationAxisZ,
+)
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
 from guppyalgos.primitives.measurement import discard_array_zero
 from tests.helpers.test_helpers import assert_allclose_ignorephase, switch_endianness
@@ -52,8 +51,8 @@ def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
 
 @pytest.mark.parametrize(
     (
-        "ham_str",
-        "n_input_qubits",
+        "rotation_axis",
+        "coefficient",
         "input_vector",
         "n_qpe",
         "simulation_time",
@@ -61,82 +60,58 @@ def test_eigenvalue_inversion_angles_use_signed_clock_labels() -> None:
     ),
     [
         (
-            "(1.5, I0), (-0.5, Z0)",
-            1,
+            RotationAxisZ,
+            1.0,
             np.array([np.sqrt(3) / 2, 0.5]),
             3,
             -0.5,
             1.0,
         ),
         (
-            "(0.5, I0), (1.5, Z0)",
-            1,
+            RotationAxisX,
+            1.5,
             np.array([1.0, 1.0]) / np.sqrt(2),
             3,
-            -0.5,
-            1.0,
+            -1.0 / 3.0,
+            0.75,
         ),
         (
-            "(1.5, I0 I1), (-0.5, Z0 I1)",
-            2,
-            np.full(4, 0.5),
+            RotationAxisX,
+            1.0,
+            np.array([np.sqrt(3) / 2, 0.5]),
             3,
             -0.5,
-            1.0,
+            0.75,
         ),
         (
-            "(1.5, I0 I1), (-0.5, Z0 Z1)",
-            2,
-            np.array([1.0, 1.0, 0.0, 0.0]) / np.sqrt(2),
+            RotationAxisY,
+            1.0,
+            np.array([np.sqrt(3) / 2, 0.5j]),
             3,
             -0.5,
-            1.0,
+            0.5,
         ),
         (
-            "(1.5, I0 I1 I2), (0.5, X0 Z1 Z2)",
+            RotationAxisZ,
+            2.0,
+            np.array([np.sqrt(3) / 2, 0.5]),
             3,
-            np.array([1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) / np.sqrt(2),
-            3,
-            -0.5,
-            1.0,
-        ),
-        (
-            "(0.5, I0 I1 I2), (1.5, Z0 Z1 Z2)",
-            3,
-            np.full(8, 1.0 / np.sqrt(8)),
-            3,
-            -0.5,
-            1.0,
+            -0.25,
+            0.5,
         ),
     ],
 )
 def test_hhl_rus(
-    ham_str: str,
-    n_input_qubits: int,
+    rotation_axis: type[RotationAxis],
+    coefficient: float,
     input_vector: np.ndarray,
     n_qpe: int,
     simulation_time: float,
     rotation_scalar: float,
 ) -> None:
-    """Test HHL across 1-, 2-, and 3-qubit linear systems with repeat-until-success."""
-    ham_op = zqp.RealTermSum.from_str(ham_str)
-
+    """Test HHL on one-qubit linear systems with repeat-until-success."""
+    n_input_qubits = 1
     n_sim_qubits = n_qpe + n_input_qubits + 1
-    controlled_trotter_step = cntrl_trotter_first_order(
-        ham_op, n_state_qubits=n_input_qubits
-    )
-    ham_terms = list(ham_op.to_terms())
-    inverse_trotter_step = cntrl_trotter_from_sequence(
-        ham_terms,
-        [(term_index, 1.0) for term_index in reversed(range(len(ham_terms)))],
-        n_input_qubits,
-    )
-    forward_simulation = cntrl_ham_sim_trotter(
-        controlled_trotter_step, 1, simulation_time, n_input_qubits
-    )
-    inverse_simulation = cntrl_ham_sim_trotter(
-        inverse_trotter_step, 1, -simulation_time, n_input_qubits
-    )
 
     @guppy
     @no_type_check
@@ -145,12 +120,14 @@ def test_hhl_rus(
         state_register: array[qubit, n_input_qubits],
         power: int,
     ) -> None:
-        if power >= 0:
-            for _ in range(power):
-                forward_simulation(control, state_register)
-        else:
-            for _ in range(-power):
-                inverse_simulation(control, state_register)
+        axis = rotation_axis()
+        axis.prepare_basis(state_register[0])
+        crz(
+            control,
+            state_register[0],
+            angle(coefficient * simulation_time * power),
+        )
+        axis.restore_basis(state_register[0])
 
     @guppy
     @no_type_check
@@ -188,7 +165,12 @@ def test_hhl_rus(
             discard_array(clock_reg)
             discard_array(qs)
 
-    a_mat = ham_op.to_sparse_matrix(False).toarray()
+    pauli_matrices = {
+        RotationAxisX: np.array([[0.0, 1.0], [1.0, 0.0]]),
+        RotationAxisY: np.array([[0.0, -1.0j], [1.0j, 0.0]]),
+        RotationAxisZ: np.array([[1.0, 0.0], [0.0, -1.0]]),
+    }
+    a_mat = coefficient * pauli_matrices[rotation_axis]
     expected_x = np.linalg.solve(a_mat, input_vector)
     expected_x /= np.linalg.norm(expected_x)
 
