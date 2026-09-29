@@ -16,7 +16,7 @@ from guppyalgos.primitives.rotations import (
     RotationAxisZ,
     multiplexed_rotation,
 )
-from guppyalgos.utils import qarray
+from guppyalgos.utils import qarray, int_to_bits, apply_bitstring
 from tests.helpers.test_helpers import assert_allclose_ignorephase
 
 
@@ -77,6 +77,39 @@ def test_multiplexed_rotation_uses_little_endian_controls() -> None:
         "target"
     ].get_single_state()
     assert_allclose_ignorephase(state, _expected_state(theta, "y"))
+
+
+@pytest.mark.parametrize(
+    ("control_index", "angles"),
+    [
+        (0, [0.25, 0.5]),
+        (1, [0.125, 0.375, 0.5, 0.75]),
+        (3, [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]),
+    ],
+)
+def test_multiplexed_rotation_applies_correct_angle(
+    control_index: int, angles: list[float]
+) -> None:
+    """Check that the correct rotation angle is applied."""
+    num_controls = int(np.floor(np.log2(len(angles))))
+    bitstring = int_to_bits(control_index, num_controls)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(num_controls)
+        target = qubit()
+        apply_bitstring(controls, bitstring)
+        multiplexed_rotation(RotationAxisY(), comptime(angles), controls, target)
+        state_output("target", target)
+        discard_array(controls)
+        discard(target)
+
+    result = main.emulator(n_qubits=num_controls + 1).run()
+    state = Quest.extract_states_dict(result.results[0].entries)[
+        "target"
+    ].get_single_state()
+    assert_allclose_ignorephase(state, _expected_state(angles[control_index], "y"))
 
 
 def test_multiplexed_rotation_rejects_too_many_angles() -> None:
