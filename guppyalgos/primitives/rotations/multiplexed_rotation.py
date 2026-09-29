@@ -13,6 +13,7 @@ from .rotation_helper import RotationAxis
 
 
 @guppy.comptime
+@no_type_check
 def _assert_valid_angle_count(
     n_controls: nat @ comptime,
     n_angles: nat @ comptime,
