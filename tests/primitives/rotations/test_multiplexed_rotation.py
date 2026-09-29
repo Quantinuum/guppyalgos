@@ -77,3 +77,21 @@ def test_multiplexed_rotation_uses_little_endian_controls() -> None:
         "target"
     ].get_single_state()
     assert_allclose_ignorephase(state, _expected_state(theta, "y"))
+
+
+def test_multiplexed_rotation_rejects_too_many_angles() -> None:
+    """Reject an angle table with more entries than control basis states."""
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(1)
+        target = qubit()
+        multiplexed_rotation(
+            RotationAxisY(), comptime([0.0, 0.5, 1.0]), controls, target
+        )
+        discard_array(controls)
+        discard(target)
+
+    with pytest.raises(ValueError, match="n_angles == 2\\*\\*n_controls"):
+        main.compile()

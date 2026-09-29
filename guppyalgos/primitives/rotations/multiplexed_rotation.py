@@ -6,10 +6,22 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, frozenarray, nat
+from guppylang.std.builtins import array, comptime, frozenarray, nat
 from guppylang.std.quantum import cx, qubit, rz
 
 from .rotation_helper import RotationAxis
+
+
+@guppy.comptime
+def _assert_valid_angle_count(
+    n_controls: nat @ comptime,
+    n_angles: nat @ comptime,
+) -> None:
+    if n_angles != 2**n_controls:
+        raise ValueError(
+            "Multiplexed rotation requires n_angles == 2**n_controls, "
+            f"got {n_angles} angles and {n_controls} controls"
+        )
 
 
 @guppy
@@ -40,6 +52,7 @@ def multiplexed_rotation[n_controls: nat, n_angles: nat, Axis: RotationAxis](
         target: Qubit receiving the controlled rotation.
 
     """
+    _assert_valid_angle_count(n_controls, n_angles)
     dim = 2**n_controls
     coefficients = array(angles[index] for index in range(n_angles))
     block_size = 1
