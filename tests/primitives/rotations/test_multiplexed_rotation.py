@@ -7,7 +7,7 @@ import pytest
 from guppylang import guppy
 from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard, discard_array, qubit, x
+from guppylang.std.quantum import discard, discard_array, h, qubit, x
 from selene_sim import Quest
 
 from guppyalgos.primitives.rotations import (
@@ -77,6 +77,32 @@ def test_multiplexed_rotation_uses_little_endian_controls() -> None:
         "target"
     ].get_single_state()
     assert_allclose_ignorephase(state, _expected_state(theta, "y"))
+
+
+def test_multiplexed_rotation_control_superposition() -> None:
+    """Preserve coherence when selecting rotations from a control superposition."""
+    theta = 0.5
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(1)
+        h(controls[0])
+        target = qubit()
+        multiplexed_rotation(RotationAxisY(), comptime([0.0, theta]), controls, target)
+        state_output("result_state", target, controls[0])
+        discard_array(controls)
+        discard(target)
+
+    result = main.emulator(n_qubits=2).run()
+    state = Quest.extract_states_dict(result.results[0].entries)[
+        "result_state"
+    ].get_single_state()
+    phase = np.pi * theta / 2.0
+    expected_state = np.array(
+        [1.0, np.cos(phase), 0.0, np.sin(phase)], dtype=np.complex128
+    ) / np.sqrt(2.0)
+    assert_allclose_ignorephase(state, expected_state)
 
 
 @pytest.mark.parametrize(
