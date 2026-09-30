@@ -375,6 +375,12 @@ def adder_ripple_gidney_carry_out[n: nat](
     """
     anc = qarray(comptime(n - 1))
 
+    if n == 1:
+        temp_and_compute(a_reg[0], b_reg[0], carry_out)
+        cx(a_reg[0], b_reg[0])
+        discard_array(anc)
+        return
+
     # ------------------------------------------------------------------ #
     # Forward sweep                                                      #
     # ------------------------------------------------------------------ #
