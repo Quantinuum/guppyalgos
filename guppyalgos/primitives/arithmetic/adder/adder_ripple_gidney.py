@@ -322,29 +322,27 @@ def adder_ripple_gidney_mod_dagger[n: nat](
             Modified in-place: b_reg -= a_reg mod 2^n.
 
     """
+    if n == 1:
+        cx(a_reg[0], b_reg[0])
+        return
+    
     anc = qarray(comptime(n - 1))
 
     cx(a_reg[0], b_reg[0])
     temp_and_compute(a_reg[0], b_reg[0], anc[0])
 
-    if n == 1:
-        cx(anc[0], b_reg[0])
+    for i in range(n - 2):
+        _g_unmajority_inverse_gate(
+            a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1]
+        )
 
-    else:
-        if n > 2:
-            for i in range(n - 2):
-                _g_unmajority_inverse_gate(
-                    a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1]
-                )
+    cx(a_reg[n - 1], b_reg[n - 1])
+    cx(anc[n - 2], b_reg[n - 1])
 
-        cx(a_reg[n - 1], b_reg[n - 1])
-        cx(anc[n - 2], b_reg[n - 1])
-
-        if n > 2:
-            for i in range(n - 2):
-                _g_majority_inverse_gate(
-                    a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
-                )
+    for i in range(n - 2):
+        _g_majority_inverse_gate(
+            a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+        )
 
     temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
 

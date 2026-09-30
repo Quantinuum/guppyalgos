@@ -280,7 +280,7 @@ def test_addition_mod_dagger[n: nat](
     num_ancilla_fn: Callable[[int], int],
 ) -> None:
     """Test ripple carry dagger inverts correctly."""
-    n_qubits = 2 * n + 2 * num_ancilla_fn(n)
+    n_qubits = 2 * n + 1 * num_ancilla_fn(n)
 
     @guppy
     @no_type_check
@@ -290,12 +290,9 @@ def test_addition_mod_dagger[n: nat](
         b_reg = qarray(n)
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
-        carry_out = qubit()
 
         adder(a_reg, b_reg)
         adder_dagger(a_reg, b_reg)
-
-        discard(carry_out)
 
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
