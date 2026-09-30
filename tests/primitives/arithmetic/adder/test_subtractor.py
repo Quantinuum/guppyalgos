@@ -38,6 +38,7 @@ from guppyalgos.testing import project_state_onto_bitstring
 @pytest.mark.parametrize(
     ("n", "cases"),
     [
+        (1, [(0, 0), (0, 1), (1, 1)]),
         (2, [(0, 0), (1, 0), (3, 1), (1, 3)]),
         (3, [(0, 7), (7, 0), (5, 2), (2, 5)]),
         (4, [(0, 15), (15, 0), (8, 8), (7, 9)]),
