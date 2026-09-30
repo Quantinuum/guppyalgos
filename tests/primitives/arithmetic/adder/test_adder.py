@@ -143,8 +143,6 @@ def test_addition_mod[n: nat](
         b_reg = qarray(n)
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
-        carry_out = qubit()
-        discard(carry_out)
 
         adder(a_reg, b_reg)
 

@@ -340,7 +340,7 @@ def adder_ripple_cuccaro_mod[n: nat](
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, comptime(min(1, n-1)), comptime(max(0, n-2)), 1)
     cx_ladder.descending_dagger(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
 
@@ -365,7 +365,7 @@ def adder_ripple_cuccaro_mod[n: nat](
         x(b_reg[i + 1])
 
     # Reverse n-2 CX ladder
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, comptime(min(1, n-1)), comptime(max(0, n-2)), 1)
     cx_ladder.descending(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
