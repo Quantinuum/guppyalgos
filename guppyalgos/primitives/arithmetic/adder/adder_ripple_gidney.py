@@ -432,6 +432,15 @@ def _adder_ripple_gidney_carry_out_dagger_impl[n: nat](
     """
     anc = qarray(comptime(n - 1))
 
+    if n == 1:
+        cx(a_reg[0], b_reg[0])
+        if uncompute_carry_out:
+            temp_and_uncompute(a_reg[0], b_reg[0], carry_out)
+        else:
+            temp_and_compute(a_reg[0], b_reg[0], carry_out)
+        discard_array(anc)
+        return
+
     cx(a_reg[0], b_reg[0])
     temp_and_compute(a_reg[0], b_reg[0], anc[0])
 
