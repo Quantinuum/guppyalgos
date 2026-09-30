@@ -108,7 +108,7 @@ def test_cntrl_adder_mod[n: nat](
             assert res.results[0].as_dict()["a_meas"] == a_bits
 
 
-@pytest.mark.parametrize("n", [2, 3, 4])
+@pytest.mark.parametrize("n", [1, 2, 3, 4])
 @pytest.mark.parametrize(
     ("controlled_adder", "num_ancilla_fn"),
     [
@@ -215,6 +215,7 @@ def test_cntrl_adder_mod_statevector_superposition[n: nat](
 @pytest.mark.parametrize(
     ("n", "cases"),
     [
+        (1, [(0, 0), (0, 1), (1, 1)]),
         (2, [(3, 1), (1, 2), (3, 3)]),
         (3, [(3, 4), (5, 2), (7, 7)]),
         (4, [(3, 7), (9, 4), (15, 15)]),
@@ -295,6 +296,7 @@ def test_cntrl_adder_carry_out[n: nat](
 @pytest.mark.parametrize(
     ("n", "cases"),
     [
+        (1, [(0, 0), (0, 1), (1, 1)]),
         (2, [(3, 1), (1, 2), (3, 3)]),
         (3, [(3, 4), (5, 2), (7, 7)]),
         (4, [(3, 7), (9, 4), (15, 15)]),
@@ -404,6 +406,7 @@ def test_cntrl_addition_carry_out_dagger[n: nat](
             ),
         ]
         for n, cases in [
+            (1, [(0, 0), (0, 1), (1, 1)]),
             (2, [(3, 1), (1, 2), (3, 3)]),
             (3, [(3, 4), (5, 2), (7, 7)]),
             (4, [(3, 7), (9, 4), (15, 15)]),
