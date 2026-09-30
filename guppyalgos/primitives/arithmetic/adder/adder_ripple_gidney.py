@@ -12,7 +12,7 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
-from guppylang.std.quantum import cx, discard_array, qubit, discard
+from guppylang.std.quantum import cx, discard_array, qubit, discard, toffoli
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
@@ -729,6 +729,15 @@ def cntrl_adder_ripple_gidney_carry_out[n: nat](
             out.
 
     """
+    if n == 1:
+        ancilla = qubit()
+        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and_compute(ctrl, ancilla, carry_out)
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        toffoli(ctrl, a_reg[0], b_reg[0])
+        discard(ancilla)
+        return
+
     anc = qarray(comptime(n - 1))
 
     # ------------------------------------------------------------------ #
@@ -784,6 +793,18 @@ def _cntrl_adder_ripple_gidney_carry_out_dagger_impl[n: nat](
             populated with the carry-out produced by the inverse circuit.
 
     """
+    if n == 1:
+        ancilla = qubit()
+        toffoli(ctrl, a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        if uncompute_carry_out:
+            temp_and_uncompute(ctrl, ancilla, carry_out)
+        else:
+            temp_and_compute(ctrl, ancilla, carry_out)
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        discard(ancilla)
+        return
+
     anc = qarray(comptime(n - 1))
 
     _ccx(ctrl, a_reg[0], b_reg[0])
