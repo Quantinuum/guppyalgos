@@ -8,9 +8,7 @@ from guppylang.std.quantum import qubit
 
 
 @guppy.unitary
-class ham_sim_trotter:
-    """Apply a full Hamiltonian simulation using Trotter steps."""
-
+class ham_sim_trotter:  # noqa: D101
     @guppy
     @no_type_check
     def __call__[n_state_q: nat](
