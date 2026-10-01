@@ -24,12 +24,12 @@ from selene_sim import Quest
 from guppyalgos.primitives.arithmetic import (
     cntrl_adder_ripple_gidney_mod,
     cntrl_adder_ripple_gidney_carry_out,
-    cntrl_adder_ripple_cuccaro_mod,
-    cntrl_adder_ripple_cuccaro_carry_out,
-    cntrl_adder_ripple_cuccaro_carry_out_dagger,
-    cntrl_adder_ripple_cuccaro_mod_dagger,
     cntrl_adder_ripple_gidney_mod_dagger,
     cntrl_adder_ripple_gidney_carry_out_dagger,
+    cntrl_adder_ripple_cuccaro_mod,
+    cntrl_adder_ripple_cuccaro_carry_out,
+    cntrl_adder_ripple_cuccaro_mod_dagger,
+    cntrl_adder_ripple_cuccaro_carry_out_dagger,
 )
 from guppyalgos.utils import qarray, int_to_bits, apply_bitstring
 from guppyalgos.testing import (
@@ -39,15 +39,16 @@ from guppyalgos.testing import (
 )
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(3, 1), (1, 2), (3, 3)]),
-        (3, [(3, 4), (5, 2), (7, 7)]),
-        (4, [(3, 7), (9, 4), (15, 15)]),
-        (5, [(5, 12), (18, 6), (31, 31)]),
-    ],
+ADDITION_CASES = (
+    pytest.param(1, ((0, 0), (0, 1), (1, 1)), id="n1"),
+    pytest.param(2, ((3, 1), (1, 2), (3, 3)), id="n2"),
+    pytest.param(3, ((3, 4), (5, 2), (7, 7)), id="n3"),
+    pytest.param(4, ((3, 7), (9, 4), (15, 15)), id="n4"),
+    pytest.param(5, ((5, 12), (18, 6), (31, 31)), id="n5"),
 )
+
+
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("controlled_adder", "num_ancilla_fn"),
     [
@@ -107,7 +108,7 @@ def test_cntrl_adder_mod[n: nat](
             assert res.results[0].as_dict()["a_meas"] == a_bits
 
 
-@pytest.mark.parametrize("n", [2, 3, 4])
+@pytest.mark.parametrize("n", [1, 2, 3, 4])
 @pytest.mark.parametrize(
     ("controlled_adder", "num_ancilla_fn"),
     [
@@ -194,7 +195,7 @@ def test_cntrl_adder_mod_statevector_superposition[n: nat](
     b_one_proj = project_state_onto_bitstring(states["b"], int_to_bits(1, n))
     assert b_one_proj.probability == pytest.approx(0.75)
 
-    b_two_proj = project_state_onto_bitstring(states["b"], int_to_bits(2, n))
+    b_two_proj = project_state_onto_bitstring(states["b"], int_to_bits(2 % (1 << n), n))
     assert b_two_proj.probability == pytest.approx(0.25)
 
     expected_state = np.zeros(2 ** (2 * n + 1), dtype=np.complex128)
@@ -211,16 +212,7 @@ def test_cntrl_adder_mod_statevector_superposition[n: nat](
     assert_allclose_ignorephase(total_state.state, expected_state)
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(3, 1), (1, 2), (3, 3)]),
-        (3, [(3, 4), (5, 2), (7, 7)]),
-        (4, [(3, 7), (9, 4), (15, 15)]),
-        (5, [(5, 12), (18, 6), (31, 31)]),
-        (6, [(5, 32), (48, 6)]),
-    ],
-)
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("controlled_adder", "num_ancilla_fn"),
     [
@@ -292,27 +284,36 @@ def test_cntrl_adder_carry_out[n: nat](
 
 
 @pytest.mark.parametrize(
-    ("n", "cases"),
+    ("n", "cases", "controlled_adder", "controlled_adder_dagger", "num_ancilla_fn"),
     [
-        (2, [(3, 1), (1, 2), (3, 3)]),
-        (3, [(3, 4), (5, 2), (7, 7)]),
-        (4, [(3, 7), (9, 4), (15, 15)]),
-        (5, [(5, 12), (18, 6), (31, 31)]),
-    ],
-)
-@pytest.mark.parametrize(
-    ("controlled_adder", "controlled_adder_dagger", "num_ancilla_fn"),
-    [
-        (
-            cntrl_adder_ripple_cuccaro_carry_out,
-            cntrl_adder_ripple_cuccaro_carry_out_dagger,
-            lambda n: 1,
-        ),
-        (
-            cntrl_adder_ripple_gidney_carry_out,
-            cntrl_adder_ripple_gidney_carry_out_dagger,
-            lambda n: n,
-        ),
+        pytest.param(
+            n,
+            cases,
+            adder,
+            dagger,
+            ancillas,
+            marks=addition_case.marks,
+            id=f"{addition_case.id}-{adder_name}",
+        )
+        for adder_name, adder, dagger, ancillas, widths in [
+            (
+                "cuccaro",
+                cntrl_adder_ripple_cuccaro_carry_out,
+                cntrl_adder_ripple_cuccaro_carry_out_dagger,
+                lambda n: 1,
+                [1, 2, 3, 4, 5, 6],
+            ),
+            (
+                "gidney",
+                cntrl_adder_ripple_gidney_carry_out,
+                cntrl_adder_ripple_gidney_carry_out_dagger,
+                lambda n: n,
+                [1, 2, 3, 4, 5],
+            ),
+        ]
+        for addition_case in ADDITION_CASES
+        for n, cases in (addition_case.values,)
+        if n in widths
     ],
 )
 def test_cntrl_addition_carry_out_dagger[n: nat](
@@ -386,29 +387,33 @@ def test_cntrl_addition_carry_out_dagger[n: nat](
 @pytest.mark.parametrize(
     ("n", "cases", "controlled_adder", "controlled_adder_dagger", "num_ancilla_fn"),
     [
-        (n, cases, adder, dagger, ancillas)
-        for adder, dagger, ancillas, widths in [
+        pytest.param(
+            n,
+            cases,
+            adder,
+            dagger,
+            ancillas,
+            marks=addition_case.marks,
+            id=f"{addition_case.id}-{adder_name}",
+        )
+        for adder_name, adder, dagger, ancillas, widths in [
             (
+                "cuccaro",
                 cntrl_adder_ripple_cuccaro_mod,
                 cntrl_adder_ripple_cuccaro_mod_dagger,
                 lambda n: 1,
-                [2, 3, 4, 5, 6],
+                [1, 2, 3, 4, 5, 6],
             ),
             (
+                "gidney",
                 cntrl_adder_ripple_gidney_mod,
                 cntrl_adder_ripple_gidney_mod_dagger,
                 lambda n: n,
-                # Stop at five bits: the six-bit inverse needs 25 simulator qubits.
-                [2, 3, 4, 5],
+                [1, 2, 3, 4, 5],
             ),
         ]
-        for n, cases in [
-            (2, [(3, 1), (1, 2), (3, 3)]),
-            (3, [(3, 4), (5, 2), (7, 7)]),
-            (4, [(3, 7), (9, 4), (15, 15)]),
-            (5, [(5, 12), (18, 6), (31, 31)]),
-            (6, [(5, 32), (48, 6)]),
-        ]
+        for addition_case in ADDITION_CASES
+        for n, cases in (addition_case.values,)
         if n in widths
     ],
 )

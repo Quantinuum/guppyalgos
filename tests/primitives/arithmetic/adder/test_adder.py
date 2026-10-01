@@ -36,16 +36,17 @@ from guppyalgos.testing import (
 )
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(3, 1), (1, 2), (3, 3)]),
-        (3, [(3, 4), (5, 2), (7, 7)]),
-        (4, [(3, 7), (9, 4), (15, 15)]),
-        (5, [(5, 12), (18, 6), (31, 31)]),
-        (6, [(5, 32), (48, 6)]),
-    ],
+ADDITION_CASES = (
+    pytest.param(1, ((0, 0), (0, 1), (1, 1)), id="n1"),
+    pytest.param(2, ((3, 1), (1, 2), (3, 3)), id="n2"),
+    pytest.param(3, ((3, 4), (5, 2), (7, 7)), id="n3"),
+    pytest.param(4, ((3, 7), (9, 4), (15, 15)), id="n4"),
+    pytest.param(5, ((5, 12), (18, 6), (31, 31)), id="n5"),
+    pytest.param(6, ((5, 32), (48, 6)), id="n6"),
 )
+
+
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("adder", "num_ancilla_fn"),
     [
@@ -107,16 +108,7 @@ def test_addition_carry_out[n: nat](
         assert np.allclose(a_proj.probability, 1.0)
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(3, 1), (1, 2), (3, 3)]),
-        (3, [(3, 4), (5, 2), (7, 7)]),
-        (4, [(3, 7), (9, 4), (15, 15)]),
-        (5, [(5, 12), (18, 6), (31, 31)]),
-        (6, [(5, 32), (48, 6)]),
-    ],
-)
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("adder", "num_ancilla_fn"),
     [
@@ -141,8 +133,6 @@ def test_addition_mod[n: nat](
         b_reg = qarray(n)
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
-        carry_out = qubit()
-        discard(carry_out)
 
         adder(a_reg, b_reg)
 
@@ -175,16 +165,7 @@ def test_addition_mod[n: nat](
         assert np.allclose(a_proj.probability, 1.0)
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(3, 1), (1, 2), (3, 3)]),
-        (3, [(3, 4), (5, 2), (7, 7)]),
-        (4, [(3, 7), (9, 4), (15, 15)]),
-        (5, [(5, 12), (18, 6), (31, 31)]),
-        (6, [(5, 32), (48, 6)]),
-    ],
-)
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("adder", "adder_dagger", "num_ancilla_fn"),
     [
@@ -251,16 +232,7 @@ def test_addition_carry_out_dagger[n: nat](
             assert state.get_single_state()[0] == 1
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(3, 1), (1, 2), (3, 3)]),
-        (3, [(3, 4), (5, 2), (7, 7)]),
-        (4, [(3, 7), (9, 4), (15, 15)]),
-        (5, [(5, 12), (18, 6), (31, 31)]),
-        (6, [(5, 32), (48, 6)]),
-    ],
-)
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("adder", "adder_dagger", "num_ancilla_fn"),
     [
@@ -278,7 +250,7 @@ def test_addition_mod_dagger[n: nat](
     num_ancilla_fn: Callable[[int], int],
 ) -> None:
     """Test ripple carry dagger inverts correctly."""
-    n_qubits = 2 * n + 2 * num_ancilla_fn(n)
+    n_qubits = 2 * n + 1 * num_ancilla_fn(n)
 
     @guppy
     @no_type_check
@@ -288,12 +260,9 @@ def test_addition_mod_dagger[n: nat](
         b_reg = qarray(n)
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
-        carry_out = qubit()
 
         adder(a_reg, b_reg)
         adder_dagger(a_reg, b_reg)
-
-        discard(carry_out)
 
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
