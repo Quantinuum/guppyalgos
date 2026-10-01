@@ -283,20 +283,37 @@ def test_cntrl_adder_carry_out[n: nat](
             assert total_state[expected_total] == 1
 
 
-@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
-    ("controlled_adder", "controlled_adder_dagger", "num_ancilla_fn"),
+    ("n", "cases", "controlled_adder", "controlled_adder_dagger", "num_ancilla_fn"),
     [
-        (
-            cntrl_adder_ripple_cuccaro_carry_out,
-            cntrl_adder_ripple_cuccaro_carry_out_dagger,
-            lambda n: 1,
-        ),
-        (
-            cntrl_adder_ripple_gidney_carry_out,
-            cntrl_adder_ripple_gidney_carry_out_dagger,
-            lambda n: n,
-        ),
+        pytest.param(
+            n,
+            cases,
+            adder,
+            dagger,
+            ancillas,
+            marks=addition_case.marks,
+            id=f"{addition_case.id}-{adder_name}",
+        )
+        for adder_name, adder, dagger, ancillas, widths in [
+            (
+                "cuccaro",
+                cntrl_adder_ripple_cuccaro_carry_out,
+                cntrl_adder_ripple_cuccaro_carry_out_dagger,
+                lambda n: 1,
+                [1, 2, 3, 4, 5, 6],
+            ),
+            (
+                "gidney",
+                cntrl_adder_ripple_gidney_carry_out,
+                cntrl_adder_ripple_gidney_carry_out_dagger,
+                lambda n: n,
+                [1, 2, 3, 4, 5],
+            ),
+        ]
+        for addition_case in ADDITION_CASES
+        for n, cases in (addition_case.values,)
+        if n in widths
     ],
 )
 def test_cntrl_addition_carry_out_dagger[n: nat](
