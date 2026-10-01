@@ -8,13 +8,13 @@ from guppylang import guppy
 from guppylang.std.builtins import array, output
 from guppylang.std.quantum import (
     collect_measurements,
+    discard,
     measure,
     measure_array,
     qubit,
     x,
 )
 
-from guppyalgos.primitives.measurement import discard
 from guppyalgos.primitives.subroutines.ladders import (
     cnx_ladder_logdepth,
     cnx_ladder_logdepth_num_ancilla,
