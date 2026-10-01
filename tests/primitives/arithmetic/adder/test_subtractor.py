@@ -35,16 +35,17 @@ from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
 from guppyalgos.testing import project_state_onto_bitstring
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(0, 0), (1, 0), (3, 1), (1, 3)]),
-        (3, [(0, 7), (7, 0), (5, 2), (2, 5)]),
-        (4, [(0, 15), (15, 0), (8, 8), (7, 9)]),
-        (5, [(0, 31), (31, 0), (20, 10), (10, 25)]),
-        (6, [(32, 5), (5, 32)]),
-    ],
+ADDITION_CASES = (
+    pytest.param(1, ((0, 0), (0, 1), (1, 1)), id="n1"),
+    pytest.param(2, ((3, 1), (1, 2), (3, 3)), id="n2"),
+    pytest.param(3, ((3, 4), (5, 2), (7, 7)), id="n3"),
+    pytest.param(4, ((3, 7), (9, 4), (15, 15)), id="n4"),
+    pytest.param(5, ((5, 12), (18, 6), (31, 31)), id="n5"),
+    pytest.param(6, ((5, 32), (48, 6)), id="n6"),
 )
+
+
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("subtractor", "num_ancilla_fn"),
     [
@@ -102,16 +103,7 @@ def test_subtraction_carry_out[n: nat](
         assert np.allclose(b_proj.probability, 1.0)
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(0, 0), (1, 0), (3, 1), (1, 3)]),
-        (3, [(0, 7), (7, 0), (5, 2), (2, 5)]),
-        (4, [(0, 15), (15, 0), (8, 8), (7, 9)]),
-        (5, [(0, 31), (31, 0), (20, 10), (10, 25)]),
-        (6, [(32, 5), (5, 32)]),
-    ],
-)
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("subtractor", "num_ancilla_fn"),
     [
@@ -136,8 +128,6 @@ def test_subtraction_mod[n: nat](
         b_reg = qarray(n)
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
-        comp = qubit()
-        discard(comp)
 
         subtractor(a_reg, b_reg)
 
@@ -168,16 +158,7 @@ def test_subtraction_mod[n: nat](
         assert np.allclose(a_proj.probability, 1.0)
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(0, 0), (1, 0), (3, 1), (1, 3)]),
-        (3, [(0, 7), (7, 0), (5, 2), (2, 5)]),
-        (4, [(0, 15), (15, 0), (8, 8), (7, 9)]),
-        (5, [(0, 31), (31, 0), (20, 10), (10, 25)]),
-        (6, [(32, 5), (5, 32)]),
-    ],
-)
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("controlled_subtractor", "num_ancilla_fn"),
     [
@@ -260,16 +241,7 @@ def test_cntrl_subtraction_carry_out[n: nat](
             assert comp_proj.probability == pytest.approx(1.0)
 
 
-@pytest.mark.parametrize(
-    ("n", "cases"),
-    [
-        (2, [(0, 0), (1, 0), (3, 1), (1, 3)]),
-        (3, [(0, 7), (7, 0), (5, 2), (2, 5)]),
-        (4, [(0, 15), (15, 0), (8, 8), (7, 9)]),
-        (5, [(0, 31), (31, 0), (20, 10), (10, 25)]),
-        (6, [(32, 5), (5, 32)]),
-    ],
-)
+@pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("controlled_subtractor", "num_ancilla_fn"),
     [
