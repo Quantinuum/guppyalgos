@@ -557,9 +557,8 @@ def adder_ripple_cuccaro_carry_out[n: nat](
 
     # Forward n-2 Toffoli ladder
     toffoli(ancilla, b_reg[1], a_reg[1])
-    if n > 2:
-        for i in range(n - 3):
-            toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
+    for i in range(n - 3):
+        toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
 
     temp_and_compute(a_reg[n - 2], b_reg[n - 1], carry_out)
     cx(a_reg[n - 1], carry_out)

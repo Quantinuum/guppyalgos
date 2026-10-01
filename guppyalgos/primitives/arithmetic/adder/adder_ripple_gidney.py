@@ -286,11 +286,10 @@ def adder_ripple_gidney_mod[n: nat](
     cx(a_reg[n - 1], b_reg[n - 1])
     cx(anc[n - 2], b_reg[n - 1])
 
-    if n > 2:
-        for i in range(n - 2):
-            _g_unmajority_gate(
-                a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
-            )
+    for i in range(n - 2):
+        _g_unmajority_gate(
+            a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+        )
 
     temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
     cx(a_reg[0], b_reg[0])
