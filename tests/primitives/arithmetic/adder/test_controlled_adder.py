@@ -195,7 +195,7 @@ def test_cntrl_adder_mod_statevector_superposition[n: nat](
     b_one_proj = project_state_onto_bitstring(states["b"], int_to_bits(1, n))
     assert b_one_proj.probability == pytest.approx(0.75)
 
-    b_two_proj = project_state_onto_bitstring(states["b"], int_to_bits(2, n))
+    b_two_proj = project_state_onto_bitstring(states["b"], int_to_bits(2 % (1 << n), n))
     assert b_two_proj.probability == pytest.approx(0.25)
 
     expected_state = np.zeros(2 ** (2 * n + 1), dtype=np.complex128)
