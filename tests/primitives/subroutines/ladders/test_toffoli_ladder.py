@@ -19,7 +19,6 @@ from guppylang.std.quantum import (
     ry,
 )
 from guppylang.std.builtins import comptime
-from guppyalgos.primitives.measurement.utils import discard_array_zero
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
 from selene_sim import Quest
 
@@ -331,7 +330,7 @@ def test_log_depth_ladder_with_cca(n_qubits: int) -> None:
             ladder.ascending_dagger_with_cca(qs, anc)
         else:
             ladder.descending_dagger_with_cca(qs, anc)
-        discard_array_zero(anc)
+        discard_array(anc)
         output("qs", collect_measurements(measure_array(qs)))
 
     emulator = main.emulator(n_qubits=n_qubits + n_anc).with_seed(42).with_shots(1)

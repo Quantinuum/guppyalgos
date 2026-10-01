@@ -14,7 +14,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
-from guppyalgos.primitives.measurement import discard_array_zero
+from guppyalgos.primitives.measurement import discard_array
 from guppyalgos.utils import int_to_bits, qarray
 
 
@@ -369,7 +369,7 @@ def select_unary_iteration[
             uncomp_and_op,
         )
 
-    discard_array_zero(work_qreg)
+    discard_array(work_qreg)
 
 
 @guppy.comptime
@@ -511,7 +511,7 @@ def cntrl_select_unary_iteration[
             uncomp_and_op,
         )
 
-    discard_array_zero(work_qreg)
+    discard_array(work_qreg)
 
 
 @guppy

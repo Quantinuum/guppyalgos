@@ -14,7 +14,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_comp_index,
     temp_and_uncomp_index,
 )
-from guppyalgos.primitives.measurement import discard_array_zero, discard_zero
+from guppyalgos.primitives.measurement import discard_array, discard
 from guppyalgos.utils import int_to_bits, qarray
 from guppyalgos.algorithms.select.select_unary_iteration import (
     compute_cascade,
@@ -142,9 +142,9 @@ def accumulator_unary_iteration[
                 )
 
     # Discard work register and accumulator qubit
-    discard_array_zero(work_qreg)
+    discard_array(work_qreg)
     x(acc_q)  # Return acc_q to |0>
-    discard_zero(acc_q)
+    discard(acc_q)
 
 
 # Comparator-guarded accumulator unary iteration implementation.
@@ -509,6 +509,6 @@ def guarded_accumulator_unary_iteration[
                 )
 
     # Discard work register and accumulator qubit
-    discard_array_zero(work_qreg)
+    discard_array(work_qreg)
     x(acc_q)  # Return acc_q to |0>
-    discard_zero(acc_q)
+    discard(acc_q)
