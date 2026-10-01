@@ -3,7 +3,7 @@
 from __future__ import annotations
 from guppylang import guppy
 
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, dagger
 from guppylang.std.angles import angle
 from guppylang.std.quantum import qubit, rz
 import pytest
@@ -79,6 +79,15 @@ def pauli_exp_test_fn(
     u_mat = pauli_exp_matrix(pauli_string, n_state_qubits, theta, little_endian=True)
 
     assert_allclose_ignorephase(u_mat, guppy_u)
+
+    @guppy
+    @no_type_check
+    def main_dagger(state_qreg: array[qubit, n_state_qubits]) -> None:
+        with dagger:
+            pauli_g(state_qreg, angle(theta))
+
+    dagger_u = get_unitary(main_dagger, n_state_qubits)
+    assert_allclose_ignorephase(u_mat.conj().T, dagger_u)
 
 
 @pytest.mark.parametrize(
