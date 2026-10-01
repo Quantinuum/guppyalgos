@@ -138,8 +138,6 @@ def test_subtraction_mod[n: nat](
         b_reg = qarray(n)
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)
-        comp = qubit()
-        discard(comp)
 
         subtractor(a_reg, b_reg)
 
