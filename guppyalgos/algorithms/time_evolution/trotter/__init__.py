@@ -11,10 +11,11 @@ from .trotter_sequence import (
     cntrl_trotter_from_sequence,
     trotter_from_sequence,
 )
-from .ham_sim_trotter import ham_sim_trotter
+from .ham_sim_trotter import cntrl_ham_sim_trotter, ham_sim_trotter
 
 
 __all__ = [
+    "cntrl_ham_sim_trotter",
     "cntrl_trotter_first_order",
     "cntrl_trotter_from_sequence",
     "cntrl_trotter_higher_order",
