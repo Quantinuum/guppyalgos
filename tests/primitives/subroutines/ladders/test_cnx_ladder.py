@@ -8,13 +8,13 @@ from guppylang import guppy
 from guppylang.std.builtins import array, output
 from guppylang.std.quantum import (
     collect_measurements,
+    discard,
     measure,
     measure_array,
     qubit,
     x,
 )
 
-from guppyalgos.primitives.measurement import discard_zero
 from guppyalgos.primitives.subroutines.ladders import (
     cnx_ladder_logdepth,
     cnx_ladder_logdepth_num_ancilla,
@@ -59,7 +59,7 @@ def test_cnx_ladder(n: int, k: int) -> None:
             x(target)
         ladder_fn(controls_a, controls_b, target, borrowed_a, borrowed_b, ancillae)
         for ancilla in ancillae:
-            discard_zero(ancilla)
+            discard(ancilla)
         output("controls_a", collect_measurements(measure_array(controls_a)))
         for register in controls_b:
             output("controls_b", collect_measurements(measure_array(register)))

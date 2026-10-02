@@ -1,27 +1,24 @@
 """Meta function to create an accumulator-based unary iteration Select function."""
 
-from guppylang import guppy
-from guppylang import comptime
-
-from guppylang.std.quantum import cx, qubit, reset, x
-from guppylang.std.builtins import array, frozenarray, nat
-
 from collections.abc import Callable
 from typing import no_type_check
 
+from guppylang import comptime, guppy
+from guppylang.std.builtins import array, frozenarray, nat
+from guppylang.std.quantum import cx, discard, discard_array, qubit, reset, x
+
+from guppyalgos.algorithms.select.select_unary_iteration import (
+    _get_bools_and_diffs,
+    adjacent_and,
+    compute_cascade,
+    uncompute_cascade,
+)
 from guppyalgos.primitives.gate_decompositions.and_op import (
     index_and,
     temp_and_comp_index,
     temp_and_uncomp_index,
 )
-from guppyalgos.primitives.measurement import discard_array_zero, discard_zero
 from guppyalgos.utils import int_to_bits, qarray
-from guppyalgos.algorithms.select.select_unary_iteration import (
-    compute_cascade,
-    adjacent_and,
-    uncompute_cascade,
-    _get_bools_and_diffs,
-)
 
 
 @guppy
@@ -142,9 +139,9 @@ def accumulator_unary_iteration[
                 )
 
     # Discard work register and accumulator qubit
-    discard_array_zero(work_qreg)
+    discard_array(work_qreg)
     x(acc_q)  # Return acc_q to |0>
-    discard_zero(acc_q)
+    discard(acc_q)
 
 
 # Comparator-guarded accumulator unary iteration implementation.
@@ -509,6 +506,6 @@ def guarded_accumulator_unary_iteration[
                 )
 
     # Discard work register and accumulator qubit
-    discard_array_zero(work_qreg)
+    discard_array(work_qreg)
     x(acc_q)  # Return acc_q to |0>
-    discard_zero(acc_q)
+    discard(acc_q)
