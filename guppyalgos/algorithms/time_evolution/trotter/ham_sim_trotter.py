@@ -1,24 +1,24 @@
 """Hamiltonian Simulation using Trotterization."""
 
+from typing import no_type_check
+
 from guppylang import guppy
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import Function, array, nat
 from guppylang.std.quantum import qubit
-from guppylang.defs import GuppyFunctionDefinition
 
 
+@guppy
+@no_type_check
 def ham_sim_trotter[n_state_q: nat](
-    trotter_step: GuppyFunctionDefinition[[array[qubit, n_state_q], float], None],
+    state_qreg: array[qubit, n_state_q],
+    trotter_step: Function[[array[qubit, n_state_q], float], None],
     n_steps: int,
     time_step: float,
-    n_state_qubits: int,
-) -> GuppyFunctionDefinition[[array[qubit, n_state_q]], None]:
-    """Build a full Hamiltonian simulation using Trotter steps.
+) -> None:
+    """Apply a full Hamiltonian simulation using Trotter steps.
 
-    This function constructs a Guppy function that simulates the time evolution of a
-    quantum system under a given Hamiltonian by repeatedly applying a provided Trotter
-    step function. The number of Trotter steps and the time step for each application
-    are specified as inputs. The resulting function applies the Trotter step the
-    specified number of times to approximate the overall time evolution. Any Trotter
+    This Guppy function simulates the time evolution of a quantum system under a given
+    Hamiltonian by repeatedly applying a provided Trotter step function. Any Trotter
     step function that matches the expected signature can be used, allowing for
     flexibility in the choice of Trotterization method.
 
@@ -38,28 +38,22 @@ def ham_sim_trotter[n_state_q: nat](
         n_state_qubits = len(ham_op.qubits)
 
         ham_trotter_step = trotter_first_order(ham_op, n_state_qubits)
-        ham_sim = ham_sim_trotter(ham_trotter_step, n_steps, time_step, n_state_qubits)
 
         @guppy
         @no_type_check
         def main(state_qreg: array[qubit, n_state_qubits]) -> None:
-            ham_sim(state_qreg)
+            ham_sim_trotter(state_qreg, ham_trotter_step, n_steps, time_step)
 
 
     Args:
+        state_qreg: The quantum state register to evolve.
         trotter_step: A Guppy function implementing a single Trotter step.
         n_steps: The number of Trotter steps to apply.
         time_step: The time step for each Trotter step.
-        n_state_qubits: The number of qubits in the quantum state register.
 
     Returns:
-        A Guppy function implementing the full Hamiltonian simulation.
+        None.
 
     """
-
-    @guppy
-    def ham_sim_fn(state_qreg: array[qubit, n_state_qubits]) -> None:
-        for _ in range(n_steps):
-            trotter_step(state_qreg, time_step)
-
-    return ham_sim_fn
+    for _ in range(n_steps):
+        trotter_step(state_qreg, time_step)
