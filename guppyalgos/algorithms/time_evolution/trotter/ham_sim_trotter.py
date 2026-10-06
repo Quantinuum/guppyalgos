@@ -3,7 +3,7 @@
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import Function, array, nat, control
+from guppylang.std.builtins import array, nat, control, Unitary
 from guppylang.std.quantum import qubit
 
 
@@ -13,7 +13,7 @@ class ham_sim_trotter:  # noqa: D101
     @no_type_check
     def __call__[n_state_q: nat](
         state_qreg: array[qubit, n_state_q],
-        trotter_step: Function[[array[qubit, n_state_q], float], None],
+        trotter_step: Unitary[[array[qubit, n_state_q], float], None],
         n_steps: int,
         time_step: float,
     ) -> None:
@@ -25,7 +25,7 @@ class ham_sim_trotter:  # noqa: D101
     @no_type_check
     def controlled[n_state_q: nat, n_ctrl_q: nat](
         state_qreg: array[qubit, n_state_q],
-        trotter_step: Function[[array[qubit, n_state_q], float], None],
+        trotter_step: Unitary[[array[qubit, n_state_q], float], None],
         n_steps: int,
         time_step: float,
         controls: array[qubit, n_ctrl_q],
