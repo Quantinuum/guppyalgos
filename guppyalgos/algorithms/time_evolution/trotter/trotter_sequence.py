@@ -7,7 +7,7 @@ from typing import no_type_check
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import Function, array, comptime, nat
+from guppylang.std.builtins import Function, array, comptime, nat, control
 from guppylang.std.quantum import crz, qubit, rz
 import zixy.qubit.pauli as zqp
 
@@ -70,22 +70,74 @@ def trotter_from_sequence[n_state_q: nat](
             for term in ham_terms
         ]
 
-    @guppy
-    @no_type_check
-    def trotter_step(
-        state_qreg: array[qubit, n_state_qubits], time_step: float
-    ) -> None:
-        coeffs = comptime(array(term.coeff for term in ham_terms))
-        term_indices = comptime(array(term_index for term_index, _ in sequence))
-        time_factors = comptime(array(time_factor for _, time_factor in sequence))
-        exponentials = pauli_exponentials()
+    def make_controlled_exponential(term: zqp.RealTerm, n_ctrl_q: int):
+        exponential = pauli_exp(term.string, n_state_qubits, cx_ladder, rz_method)
 
-        for i in range(n_exponentials):
-            term_index = term_indices[i]
-            exponentials[term_index](
-                state_qreg,
-                angle(coeffs[term_index] * time_factors[i] * time_step),
-            )
+        @guppy
+        @no_type_check
+        def controlled_exponential(
+            state_qreg: array[qubit, n_state_qubits],
+            rotation_angle: angle,
+            controls: array[qubit, n_ctrl_q],
+        ) -> None:
+            with control(controls):
+                exponential(state_qreg, rotation_angle)
+
+        return controlled_exponential
+
+    @guppy.comptime
+    @no_type_check
+    def controlled_pauli_exponentials[n_ctrl_q: nat]() -> array[
+        Function[
+            [
+                array[qubit, n_state_qubits],
+                angle,
+                array[qubit, n_ctrl_q],
+            ],
+            None,
+        ],
+        n_terms,
+    ]:
+        return [make_controlled_exponential(term, n_ctrl_q) for term in ham_terms]
+
+    @guppy.unitary
+    class trotter_step:
+        @guppy
+        @no_type_check
+        def __call__(
+            state_qreg: array[qubit, n_state_qubits], time_step: float
+        ) -> None:
+            coeffs = comptime(array(term.coeff for term in ham_terms))
+            term_indices = comptime(array(term_index for term_index, _ in sequence))
+            time_factors = comptime(array(time_factor for _, time_factor in sequence))
+            exponentials = pauli_exponentials()
+
+            for i in range(n_exponentials):
+                term_index = term_indices[i]
+                exponentials[term_index](
+                    state_qreg,
+                    angle(coeffs[term_index] * time_factors[i] * time_step),
+                )
+
+        @guppy
+        @no_type_check
+        def controlled[n_ctrl_q: nat](
+            state_qreg: array[qubit, n_state_qubits],
+            time_step: float,
+            controls: array[qubit, n_ctrl_q],
+        ) -> None:
+            coeffs = comptime(array(term.coeff for term in ham_terms))
+            term_indices = comptime(array(term_index for term_index, _ in sequence))
+            time_factors = comptime(array(time_factor for _, time_factor in sequence))
+            exponentials = controlled_pauli_exponentials[n_ctrl_q]()
+
+            for i in range(n_exponentials):
+                term_index = term_indices[i]
+                exponentials[term_index](
+                    state_qreg,
+                    angle(coeffs[term_index] * time_factors[i] * time_step),
+                    controls,
+                )
 
     return trotter_step
 
