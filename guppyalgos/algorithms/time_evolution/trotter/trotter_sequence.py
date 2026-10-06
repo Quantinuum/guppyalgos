@@ -70,6 +70,28 @@ def trotter_from_sequence[n_state_q: nat](
             for term in ham_terms
         ]
 
+    rz_flags = getattr(rz_method.wrapped, "unitary_flags", None)
+    if getattr(rz_flags, "name", None) != "Unitary":
+
+        @guppy
+        @no_type_check
+        def trotter_step(
+            state_qreg: array[qubit, n_state_qubits], time_step: float
+        ) -> None:
+            coeffs = comptime(array(term.coeff for term in ham_terms))
+            term_indices = comptime(array(term_index for term_index, _ in sequence))
+            time_factors = comptime(array(time_factor for _, time_factor in sequence))
+            exponentials = pauli_exponentials()
+
+            for i in range(n_exponentials):
+                term_index = term_indices[i]
+                exponentials[term_index](
+                    state_qreg,
+                    angle(coeffs[term_index] * time_factors[i] * time_step),
+                )
+
+        return trotter_step
+
     def make_controlled_exponential(term: zqp.RealTerm, n_ctrl_q: int):
         exponential = pauli_exp(term.string, n_state_qubits, cx_ladder, rz_method)
 
