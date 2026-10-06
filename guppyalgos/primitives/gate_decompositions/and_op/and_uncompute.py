@@ -6,7 +6,7 @@ from guppylang.std.quantum import (
     project_z,
     cz,
     h,
-    x,
+    reset,
 )
 
 
@@ -33,4 +33,4 @@ def temp_and_uncompute(q_0: qubit, q_1: qubit, target_q: qubit) -> None:
     h(target_q)
     if project_z(target_q).read():
         cz(q_0, q_1)
-        x(target_q)
+        reset(target_q)
