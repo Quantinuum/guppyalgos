@@ -161,6 +161,43 @@ def trotter_from_sequence[n_state_q: nat](
                     controls,
                 )
 
+        @guppy
+        @no_type_check
+        def daggered(
+            state_qreg: array[qubit, n_state_qubits], time_step: float
+        ) -> None:
+            coeffs = comptime(array(term.coeff for term in ham_terms))
+            term_indices = comptime(array(term_index for term_index, _ in sequence))
+            time_factors = comptime(array(time_factor for _, time_factor in sequence))
+            exponentials = pauli_exponentials()
+
+            for i in range(n_exponentials):
+                term_index = term_indices[i]
+                exponentials[term_index](
+                    state_qreg,
+                    angle(-coeffs[term_index] * time_factors[i] * time_step),
+                )
+
+        @guppy
+        @no_type_check
+        def ctrl_daggered[n_ctrl_q: nat](
+            state_qreg: array[qubit, n_state_qubits],
+            time_step: float,
+            controls: array[qubit, n_ctrl_q],
+        ) -> None:
+            coeffs = comptime(array(term.coeff for term in ham_terms))
+            term_indices = comptime(array(term_index for term_index, _ in sequence))
+            time_factors = comptime(array(time_factor for _, time_factor in sequence))
+            exponentials = controlled_pauli_exponentials[n_ctrl_q]()
+
+            for i in range(n_exponentials):
+                term_index = term_indices[i]
+                exponentials[term_index](
+                    state_qreg,
+                    angle(-coeffs[term_index] * time_factors[i] * time_step),
+                    controls,
+                )
+
     return trotter_step
 
 
