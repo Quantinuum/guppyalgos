@@ -13,7 +13,7 @@ from guppyalgos.primitives.subroutines.ladders.cx_ladder import (
 )
 
 
-@guppy(unitary=True)
+@guppy.comptime(unitary=True)
 @no_type_check
 def ghz_state[n: nat](
     q: array[qubit, n],
@@ -38,4 +38,5 @@ def ghz_state[n: nat](
         _ghz_state_prep_filter(log_cx_ladder_indices(n))
     )
     h(q[0])
-    _cx_ladder_apply_from_inds(q, filtered_cx_gate_indices)
+    if n > 1:
+        _cx_ladder_apply_from_inds(q, filtered_cx_gate_indices)

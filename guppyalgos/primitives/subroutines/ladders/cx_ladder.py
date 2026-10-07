@@ -6,7 +6,7 @@ from typing import cast, no_type_check
 
 from guppylang import comptime, guppy
 from guppylang.std.array import frozenarray
-from guppylang.std.builtins import array, nat, control
+from guppylang.std.builtins import array, nat, control, dagger
 from guppylang.std.quantum import cx, qubit
 
 
@@ -125,25 +125,25 @@ class CXLadderLog:
 
 
 @guppy.unitary
-class _cx_ladder_apply_from_inds:
+class _cx_ladder_apply_from_inds_arr:
     @guppy
     @no_type_check
     def __call__[n_qubits: nat, n_gates: nat](
         q: array[qubit, n_qubits],
-        gate_indices: frozenarray[tuple[int, int], n_gates],
+        gate_indices: array[tuple[int, int], n_gates],
     ) -> None:
         """Apply CX gates based on the provided indices."""
-        for i, j in gate_indices:
+        for i, j in gate_indices.copy():
             cx(q[i], q[j])
 
     @guppy
     @no_type_check
     def daggered[n_qubits: nat, n_gates: nat](
         q: array[qubit, n_qubits],
-        gate_indices: frozenarray[tuple[int, int], n_gates],
+        gate_indices: array[tuple[int, int], n_gates],
     ) -> None:
         """Apply CX gates based on the provided indices."""
-        reversed_inds = gate_indices.mutable_copy()
+        reversed_inds = gate_indices.copy()
         reversed_inds.reverse_in_place()
         for i, j in reversed_inds:
             cx(q[i], q[j])
@@ -152,13 +152,59 @@ class _cx_ladder_apply_from_inds:
     @no_type_check
     def controlled[n_qubits: nat, n_gates: nat, n_ctrls: nat](
         q: array[qubit, n_qubits],
-        gate_indices: frozenarray[tuple[int, int], n_gates],
+        gate_indices: array[tuple[int, int], n_gates],
         ctrls: array[qubit, n_ctrls],
     ) -> None:
         """Apply CX gates based on the provided indices."""
-        for i, j in gate_indices:
+        for i, j in gate_indices.copy():
             with control(ctrls):
                 cx(q[i], q[j])
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n_qubits: nat, n_gates: nat, n_ctrls: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: array[tuple[int, int], n_gates],
+        ctrls: array[qubit, n_ctrls],
+    ) -> None:
+        """Apply CX gates based on the provided indices."""
+        reversed_inds = gate_indices.copy()
+        reversed_inds.reverse_in_place()
+        for i, j in reversed_inds:
+            with control(ctrls):
+                cx(q[i], q[j])
+
+
+@guppy.unitary
+class _cx_ladder_apply_from_inds_frozenarr:
+    @guppy
+    @no_type_check
+    def __call__[n_qubits: nat, n_gates: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: frozenarray[tuple[int, int], n_gates],
+    ) -> None:
+        _cx_ladder_apply_from_inds_arr(q, gate_indices.mutable_copy())
+
+    @guppy
+    @no_type_check
+    def daggered[n_qubits: nat, n_gates: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: frozenarray[tuple[int, int], n_gates],
+    ) -> None:
+        inds = gate_indices.mutable_copy()
+        with dagger:
+            _cx_ladder_apply_from_inds_arr(q, inds)
+
+    @guppy
+    @no_type_check
+    def controlled[n_qubits: nat, n_gates: nat, n_ctrls: nat](
+        q: array[qubit, n_qubits],
+        gate_indices: frozenarray[tuple[int, int], n_gates],
+        ctrls: array[qubit, n_ctrls],
+    ) -> None:
+        inds = gate_indices.mutable_copy()
+        with control(ctrls):
+            _cx_ladder_apply_from_inds_arr(q, inds)
 
     @guppy
     @no_type_check
@@ -167,12 +213,16 @@ class _cx_ladder_apply_from_inds:
         gate_indices: frozenarray[tuple[int, int], n_gates],
         ctrls: array[qubit, n_ctrls],
     ) -> None:
-        """Apply CX gates based on the provided indices."""
-        reversed_inds = gate_indices.mutable_copy()
-        reversed_inds.reverse_in_place()
-        for i, j in reversed_inds:
-            with control(ctrls):
-                cx(q[i], q[j])
+        inds = gate_indices.mutable_copy()
+        with control(ctrls), dagger:
+            _cx_ladder_apply_from_inds_arr(q, inds)
+
+
+@guppy.overload(_cx_ladder_apply_from_inds_arr, _cx_ladder_apply_from_inds_frozenarr)
+def _cx_ladder_apply_from_inds[n_qubits: nat, n_gates: nat](
+    q: array[qubit, n_qubits],
+    gate_indices: frozenarray[tuple[int, int], n_gates],
+) -> None: ...
 
 
 def ladder_inds_from_ascending(
@@ -252,7 +302,7 @@ def log_cx_ladder_indices(n_qubits: int) -> list[tuple[int, int]]:
 def _ghz_state_prep_filter(tuples: list[tuple[int, int]]) -> list[tuple[int, int]]:
     """Eliminate redundant gates in GHZ state prep using ascending log ladder."""
     if len(tuples) == 0:
-        raise ValueError("GHZ state prep must be called on an array of size >1")
+        return [(0, 0)]
     result = [tuples[0]]
     seen_values = {
         tuples[0][0],
