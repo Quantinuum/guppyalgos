@@ -5,6 +5,45 @@ Run the full library suite with `uv run pytest tests --ignore=tests/notebooks -n
 and execute notebooks separately with `uv run pytest tests/notebooks -v`.
 Notebook execution must remain sequential.
 
+## Unitary modifier coverage
+
+Each new capability must have explicit coverage. A separate test function for
+each capability is not required: `assert_unitary_modifiers` checks forward
+unitarity, dagger, control, and controlled dagger with one invocation:
+
+```python
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array
+from guppylang.std.quantum import qubit, rz
+from guppyalgos.testing import assert_unitary_modifiers
+
+
+def test_rotation_modifiers() -> None:
+    @guppy(unitary=True)
+    def rotation(qs: array[qubit, 1]) -> None:
+        rz(qs[0], angle(0.7))
+
+    assert_unitary_modifiers(rotation, 1)
+```
+
+The helper accepts functions with one borrowed qubit array, including wrappers
+around `@guppy.unitary` custom implementations. It checks one control qubit;
+additional supported control counts need their own coverage. Failures name the
+mode. Keep existing algorithm correctness tests, or pass `expected_unitary` to
+compare the forward matrix with an independent reference (up to global phase).
+
+Controlled references preserve the extracted forward matrix's phase relative to
+the inactive branch. Do not phase-align that matrix before building a controlled
+reference. The helper compares coherent projected blocks with one shared phase
+alignment using `assert_cntrl_unitary`.
+
+Use this helper only for small, fully unitary circuits because matrix extraction
+scales exponentially. `endianness`, `n_extra_qubits`, and `threshold` configure
+matrix ordering, extra simulator qubits, and absolute tolerance. Internal ancilla
+must return to zero. Promised-input or measurement-cleanup routines still need
+specialized tests.
+
 ## CI test discovery
 
 `.github/workflows/ci.yml` runs library tests on Python 3.12, 3.13, and 3.14.

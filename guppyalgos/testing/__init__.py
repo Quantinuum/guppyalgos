@@ -12,9 +12,9 @@ from numpy.polynomial.chebyshev import chebval
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.emulator import EmulatorInstance
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.std.builtins import array, comptime, control, dagger, nat
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard_array, qubit
+from guppylang.std.quantum import discard_array, h, qubit
 from hugr.package import Package
 from hugr.qsystem.result import QsysResult
 from numpy.typing import NDArray
@@ -749,6 +749,94 @@ def assert_cntrl_unitary(
         ]
     )
     assert_allclose_ignorephase(actual_blocks, expected_blocks, threshold)
+
+
+def assert_unitary_modifiers[n_state: nat](
+    circ: GuppyFunctionDefinition[[array[qubit, n_state]], None],
+    n_qubits: int,
+    *,
+    expected_unitary: NDArray[np.complex128] | None = None,
+    endianness: Endianness = Endianness.BIG,
+    n_extra_qubits: int = 0,
+    threshold: float = 1e-8,
+) -> None:
+    """Check forward, dagger, control, and controlled dagger in one invocation.
+
+    ``circ`` must accept one borrowed qubit array and support both modifiers.
+    The forward matrix is extracted once and must be unitary. If supplied,
+    ``expected_unitary`` also checks algorithm correctness, up to global phase,
+    in the selected endianness. Otherwise keep independent correctness tests.
+
+    Dagger is compared with the forward adjoint up to global phase. Controlled
+    modes use coherent interference with one shared phase alignment, preserving
+    the forward matrix's phase relative to the inactive branch. These checks
+    cover a single control qubit, not every possible number of controls.
+
+    Use only for small, fully unitary circuits: matrix extraction scales
+    exponentially. Internal ancilla require ``n_extra_qubits`` and must return
+    to zero. Promised-input and measurement-cleanup routines need separate tests.
+    ``threshold`` is the absolute tolerance used by the matrix assertions.
+    Failures identify the mode being checked.
+    """
+    try:
+        unitary = get_unitary(circ, n_qubits, endianness, n_extra_qubits)
+        np.testing.assert_allclose(
+            unitary.conj().T @ unitary, np.eye(2**n_qubits), atol=threshold
+        )
+        if expected_unitary is not None:
+            assert_allclose_ignorephase(unitary, expected_unitary, threshold)
+    except AssertionError as exc:
+        raise AssertionError(f"Forward mode: {exc}") from exc
+
+    @guppy
+    @no_type_check
+    def adjoint(qs: array[qubit, n_qubits]) -> None:
+        with dagger:
+            circ(qs)
+
+    @guppy
+    @no_type_check
+    def controlled(cs: array[qubit, 1], qs: array[qubit, n_qubits]) -> None:
+        h(cs[0])
+        with control(cs[0]):
+            circ(qs)
+        h(cs[0])
+
+    @guppy
+    @no_type_check
+    def controlled_adjoint(cs: array[qubit, 1], qs: array[qubit, n_qubits]) -> None:
+        h(cs[0])
+        with control(cs[0]):
+            with dagger:
+                circ(qs)
+        h(cs[0])
+
+    expected_adjoint = unitary.conj().T
+    try:
+        assert_allclose_ignorephase(
+            get_unitary(adjoint, n_qubits, endianness, n_extra_qubits),
+            expected_adjoint,
+            threshold,
+        )
+    except AssertionError as exc:
+        raise AssertionError(f"Dagger mode: {exc}") from exc
+
+    for mode, wrapper, expected in (
+        ("Control", controlled, unitary),
+        ("Controlled dagger", controlled_adjoint, expected_adjoint),
+    ):
+        try:
+            assert_cntrl_unitary(
+                wrapper,
+                expected,
+                n_qubits,
+                {},
+                endianness=endianness,
+                n_extra_qubits=n_extra_qubits,
+                threshold=threshold,
+            )
+        except AssertionError as exc:
+            raise AssertionError(f"{mode} mode: {exc}") from exc
 
 
 def project_state_onto_bitstring(
