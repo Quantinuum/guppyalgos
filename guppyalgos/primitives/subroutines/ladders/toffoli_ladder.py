@@ -368,7 +368,7 @@ def _log_toffoli_ladder_labeled_indices(
 
         def sigma(i: int) -> int:
             m = n & ((1 << i) - 1)
-            return n - i - 2 * n // 2**i - m.bit_count()
+            return n - i - 2 * (n // 2**i) - m.bit_count()
 
         a_indices = [(0, i) for i in range(0, n_q, 2)]
         b_indices = [(0, i) for i in range(1, n_q, 2)]
