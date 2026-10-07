@@ -171,6 +171,37 @@ def test_controlled_cx_ladder() -> None:
     )
 
 
+def test_controlled_dagger_cx_ladder() -> None:
+    """Test the custom controlled dagger implementation of the CX ladder."""
+    n_qubits = 4
+    gate_indices = log_cx_ladder_indices(n_qubits)
+
+    @guppy
+    @no_type_check
+    def ladder(qs: array[qubit, n_qubits]) -> None:
+        _cx_ladder_apply_from_inds(qs, comptime(gate_indices))
+
+    @guppy
+    @no_type_check
+    def controlled_dagger_ladder(
+        ctrl: array[qubit, 1], qs: array[qubit, n_qubits]
+    ) -> None:
+        h(ctrl[0])
+        with control(ctrl):
+            with dagger:
+                _cx_ladder_apply_from_inds(qs, comptime(gate_indices))
+        h(ctrl[0])
+
+    ladder_unitary = get_unitary(ladder, n_qubits)
+    assert_cntrl_unitary(
+        controlled_dagger_ladder,
+        align_phase(ladder_unitary.conj().T),
+        n_qubits,
+        {},
+        control_name="ctrl",
+    )
+
+
 @pytest.mark.parametrize(
     ("n_qubits", "ladder"),
     list(
