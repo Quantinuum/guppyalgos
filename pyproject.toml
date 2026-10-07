@@ -16,7 +16,7 @@ authors = [
 ]
 
 dependencies = [
-    "guppylang @ git+https://github.com/Quantinuum/guppylang.git@a49679105a0777f5a05bf8f120cbbea8ed93c168#subdirectory=guppylang",
+    "guppylang>=1.1.3",
     "pandas",
     "numpy",
     "scipy",
