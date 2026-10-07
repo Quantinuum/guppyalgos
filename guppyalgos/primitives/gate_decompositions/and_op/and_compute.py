@@ -47,7 +47,7 @@ def temp_and_t_state_compute(q0: qubit, q1: qubit, t_qubit: qubit) -> None:
 def temp_and_compute(q0: qubit, q1: qubit, t_qubit: qubit) -> None:
     r"""Temporary AND computation acting on 0 state target.
 
-    Following the construction in https://arxiv.org/abs/1805.03662
+    Following the construction in https://arxiv.org/abs/1709.06648
     which uses 4 T-gates.
 
     Args:
