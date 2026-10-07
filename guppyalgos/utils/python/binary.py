@@ -1,4 +1,4 @@
-"""Utility methods for Guppy algorithms."""
+"""Utility methods for guppyalgos."""
 
 from collections.abc import Sequence
 

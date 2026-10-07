@@ -9,7 +9,7 @@ mystnb:
 
 # Testing quantum routines
 
-Testing is a key part of Guppy Algorithms, even though it is not a runtime
+Testing is a key part of guppyalgos, even though it is not a runtime
 feature. Substantial effort has gone into simulation helpers for checking
 states, whole operations, and routines that depend on selected measurement
 outcomes. These checks help catch errors that output bit counts alone can miss.

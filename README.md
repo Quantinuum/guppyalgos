@@ -29,8 +29,9 @@ See [documentation](https://docs.quantinuum.com/guppy/algorithms) for user guide
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, checks, and our
-`gh stack` workflow for stacked pull requests.
+Contributions are welcome! See our [contributing guide](CONTRIBUTING.md) for the
+pull request process, development setup, checks, and `gh stack` workflow for
+stacked pull requests.
 
 ## Citation
 

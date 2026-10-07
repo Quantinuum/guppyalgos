@@ -9,7 +9,7 @@ mystnb:
 
 # Upcoming features
 
-Guppy Algorithms is under active development. This page describes planned
+guppyalgos is under active development. This page describes planned
 directions rather than APIs that users should rely on today.
 
 ## Unified control and dagger modifiers
@@ -59,7 +59,7 @@ repository:
   uniform across the library.
 
 We are waiting for custom-modifier support in Guppy before standardizing this
-across Guppy Algorithms. The intended direction is to:
+across guppyalgos. The intended direction is to:
 
 - define control and adjoint transformations through one modifier framework;
 - let higher-order functions and structs request those capabilities through

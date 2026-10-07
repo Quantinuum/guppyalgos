@@ -6,7 +6,7 @@ from guppylang.std.quantum import qubit, h, x, rz, discard
 from guppylang.std.angles import angle
 from guppylang.defs import GuppyFunctionDefinition
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
-from guppyalgos.primitives.measurement.utils import discard_array_zero
+from guppyalgos.primitives.measurement.utils import discard_array
 from guppyalgos.utils import int_to_bits, transversal, apply_bitstring, qarray
 import numpy as np
 from guppyalgos.primitives.arithmetic.comparator import (
@@ -148,7 +148,7 @@ def uniform_state[n: nat](
                 apply_bitstring(anci_reg_L, L_bit_array)
                 transversal(h, q_reg)
 
-            discard_array_zero(anci_reg_L)
+            discard_array(anci_reg_L)
             discard(ancilla)
 
         return uniform_state_non_div_box

@@ -28,7 +28,6 @@ from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
     adder_ripple_gidney_mod,
     cntrl_adder_ripple_gidney_mod,
 )
-from guppyalgos.primitives.measurement import discard_array_zero
 from guppyalgos.utils import apply_bitstring, cswap, int_to_bits, qarray
 
 
@@ -178,7 +177,7 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     work_reg = qarray(n)
     multiplier_ripple_gidney_mod(constant_reg, a_reg, work_reg)
     apply_bitstring(constant_reg, b_bits)
-    discard_array_zero(constant_reg)
+    discard_array(constant_reg)
 
     mem_swap(a_reg, work_reg)
 
@@ -186,8 +185,8 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     apply_bitstring(inverse_reg, negative_inverse_bits)
     multiplier_ripple_gidney_mod(inverse_reg, a_reg, work_reg)
     apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array_zero(inverse_reg)
-    discard_array_zero(work_reg)
+    discard_array(inverse_reg)
+    discard_array(work_reg)
 
 
 @guppy
@@ -220,7 +219,7 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     work_reg = qarray(n)
     cntrl_multiplier_ripple_gidney_mod(ctrl, constant_reg, a_reg, work_reg)
     apply_bitstring(constant_reg, b_bits)
-    discard_array_zero(constant_reg)
+    discard_array(constant_reg)
 
     cswap(ctrl, a_reg, work_reg)
 
@@ -228,5 +227,5 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     apply_bitstring(inverse_reg, negative_inverse_bits)
     cntrl_multiplier_ripple_gidney_mod(ctrl, inverse_reg, a_reg, work_reg)
     apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array_zero(inverse_reg)
-    discard_array_zero(work_reg)
+    discard_array(inverse_reg)
+    discard_array(work_reg)
