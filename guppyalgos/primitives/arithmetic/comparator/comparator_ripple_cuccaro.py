@@ -150,7 +150,7 @@ def partial_comparator_ripple_cuccaro[n: nat](
             toffoli(a_reg[0], b_reg[0], target)
             cx(a_reg[0], b_reg[0])
 
-        if n == 2:
+        elif n == 2:
             # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
             temp_and_compute(a_reg[0], b_reg[0], ancilla)
 
@@ -186,7 +186,7 @@ def partial_comparator_ripple_cuccaro[n: nat](
                 # Could use temp_and_uncompute with a clean target
                 toffoli(a_reg[0], b_reg[0], target)
 
-        if n == 2:
+        elif n == 2:
             _maj_umaj_bottom_carry_out_partial_gate(
                 a_reg[1], b_reg[1], ancilla, target, True, uncompute_target
             )
