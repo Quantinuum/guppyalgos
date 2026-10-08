@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* add max_attempts to ComparatorBasedRz ([#78](https://github.com/Quantinuum/guppyalgos/issues/78))
+
+### Features
+
+* add max_attempts to ComparatorBasedRz ([#78](https://github.com/Quantinuum/guppyalgos/issues/78)) ([390b5b5](https://github.com/Quantinuum/guppyalgos/commit/390b5b52b864e16a1d058f4f02470ee1638f3e71))
+* Add testing module to package ([#30](https://github.com/Quantinuum/guppyalgos/issues/30)) ([7a2cc17](https://github.com/Quantinuum/guppyalgos/commit/7a2cc17f2bab9b4c0c6f625e7b17daabbcad7906))
+
+
+### Bug Fixes
+
+* Fix n=1 ripple-carry adders ([#55](https://github.com/Quantinuum/guppyalgos/issues/55)) ([c14bb2d](https://github.com/Quantinuum/guppyalgos/commit/c14bb2da05b59c5428a7362ab2202f944df0b42a))
+* remove discard_zero for coinflip compatibility ([#61](https://github.com/Quantinuum/guppyalgos/issues/61)) ([7f9b1f5](https://github.com/Quantinuum/guppyalgos/commit/7f9b1f57a3868f1df95cff1842e20d70cec9d43d))
+* return the target of temp_and_uncompute to |0&gt; ([#71](https://github.com/Quantinuum/guppyalgos/issues/71)) ([18ab27f](https://github.com/Quantinuum/guppyalgos/commit/18ab27f2b6f3321d52dbc6c442b57e0cf85ad9fb))
+
+
+### Performance Improvements
+
+* Use T-depth 1 construction for temporary AND ([#75](https://github.com/Quantinuum/guppyalgos/issues/75)) ([b5ff14e](https://github.com/Quantinuum/guppyalgos/commit/b5ff14eb032250e58675e634353a8c278128c7cf))
+
+
+### Documentation
+
+* clarify contribution guidance ([#42](https://github.com/Quantinuum/guppyalgos/issues/42)) ([8125d6e](https://github.com/Quantinuum/guppyalgos/commit/8125d6eef20bcaef707235d4832a2f4bcca1ba19))
+* clarify library structure ([94ab7ac](https://github.com/Quantinuum/guppyalgos/commit/94ab7ace78daef83b851a23ade5b2891bc50a3d4))
+* expand algorithm guides ([b010cfd](https://github.com/Quantinuum/guppyalgos/commit/b010cfdc88d20defdb76a1179091c41f2eb2b3b4))
+* improve block encoding demo ([13efd85](https://github.com/Quantinuum/guppyalgos/commit/13efd85ff58e347c30d51a5131642dc87165d2e5))
+* polish phase estimation examples ([72d4892](https://github.com/Quantinuum/guppyalgos/commit/72d4892611b1cff35350ce7cc49241375e7672ac))
+
 ## 0.1.0 (2026-09-11)
 
 
