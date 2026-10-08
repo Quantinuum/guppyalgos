@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, no_type_check
+from typing import no_type_check
 
 import numpy as np
 from guppylang import comptime, guppy

@@ -8,10 +8,9 @@ from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import Function, array, comptime, nat, control
-from guppylang.std.quantum import qubit, rz
+from guppylang.std.quantum import qubit, rz, discard_array
 import zixy.qubit.pauli as zqp
 
-from guppyalgos.primitives.measurement import discard_array_zero
 from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
 from guppyalgos.primitives.pauli.pauli_exp.pauli_exp import (
     _controlled_pauli_exp_for_function_array,
@@ -105,7 +104,7 @@ def trotter_from_sequence[n_state_q: nat](
                     phase_qreg = qarray(1)
                     with control(controls):
                         rz_method(phase_qreg[0], angle(-identity_phase * time_step / 2))
-                    discard_array_zero(phase_qreg)
+                    discard_array(phase_qreg)
 
             @guppy
             @no_type_check
@@ -127,7 +126,7 @@ def trotter_from_sequence[n_state_q: nat](
                     phase_qreg = qarray(1)
                     with control(controls):
                         rz_method(phase_qreg[0], angle(identity_phase * time_step / 2))
-                    discard_array_zero(phase_qreg)
+                    discard_array(phase_qreg)
 
         return phase_only_trotter_step
 
@@ -261,7 +260,7 @@ def trotter_from_sequence[n_state_q: nat](
                     phase_qreg = qarray(1)
                     with control(controls):
                         rz_method(phase_qreg[0], angle(-identity_phase * time_step / 2))
-                    discard_array_zero(phase_qreg)
+                    discard_array(phase_qreg)
 
         @guppy
         @no_type_check
@@ -315,6 +314,6 @@ def trotter_from_sequence[n_state_q: nat](
                     phase_qreg = qarray(1)
                     with control(controls):
                         rz_method(phase_qreg[0], angle(identity_phase * time_step / 2))
-                    discard_array_zero(phase_qreg)
+                    discard_array(phase_qreg)
 
     return trotter_step

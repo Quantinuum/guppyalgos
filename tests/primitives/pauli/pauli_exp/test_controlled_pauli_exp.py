@@ -242,6 +242,7 @@ def test_controlled_pauli_exp_identity_phase_custom_rz() -> None:
             rz(q, theta)
 
         @guppy
+        @no_type_check
         def controlled[n_controls: nat](
             q: qubit, theta: angle, controls: array[qubit, n_controls]
         ) -> None:
@@ -255,6 +256,7 @@ def test_controlled_pauli_exp_identity_phase_custom_rz() -> None:
             rz(q, -theta)
 
         @guppy
+        @no_type_check
         def ctrl_daggered[n_controls: nat](
             q: qubit, theta: angle, controls: array[qubit, n_controls]
         ) -> None:
