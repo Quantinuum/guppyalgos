@@ -6,6 +6,7 @@ from math import ceil, log2, pi
 from typing import no_type_check
 
 from guppylang import guppy, comptime
+from guppylang.std.builtins import nothing, output, some
 from guppylang.std.debug import state_output
 from guppylang.std.angles import angle
 from guppylang.std.quantum import qubit, h, discard, toffoli
@@ -88,6 +89,7 @@ def test_comparator_based_rz_replay(theta: float) -> None:
         rz = ComparatorBasedRz(
             comparator,
             inverse_comparator,
+            nothing(),
         )
         rz.compose(target, theta)
 
@@ -122,3 +124,53 @@ def test_comparator_based_rz_replay(theta: float) -> None:
         assert angle_error < epsilon, (
             f"Angle error {angle_error:.6e} exceeds epsilon {epsilon}"
         )
+
+
+def test_comparator_based_rz_max_attempts() -> None:
+    """Test that a shot exits once ``max_attempts`` attempts have failed."""
+    epsilon = 0.01
+    max_attempts = 3
+    n = 1 + ceil(log2(1 / epsilon))
+    n_comparator_ancillas = n_constant_comparator_cascade_ancillas(n)
+
+    @guppy
+    @no_type_check
+    def circ_rus() -> None:
+        comparator = ConstantComparatorCascade[
+            comptime(n), comptime(n_comparator_ancillas)
+        ](toffoli, toffoli, False)
+        inverse_comparator = ConstantComparatorCascade[
+            comptime(n), comptime(n_comparator_ancillas)
+        ](toffoli, toffoli, True)
+        rz = ComparatorBasedRz(
+            comparator,
+            inverse_comparator,
+            some(comptime(max_attempts)),
+        )
+        target = qubit()
+        h(target)
+        rz.compose(target, angle(0.1))
+        output("done", True)
+        discard(target)
+
+    fail = [False] * (2 * n - 3) + [True]
+    success = [False] * (2 * n - 2)
+    desired_measurements = [
+        fail * (max_attempts - 1) + success,
+        fail * max_attempts,
+        success,
+    ]
+
+    rus_replay_sim = QuantumReplay(simulator=Quest(), measurements=desired_measurements)
+    em_result = (
+        circ_rus.emulator(n_comparator_based_rz_cascade_ancillas(epsilon) + 1)
+        .with_simulator(rus_replay_sim)
+        .with_shots(len(desired_measurements))
+        .run()
+    )
+
+    assert [shot.entries for shot in em_result.results] == [
+        [("attempts", max_attempts), ("done", 1)],
+        [("exit: ComparatorBasedRz reached max_attempts without success", 1)],
+        [("attempts", 1), ("done", 1)],
+    ]
