@@ -208,3 +208,81 @@ def test_pauli_exp_controlled_and_ctrl_daggered() -> None:
     assert_allclose_ignorephase(
         get_statevector(main_ctrl_daggered, 2), expected_state.conj()
     )
+
+
+def test_pauli_exp_identity_controlled_and_ctrl_daggered() -> None:
+    """Controlled identity exponentials apply only a control-dependent phase."""
+    theta = 0.7
+    pauli_string = zqp.String.from_str("I0", 1)
+    pauli_g = pauli_exp(pauli_string, 1, CXLadderLinear, rz)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(2)
+        qreg = qarray(1)
+        h(controls[0])
+        h(controls[1])
+        with control(controls):
+            pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], controls[1], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    @guppy
+    @no_type_check
+    def main_ctrl_daggered() -> None:
+        controls = qarray(2)
+        qreg = qarray(1)
+        h(controls[0])
+        h(controls[1])
+        with control(controls):
+            with dagger:
+                pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], controls[1], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    @guppy
+    @no_type_check
+    def main_single_control() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    @guppy
+    @no_type_check
+    def main_single_ctrl_daggered() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            with dagger:
+                pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    phase = np.exp(-1j * 0.5 * np.pi * theta)
+    expected_state = np.array(
+        [1.0, 1.0, 1.0, phase] + [0.0] * 12, dtype=np.complex128
+    ) / 2
+    expected_single_control_state = np.array(
+        [1.0, phase, 0.0, 0.0], dtype=np.complex128
+    ) / np.sqrt(2)
+    assert_allclose_ignorephase(get_statevector(main, 4), expected_state)
+    assert_allclose_ignorephase(
+        get_statevector(main_ctrl_daggered, 4), expected_state.conj()
+    )
+    assert_allclose_ignorephase(
+        get_statevector(main_single_control, 2), expected_single_control_state
+    )
+    assert_allclose_ignorephase(
+        get_statevector(main_single_ctrl_daggered, 2),
+        expected_single_control_state.conj(),
+    )
