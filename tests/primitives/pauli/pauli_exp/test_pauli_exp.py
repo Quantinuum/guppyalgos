@@ -6,6 +6,7 @@ from guppylang import guppy
 from guppylang.std.builtins import array, dagger
 from guppylang.std.angles import angle
 from guppylang.std.quantum import qubit, rz
+import numpy as np
 import pytest
 
 from guppyalgos.primitives.subroutines.ladders import CXLadderLinear, Ladder
@@ -153,16 +154,14 @@ def test_pauli_exp_4q(
     pauli_exp_test_fn(pauli_string, n_state_qubits, cx_ladder, rz_method)
 
 
-def test_pauli_exp_invalid_pauli() -> None:
-    """Test that pauli exponential raises error for invalid pauli strings.
-
-    The pauli exponential requires at least 1 non-identity Pauli operator. This
-    test checks that a ValueError is raised for the all-identity case.
-    """
+def test_pauli_exp_identity_is_noop() -> None:
+    """An uncontrolled identity exponential is a no-op up to global phase."""
     pauli_string = zqp.String.from_str("I0 I1 I2", 3)
+    pauli_g = pauli_exp(pauli_string, 3, CXLadderLinear, rz)
 
-    with pytest.raises(
-        ValueError,
-        match="Pauli exponential requires at least 1 non-identity Pauli operators",
-    ):
-        pauli_exp(pauli_string, 3, CXLadderLinear, rz)
+    @guppy
+    @no_type_check
+    def main(state_qreg: array[qubit, 3]) -> None:
+        pauli_g(state_qreg, angle(0.7))
+
+    np.testing.assert_allclose(get_unitary(main, 3), np.eye(8), atol=1e-8)
