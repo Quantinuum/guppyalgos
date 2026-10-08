@@ -9,7 +9,7 @@ from guppylang.std.quantum import qubit, rz, crz
 
 from guppyalgos.primitives.pauli import pauli_to_z_basis
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
-from guppyalgos.primitives.measurement import discard_array_zero
+from guppyalgos.primitives.measurement.utils import discard_array_zero
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
