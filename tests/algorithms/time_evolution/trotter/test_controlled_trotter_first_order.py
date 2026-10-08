@@ -6,7 +6,7 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.angles import pi
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, control
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import crz, discard_array, h, qubit
 import numpy as np
@@ -15,17 +15,19 @@ from pytest_lazy_fixtures import lf as lazy_fixture
 import zixy.qubit.pauli as zqp
 from scipy.linalg import expm
 
-from guppyalgos.algorithms.time_evolution.trotter import cntrl_trotter_first_order
+from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
+from guppyalgos.algorithms.phase_estimation import qpe_unitary
 from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
+    get_unitary,
     get_unitary_projected,
 )
 from guppyalgos.utils import trotter_step_matrix
 
 
-def cntrl_trotter_blocks(
+def controlled_trotter_blocks(
     ham_op: zqp.RealTermSum,
     n_state_qubits: int,
     time_step: float,
@@ -39,7 +41,7 @@ def cntrl_trotter_blocks(
     # TODO: Replace repeated projected-unitary reconstruction with a helper that
     # extracts all control blocks from one full unitary once the register-aware
     # statevector/unitary utilities are improved.
-    controlled_step = cntrl_trotter_first_order(ham_op, n_state_qubits)
+    trotter_step = trotter_first_order(ham_op, n_state_qubits)
 
     @guppy
     @no_type_check
@@ -47,7 +49,8 @@ def cntrl_trotter_blocks(
         ctrl_qreg: array[qubit, 1],
         state_qreg: array[qubit, n_state_qubits],
     ) -> None:
-        controlled_step(ctrl_qreg[0], state_qreg, time_step)
+        with control(ctrl_qreg):
+            trotter_step(state_qreg, time_step)
         state_output("ctrl", ctrl_qreg)
 
     block_00 = get_unitary_projected(
@@ -65,14 +68,14 @@ def cntrl_trotter_blocks(
     return block_00, block_01, block_10, block_11
 
 
-def assert_cntrl_trotter_blocks_match(
+def assert_controlled_trotter_blocks_match(
     ham_op: zqp.RealTermSum,
     time_step: float,
 ) -> None:
     """Check the control blocks against the classical first-order Trotter step."""
     n_state_qubits = len(ham_op.qubits)
 
-    block_00, block_01, block_10, block_11 = cntrl_trotter_blocks(
+    block_00, block_01, block_10, block_11 = controlled_trotter_blocks(
         ham_op, n_state_qubits, time_step
     )
 
@@ -86,12 +89,12 @@ def assert_cntrl_trotter_blocks_match(
     assert_allclose_ignorephase(block_11, expected_u)
 
 
-def cntrl_trotter_statevector(
+def controlled_trotter_statevector(
     ham_op: zqp.RealTermSum,
     time_step: float,
 ) -> np.ndarray:
     """Return the two-qubit statevector after one controlled Trotter step."""
-    controlled_step = cntrl_trotter_first_order(ham_op, 1)
+    trotter_step = trotter_first_order(ham_op, 1)
 
     @guppy
     @no_type_check
@@ -100,7 +103,8 @@ def cntrl_trotter_statevector(
         state_qreg = qarray(1)
 
         h(ctrl_qreg[0])
-        controlled_step(ctrl_qreg[0], state_qreg, time_step)
+        with control(ctrl_qreg):
+            trotter_step(state_qreg, time_step)
 
         state_output("result_state", ctrl_qreg[0], state_qreg[0])
         discard_array(ctrl_qreg)
@@ -109,11 +113,11 @@ def cntrl_trotter_statevector(
     return get_statevector(main, 2)
 
 
-def assert_cntrl_trotter_cntrl_phase(
+def assert_controlled_trotter_phase(
     ham_op: zqp.RealTermSum, time_step: float, expected_phase: complex
 ) -> None:
     """Check that a one-qubit controlled Trotter step kicks back the right phase."""
-    result_state = cntrl_trotter_statevector(ham_op, time_step)
+    result_state = controlled_trotter_statevector(ham_op, time_step)
     expected_state = np.array(
         [1.0, expected_phase, 0.0, 0.0], dtype=np.complex128
     ) / np.sqrt(2)
@@ -133,10 +137,45 @@ def assert_cntrl_trotter_cntrl_phase(
         lazy_fixture("ham_2q_posreal_1"),
     ],
 )
-def test_cntrl_trotter_blocks(ham_op: zqp.RealTermSum) -> None:
+def test_controlled_trotter_blocks(ham_op: zqp.RealTermSum) -> None:
     """Check ``00 ~= I``, ``01 = 10 = 0``, and ``11 ~=`` the classical Trotter step."""
     time_step = 0.3
-    assert_cntrl_trotter_blocks_match(ham_op, time_step)
+    assert_controlled_trotter_blocks_match(ham_op, time_step)
+
+
+def test_qpe_unitary_accepts_trotter_step() -> None:
+    """The unitary-based QPE path controls a Trotter step via its modifier."""
+    ham_op = zqp.RealTermSum.from_str("(0.5, Z0)")
+    time_step = 0.3
+    trotter_step = trotter_first_order(ham_op, 1)
+
+    @guppy
+    @no_type_check
+    def qpe_main() -> None:
+        ctrl_qreg = qarray(1)
+        state_qreg = qarray(1)
+        h(ctrl_qreg[0])
+        qpe_unitary(ctrl_qreg, state_qreg, trotter_step, time_step)
+        state_output("result_state", ctrl_qreg[0], state_qreg[0])
+        discard_array(ctrl_qreg)
+        discard_array(state_qreg)
+
+    @guppy
+    @no_type_check
+    def reference_main() -> None:
+        ctrl_qreg = qarray(1)
+        state_qreg = qarray(1)
+        h(ctrl_qreg[0])
+        with control(ctrl_qreg):
+            trotter_step(state_qreg, time_step)
+        h(ctrl_qreg[0])
+        state_output("result_state", ctrl_qreg[0], state_qreg[0])
+        discard_array(ctrl_qreg)
+        discard_array(state_qreg)
+
+    assert_allclose_ignorephase(
+        get_statevector(qpe_main, 2), get_statevector(reference_main, 2)
+    )
 
 
 @pytest.mark.parametrize(
@@ -145,13 +184,13 @@ def test_cntrl_trotter_blocks(ham_op: zqp.RealTermSum) -> None:
         lazy_fixture("ham_2q_posreal_1"),
     ],
 )
-def test_cntrl_trotter_default_n_state_qubits(
+def test_controlled_trotter_default_n_state_qubits(
     ham_op: zqp.RealTermSum,
 ) -> None:
     """Check omitted ``n_state_qubits`` defaults to ``len(ham_op.qubits)``."""
     n_state_qubits = len(ham_op.qubits)
     time_step = 0.3
-    controlled_step = cntrl_trotter_first_order(ham_op)
+    trotter_step = trotter_first_order(ham_op)
 
     @guppy
     @no_type_check
@@ -159,7 +198,8 @@ def test_cntrl_trotter_default_n_state_qubits(
         ctrl_qreg: array[qubit, 1],
         state_qreg: array[qubit, n_state_qubits],
     ) -> None:
-        controlled_step(ctrl_qreg[0], state_qreg, time_step)
+        with control(ctrl_qreg):
+            trotter_step(state_qreg, time_step)
         state_output("ctrl", ctrl_qreg)
 
     block_11 = get_unitary_projected(
@@ -169,21 +209,21 @@ def test_cntrl_trotter_default_n_state_qubits(
     assert_allclose_ignorephase(block_11, expected_u)
 
 
-def test_cntrl_trotter_identity_phase() -> None:
+def test_controlled_trotter_identity_phase() -> None:
     """Check that an identity term kicks back the expected phase onto the control."""
     ham_op = zqp.RealTermSum.from_str("(0.5, I0)")
     time_step = 0.7
     expected_phase = np.exp(-1j * 0.5 * np.pi * 0.5 * time_step)
-    assert_cntrl_trotter_cntrl_phase(ham_op, time_step, expected_phase)
+    assert_controlled_trotter_phase(ham_op, time_step, expected_phase)
 
 
-def test_cntrl_trotter_single_qubit_z() -> None:
+def test_controlled_trotter_single_qubit_z() -> None:
     """Check the ``0.5 * Z`` toy model matches a direct ``crz`` reference exactly."""
     phi = 0.33
     time_step = -4 * phi
     ham_op = zqp.RealTermSum.from_str("(0.5, Z0)")
     expected_phase = np.exp(1j * np.pi * phi)
-    assert_cntrl_trotter_cntrl_phase(ham_op, time_step, expected_phase)
+    assert_controlled_trotter_phase(ham_op, time_step, expected_phase)
 
     @guppy
     @no_type_check
@@ -207,16 +247,16 @@ def test_cntrl_trotter_single_qubit_z() -> None:
     np.testing.assert_allclose(crz_state[1] / crz_state[0], expected_phase, atol=1e-8)
 
 
-def test_cntrl_trotter_identity_and_single_qubit_z() -> None:
+def test_controlled_trotter_identity_and_single_qubit_z() -> None:
     """Check identity and non-identity terms accumulate on the control branch."""
     phi = 0.2
     time_step = -4 * phi
     ham_op = zqp.RealTermSum.from_str("(0.25, I0), (0.5, Z0)")
     expected_phase = np.exp(1j * 1.5 * np.pi * phi)
-    assert_cntrl_trotter_cntrl_phase(ham_op, time_step, expected_phase)
+    assert_controlled_trotter_phase(ham_op, time_step, expected_phase)
 
 
-def test_cntrl_trotter_commuting_terms(
+def test_controlled_trotter_commuting_terms(
     ham_commuting_comp_basis_fixture: tuple[zqp.RealTermSum, float],
 ) -> None:
     """Check small computational-basis-diagonal commuting examples.
@@ -225,15 +265,15 @@ def test_cntrl_trotter_commuting_terms(
     matrix.
     """
     ham_op, time_step = ham_commuting_comp_basis_fixture
-    assert_cntrl_trotter_blocks_match(ham_op, time_step)
+    assert_controlled_trotter_blocks_match(ham_op, time_step)
 
 
-def test_cntrl_trotter_noncommuting_terms(
+def test_controlled_trotter_noncommuting_terms(
     ham_noncommuting_fixture: tuple[zqp.RealTermSum, float],
 ) -> None:
     """Check small noncommuting examples against the classical Trotter matrix."""
     ham_op, time_step = ham_noncommuting_fixture
-    assert_cntrl_trotter_blocks_match(ham_op, time_step)
+    assert_controlled_trotter_blocks_match(ham_op, time_step)
 
 
 def test_commuting_trotter_step_matches_exact_exponential(

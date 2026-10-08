@@ -257,15 +257,20 @@ def pauli_exp[n_state_q: nat](
     return pauli_gadget_fn
 
 
-# Legacy implementation, to be deleted once everything uses the custom modifier
-def cntrl_pauli_exp[n_state_q: nat](
+# Dynamic Trotter function arrays cannot retain Guppy's custom unitary modifiers.
+def _controlled_pauli_exp_for_function_array[n_state_q: nat](
     pauli_string: zqp.String,
     n_qubits: int,
     cx_ladder: type[Ladder] = CXLadderLog,
     controlled_rz_method: GuppyFunctionDefinition[[qubit, qubit, angle], None] = crz,
     rz_method: GuppyFunctionDefinition[[qubit, angle], None] = rz,
 ) -> GuppyFunctionDefinition[[qubit, array[qubit, n_state_q], angle], None]:
-    r"""Generate a controlled Pauli exponential using the conjugation pattern.
+    r"""Build an explicit controlled function for dynamic Pauli function arrays.
+
+    Ordinary callers should use the custom modifier on :func:`pauli_exp`. This
+    lower-level form is only needed where Guppy represents a runtime-selected
+    sequence as an array of ``Function`` values, which does not preserve unitary
+    modifier metadata.
 
     The controlled Pauli exponential follows the same conjugation pattern as
     :func:`pauli_exp`: conjugate the active support into the Z basis, accumulate the

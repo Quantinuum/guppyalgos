@@ -2,14 +2,10 @@
 
 from typing import no_type_check
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, nat, Function
+from guppylang.std.builtins import Unitary, array, control, nat, Function
 from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.subroutines.qft import iqft, qft
-
-dagger = object()
-control = object()
-power = object()
 
 
 @guppy
@@ -39,6 +35,22 @@ def qpe[
     """
     for n_index in range(n_q_a):
         power_oracle(phase_reg[n_index], unitary_regs, 2**n_index)
+    iqft(phase_reg)
+
+
+@guppy
+@no_type_check
+def qpe_unitary[n_q_a: nat, UnitaryRegs, UnitaryArg](
+    phase_reg: array[qubit, n_q_a],
+    unitary_regs: UnitaryRegs,
+    unitary: Unitary[[UnitaryRegs, UnitaryArg], None],
+    unitary_arg: UnitaryArg,
+) -> None:
+    """Estimate a unitary's phase using its custom controlled modifier."""
+    for n_index in range(n_q_a):
+        for _ in range(2**n_index):
+            with control(phase_reg[n_index]):
+                unitary(unitary_regs, unitary_arg)
     iqft(phase_reg)
 
 

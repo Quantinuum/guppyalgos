@@ -5,12 +5,11 @@ from __future__ import annotations
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import crz, qubit, rz
+from guppylang.std.quantum import qubit, rz
 import zixy.qubit.pauli as zqp
 
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
 from guppyalgos.algorithms.time_evolution.trotter.trotter_sequence import (
-    cntrl_trotter_from_sequence,
     trotter_from_sequence,
 )
 
@@ -96,52 +95,7 @@ def trotter_higher_order[n_state_q: nat](
     ham_terms: list[zqp.RealTerm] = list(  # ty: ignore[invalid-assignment]
         hamiltonian.to_terms()
     )
-    ham_terms = [term for term in ham_terms if not term.string.is_identity()]
     sequence = suzuki_sequence(len(ham_terms), order)
     return trotter_from_sequence(
         ham_terms, sequence, n_state_qubits, cx_ladder, rz_method
-    )
-
-
-def cntrl_trotter_higher_order[n_state_q: nat](
-    hamiltonian: zqp.RealTermSum,
-    n_state_qubits: int,
-    order: int,
-    cx_ladder: type[Ladder] = CXLadderLog,
-    controlled_rz_method: GuppyFunctionDefinition[[qubit, qubit, angle], None] = crz,
-    rz_method: GuppyFunctionDefinition[[qubit, angle], None] = rz,
-) -> GuppyFunctionDefinition[[qubit, array[qubit, n_state_q], float], None]:
-    r"""Build a controlled even-order symmetric Suzuki--Trotter step.
-
-    This applies the same recursive product formula as
-    :func:`trotter_higher_order`, controlled by a single qubit. Unlike the
-    uncontrolled variant, identity Hamiltonian terms are retained because their
-    phase is observable relative to the inactive control branch.
-
-    Args:
-        hamiltonian: Real Pauli Hamiltonian to simulate.
-        n_state_qubits: Number of qubits in the state register.
-        order: Desired product-formula order. Must be an even integer at least 2.
-        cx_ladder: CX ladder implementation used by each Pauli exponential.
-        controlled_rz_method: Implementation used for controlled RZ rotations.
-        rz_method: Implementation used for identity-term phases on the control.
-
-    Returns:
-        A Guppy function implementing one controlled product-formula step.
-
-    Raises:
-        ValueError: If ``order`` is not an even integer of at least 2.
-
-    """
-    ham_terms: list[zqp.RealTerm] = list(  # ty: ignore[invalid-assignment]
-        hamiltonian.to_terms()
-    )
-    sequence = suzuki_sequence(len(ham_terms), order)
-    return cntrl_trotter_from_sequence(
-        ham_terms,
-        sequence,
-        n_state_qubits,
-        cx_ladder,
-        controlled_rz_method,
-        rz_method,
     )

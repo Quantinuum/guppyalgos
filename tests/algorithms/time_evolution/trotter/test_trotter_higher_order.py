@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, control
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard_array, h, qubit
 import numpy as np
@@ -14,7 +14,6 @@ from scipy.linalg import expm
 import zixy.qubit.pauli as zqp
 
 from guppyalgos.algorithms.time_evolution.trotter import (
-    cntrl_trotter_higher_order,
     suzuki_sequence,
     trotter_higher_order,
 )
@@ -144,17 +143,18 @@ def test_higher_order_trotter_omits_identity_only_hamiltonian() -> None:
     np.testing.assert_allclose(actual, np.eye(2), atol=1e-8)
 
 
-def test_cntrl_higher_order_trotter_blocks_match_formula() -> None:
+def test_controlled_higher_order_trotter_blocks_match_formula() -> None:
     """Check inactive, off-diagonal, and active blocks of a fourth-order step."""
     ham_op = zqp.RealTermSum.from_str("(0.5, Z0), (0.1, X0)")
     time_step = 0.3
     order = 4
-    controlled_step = cntrl_trotter_higher_order(ham_op, 1, order)
+    trotter_step = trotter_higher_order(ham_op, 1, order)
 
     @guppy
     @no_type_check
     def main(control_qreg: array[qubit, 1], state_qreg: array[qubit, 1]) -> None:
-        controlled_step(control_qreg[0], state_qreg, time_step)
+        with control(control_qreg):
+            trotter_step(state_qreg, time_step)
         state_output("control", control_qreg)
 
     block_00 = get_unitary_projected(
@@ -173,12 +173,12 @@ def test_cntrl_higher_order_trotter_blocks_match_formula() -> None:
     assert_allclose_ignorephase(block_11, expected_active)
 
 
-def test_cntrl_higher_order_trotter_retains_identity_phase() -> None:
+def test_controlled_higher_order_trotter_retains_identity_phase() -> None:
     """Check identity terms kick back their phase onto the control branch."""
     coefficient = 0.5
     time_step = 0.7
     ham_op = zqp.RealTermSum.from_str(f"({coefficient}, I0)")
-    controlled_step = cntrl_trotter_higher_order(ham_op, 1, 4)
+    trotter_step = trotter_higher_order(ham_op, 1, 4)
 
     @guppy
     @no_type_check
@@ -186,7 +186,8 @@ def test_cntrl_higher_order_trotter_retains_identity_phase() -> None:
         control_qreg = qarray(1)
         state_qreg = qarray(1)
         h(control_qreg[0])
-        controlled_step(control_qreg[0], state_qreg, time_step)
+        with control(control_qreg):
+            trotter_step(state_qreg, time_step)
         state_output("result_state", control_qreg[0], state_qreg[0])
         discard_array(control_qreg)
         discard_array(state_qreg)
@@ -199,9 +200,9 @@ def test_cntrl_higher_order_trotter_retains_identity_phase() -> None:
 
 
 @pytest.mark.parametrize("order", [1, 3, True])
-def test_cntrl_higher_order_trotter_rejects_invalid_order(order: object) -> None:
-    """The controlled factory enforces the same even-order contract."""
+def test_controlled_higher_order_trotter_rejects_invalid_order(order: object) -> None:
+    """The higher-order factory only accepts even orders of at least two."""
     ham_op = zqp.RealTermSum.from_str("(0.5, Z0)")
 
     with pytest.raises(ValueError, match="even integer"):
-        cntrl_trotter_higher_order(ham_op, 1, order)
+        trotter_higher_order(ham_op, 1, order)
