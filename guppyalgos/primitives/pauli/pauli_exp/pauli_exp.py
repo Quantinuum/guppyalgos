@@ -9,10 +9,12 @@ from guppylang.std.quantum import qubit, rz, crz
 
 from guppyalgos.primitives.pauli import pauli_to_z_basis
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
+from guppyalgos.primitives.measurement import discard_array_zero
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
 )
+from guppyalgos.utils import qarray
 
 import zixy.qubit.pauli as zqp
 from typing import no_type_check
@@ -93,10 +95,62 @@ def pauli_exp[n_state_q: nat](
         rz_method (GuppyFunctionDefinition): RZ decomposition method to use for the RZ
 
     """
+    rz_flags = getattr(rz_method.wrapped, "unitary_flags", None)
+    has_unitary_rz = getattr(rz_flags, "name", None) == "Unitary"
+
     if pauli_string.is_identity():
-        raise ValueError(
-            "Pauli exponential requires at least 1 non-identity Pauli operators"
-        )
+        if not has_unitary_rz:
+
+            @guppy
+            @no_type_check
+            def identity_gadget(qreg: array[qubit, n_qubits], angle: angle) -> None:
+                pass
+
+            return identity_gadget
+
+        @guppy.unitary
+        class identity_gadget:
+            @guppy
+            @no_type_check
+            def __call__(qreg: array[qubit, n_qubits], angle: angle) -> None:
+                pass
+
+            @guppy
+            @no_type_check
+            def controlled[n_controls: nat](
+                qreg: array[qubit, n_qubits],
+                angle: angle,
+                controls: array[qubit, n_controls],
+            ) -> None:
+                if n_controls == 1:
+                    rz_method(controls[0], -angle / 2)
+                else:
+                    phase_qreg = qarray(1)
+                    with control(controls):
+                        rz_method(phase_qreg[0], angle)
+                    discard_array_zero(phase_qreg)
+
+            @guppy
+            @no_type_check
+            def daggered(qreg: array[qubit, n_qubits], angle: angle) -> None:
+                pass
+
+            @guppy
+            @no_type_check
+            def ctrl_daggered[n_controls: nat](
+                qreg: array[qubit, n_qubits],
+                angle: angle,
+                controls: array[qubit, n_controls],
+            ) -> None:
+                if n_controls == 1:
+                    rz_method(controls[0], angle / 2)
+                else:
+                    phase_qreg = qarray(1)
+                    with control(controls):
+                        rz_method(phase_qreg[0], -angle)
+                    discard_array_zero(phase_qreg)
+
+        return identity_gadget
 
     basis_change = pauli_to_z_basis(pauli_string=pauli_string, size=n_qubits)
     basis_change_dagger = pauli_to_z_basis(
@@ -104,6 +158,26 @@ def pauli_exp[n_state_q: nat](
     )
 
     pauli_indices = list(pauli_string.get_dict().keys())
+
+    if not has_unitary_rz:
+
+        @guppy
+        @no_type_check
+        def pauli_gadget_fn(qreg: array[qubit, n_qubits], angle: angle) -> None:
+            ladder = cx_ladder()
+            basis_change(qreg)
+            qubit_subset, borrowed_qreg = _take_pauli_qubits(
+                qreg, comptime(pauli_indices)
+            )
+            ladder.ascending(qubit_subset)
+            rz_method(qubit_subset[len(qubit_subset) - 1], angle)
+            ladder.ascending_dagger(qubit_subset)
+            _return_pauli_qubits(
+                qreg, qubit_subset, borrowed_qreg, comptime(pauli_indices)
+            )
+            basis_change_dagger(qreg)
+
+        return pauli_gadget_fn
 
     @guppy.unitary
     class pauli_gadget_fn:
