@@ -5,11 +5,10 @@ from guppylang import guppy, comptime
 
 from guppylang.std.builtins import array, control, frozenarray, nat, owned
 from guppylang.std.angles import angle
-from guppylang.std.quantum import qubit, rz, crz
+from guppylang.std.quantum import qubit, rz, crz, discard_array
 
 from guppyalgos.primitives.pauli import pauli_to_z_basis
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
-from guppyalgos.primitives.measurement.utils import discard_array_zero
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
@@ -128,7 +127,7 @@ def pauli_exp[n_state_q: nat](
                     phase_qreg = qarray(1)
                     with control(controls):
                         rz_method(phase_qreg[0], angle)
-                    discard_array_zero(phase_qreg)
+                    discard_array(phase_qreg)
 
             @guppy
             @no_type_check
@@ -148,7 +147,7 @@ def pauli_exp[n_state_q: nat](
                     phase_qreg = qarray(1)
                     with control(controls):
                         rz_method(phase_qreg[0], -angle)
-                    discard_array_zero(phase_qreg)
+                    discard_array(phase_qreg)
 
         return identity_gadget
 
