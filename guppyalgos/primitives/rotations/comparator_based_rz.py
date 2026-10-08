@@ -6,8 +6,18 @@ from typing import no_type_check
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import Function, array, comptime, nat, output
+from guppylang.std.builtins import (
+    Function,
+    array,
+    comptime,
+    exit,
+    nat,
+    nothing,
+    output,
+    some,
+)
 from guppylang.std.lang import Drop
+from guppylang.std.option import Option
 from guppylang.std.quantum import (
     cx,
     h,
@@ -176,11 +186,15 @@ class ComparatorBasedRz[
     Attributes:
         comparator: Configured forward constant comparator.
         inverse_comparator: Configured inverse constant comparator.
+        max_attempts: Maximum number of attempts for one rotation. When it is
+            reached without a success, the shot is ended with ``exit``. If
+            ``nothing()``, the rotation repeats until success.
 
     """
 
     comparator: ComparatorType
     inverse_comparator: ComparatorType
+    max_attempts: Option[int]
 
     @guppy
     @no_type_check
@@ -204,6 +218,8 @@ class ComparatorBasedRz[
         attempts = 0
 
         while True:
+            if self.max_attempts.is_some() and attempts >= self.max_attempts.unwrap():
+                exit("ComparatorBasedRz reached max_attempts without success", 1)
             attempts += 1
             a_reg = qarray(n)
             b_reg = qarray(n_ancillas)
@@ -234,6 +250,7 @@ class ComparatorBasedRz[
 
 def comparator_based_rz_cascade(
     epsilon: float,
+    max_attempts: int | None = None,
 ) -> GuppyFunctionDefinition[[qubit, angle], None]:
     """Build a comparator-based Rz using the cascade comparator.
 
@@ -243,12 +260,21 @@ def comparator_based_rz_cascade(
 
     Args:
         epsilon: Approximation error bound in operator norm.
+        max_attempts: Maximum number of attempts for one rotation. When it is
+            reached without a success, the shot is ended with ``exit``. If
+            ``None``, the rotation repeats until success.
 
     Returns:
         A Guppy function with signature ``(target: qubit, theta: angle) -> None``.
         The returned function uses temporary AND compute and uncompute operations.
 
+    Raises:
+        ValueError: If ``max_attempts`` is negative.
+
     """
+    if max_attempts is not None and max_attempts < 0:
+        raise ValueError("max_attempts must be non-negative")
+
     n = 1 + ceil(log2(1 / epsilon))
     n_comparator_ancillas = n_constant_comparator_cascade_ancillas(n)
 
@@ -270,7 +296,13 @@ def comparator_based_rz_cascade(
             temp_and_uncompute,
             True,
         )
-        rz = ComparatorBasedRz(comparator, inverse_comparator)
+        rz = ComparatorBasedRz(
+            comparator,
+            inverse_comparator,
+            some(comptime(max_attempts or 0))
+            if comptime(max_attempts is not None)
+            else nothing[int](),
+        )
         rz.compose(target, theta)
 
     return rz_fn
