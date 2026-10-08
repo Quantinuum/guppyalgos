@@ -21,7 +21,6 @@ from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
-    get_unitary,
     get_unitary_projected,
 )
 from guppyalgos.utils import trotter_step_matrix
