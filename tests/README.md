@@ -14,29 +14,52 @@ unitarity, dagger, control, and controlled dagger with one invocation:
 ```python
 from guppylang import guppy
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, control, nat
 from guppylang.std.quantum import qubit, rz
 from guppyalgos.testing import assert_unitary_modifiers
 
 
-def test_rotation_modifiers() -> None:
-    @guppy(unitary=True)
-    def rotation(qs: array[qubit, 1]) -> None:
+@guppy.unitary
+class rotation:
+    @guppy
+    def __call__(qs: array[qubit, 1]) -> None:
         rz(qs[0], angle(0.7))
 
+    @guppy
+    def daggered(qs: array[qubit, 1]) -> None:
+        rz(qs[0], angle(-0.7))
+
+    @guppy
+    def controlled[n: nat](qs: array[qubit, 1], cs: array[qubit, n]) -> None:
+        with control(cs):
+            rz(qs[0], angle(0.7))
+
+    @guppy
+    def ctrl_daggered[n: nat](qs: array[qubit, 1], cs: array[qubit, n]) -> None:
+        with control(cs):
+            rz(qs[0], angle(-0.7))
+
+
+def test_rotation_modifiers() -> None:
     assert_unitary_modifiers(rotation, 1)
 ```
 
-The helper accepts functions with one borrowed qubit array, including wrappers
-around `@guppy.unitary` custom implementations. It checks one control qubit;
+Use this helper to test manually implemented custom modifiers, as above.
+Automatically generated modifiers are the compiler's testing responsibility
+and do not need additional modifier tests here.
+
+The helper works with circuits that accept a single qubit array, including
+wrappers around `@guppy.unitary` custom implementations. It checks one control qubit;
 additional supported control counts need their own coverage. Failures name the
 mode. Keep existing algorithm correctness tests, or pass `expected_unitary` to
 compare the forward matrix with an independent reference (up to global phase).
 
 Controlled references preserve the extracted forward matrix's phase relative to
 the inactive branch. Do not phase-align that matrix before building a controlled
-reference. The helper compares coherent projected blocks with one shared phase
-alignment using `assert_cntrl_unitary`.
+reference. The helper compares the full controlled matrix with one shared phase
+alignment.
+Each mode first checks matrix unitarity, then correctness, with distinct failure
+messages for a nonunitary matrix and an incorrect unitary operation.
 
 Use this helper only for small, fully unitary circuits because matrix extraction
 scales exponentially. `endianness`, `n_extra_qubits`, and `threshold` configure

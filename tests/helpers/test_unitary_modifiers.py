@@ -134,7 +134,10 @@ def test_rejects_incorrect_custom_modifiers(
     mode: str, circuit: GuppyFunctionDefinition
 ) -> None:
     """Reject wrong inverses, controls, and active-branch phase errors."""
-    with pytest.raises(AssertionError, match=f"{mode} mode"):
+    with pytest.raises(
+        AssertionError,
+        match=f"{mode} mode: extracted matrix is unitary, but does not match",
+    ):
         assert_unitary_modifiers(circuit, 1)
 
 
@@ -229,3 +232,56 @@ def test_good_reset() -> None:
     assert_unitary_modifiers(
         _rotation_with_good_reset, 1, expected_unitary=expected, n_extra_qubits=1
     )
+
+
+@guppy.unitary
+class _rotation_with_bad_reset:
+    @guppy
+    @no_type_check
+    def __call__(qs: array[qubit, 1], fault_mode: int) -> None:
+        rz(qs[0], angle(0.7))
+
+    @guppy
+    @no_type_check
+    def daggered(qs: array[qubit, 1], fault_mode: int) -> None:
+        if fault_mode == 1:
+            reset(qs[0])
+        rz(qs[0], angle(-0.7))
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat](
+        qs: array[qubit, 1], fault_mode: int, cs: array[qubit, n]
+    ) -> None:
+        if fault_mode == 2:
+            reset(qs[0])
+        with control(cs):
+            rz(qs[0], angle(0.7))
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat](
+        qs: array[qubit, 1], fault_mode: int, cs: array[qubit, n]
+    ) -> None:
+        if fault_mode == 3:
+            reset(qs[0])
+        with control(cs):
+            rz(qs[0], angle(-0.7))
+
+
+@pytest.mark.parametrize(
+    ("fault_mode", "mode"),
+    [(1, "Dagger"), (2, "Control"), (3, "Controlled dagger")],
+)
+def test_nonunitary_modifier(fault_mode: int, mode: str) -> None:
+    """Report target reset as nonunitarity rather than a wrong unitary action."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def circuit(qs: array[qubit, 1]) -> None:
+        _rotation_with_bad_reset(qs, fault_mode)
+
+    with pytest.raises(
+        AssertionError, match=f"{mode} mode: extracted matrix is not unitary"
+    ):
+        assert_unitary_modifiers(circuit, 1)
