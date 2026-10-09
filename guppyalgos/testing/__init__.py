@@ -774,19 +774,36 @@ def assert_unitary_modifiers[n_state: nat](
 
     Use only for small, fully unitary circuits: matrix extraction scales
     exponentially. Internal ancilla require ``n_extra_qubits`` and must return
-    to zero. Promised-input and measurement-cleanup routines need separate tests.
+    to zero. Reset of correctly uncomputed, disentangled work qubits is
+    compatible with a unitary logical action. Measurement-based cleanup needs
+    separate superposition and outcome checks: basis runs can hide lost coherence
+    or combine outcome-dependent phases into inconsistent matrix column phases.
+    Promised-input routines also need specialized tests.
     ``threshold`` is the absolute tolerance used by the matrix assertions.
     Failures identify the mode being checked.
     """
     try:
         unitary = get_unitary(circ, n_qubits, endianness, n_extra_qubits)
+    except ValueError as exc:
+        raise ValueError(f"Forward mode: matrix extraction failed: {exc}") from exc
+    try:
         np.testing.assert_allclose(
-            unitary.conj().T @ unitary, np.eye(2**n_qubits), atol=threshold
+            unitary.conj().T @ unitary, np.eye(2**n_qubits), atol=threshold, rtol=0
         )
-        if expected_unitary is not None:
-            assert_allclose_ignorephase(unitary, expected_unitary, threshold)
     except AssertionError as exc:
-        raise AssertionError(f"Forward mode: {exc}") from exc
+        raise AssertionError(
+            "Forward mode: extracted matrix is not unitary. "
+            "Consider specialized tests for measurement, reset, or "
+            "input-dependent classical control."
+        ) from exc
+    if expected_unitary is not None:
+        try:
+            assert_allclose_ignorephase(unitary, expected_unitary, threshold)
+        except AssertionError as exc:
+            raise AssertionError(
+                "Forward mode: extracted matrix is unitary, but does not match "
+                "expected_unitary."
+            ) from exc
 
     @guppy
     @no_type_check
@@ -819,7 +836,12 @@ def assert_unitary_modifiers[n_state: nat](
             threshold,
         )
     except AssertionError as exc:
-        raise AssertionError(f"Dagger mode: {exc}") from exc
+        raise AssertionError(
+            "Dagger mode: extracted matrix does not match the adjoint of the "
+            "forward matrix (up to global phase)."
+        ) from exc
+    except ValueError as exc:
+        raise ValueError(f"Dagger mode: matrix extraction failed: {exc}") from exc
 
     for mode, wrapper, expected in (
         ("Control", controlled, unitary),
@@ -836,7 +858,13 @@ def assert_unitary_modifiers[n_state: nat](
                 threshold=threshold,
             )
         except AssertionError as exc:
-            raise AssertionError(f"{mode} mode: {exc}") from exc
+            raise AssertionError(
+                f"{mode} mode: coherent control blocks do not match identity "
+                "on the inactive branch and the expected operation on the "
+                "active branch, including their relative phase."
+            ) from exc
+        except ValueError as exc:
+            raise ValueError(f"{mode} mode: matrix extraction failed: {exc}") from exc
 
 
 def project_state_onto_bitstring(
