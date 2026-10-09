@@ -13,7 +13,6 @@ from pytest_lazy_fixtures import lf as lazy_fixture
 import zixy.qubit.pauli as zqp
 from selene_sim import Quest
 
-from guppyalgos.algorithms.time_evolution.trotter import cntrl_trotter_first_order
 from guppyalgos.utils import phase_distance_mod_2, trotterized_eigenphases
 from guppyalgos.testing import assert_allclose_ignorephase
 from tests.algorithms.phase_estimation.qpe_test_helpers import (
@@ -22,7 +21,6 @@ from tests.algorithms.phase_estimation.qpe_test_helpers import (
     make_ry_state,
     make_trotter_qpe_diagnostic_program,
     make_trotter_qpe_program,
-    make_trotter_power_oracle,
     phase_key,
     ry_state_probabilities,
 )
@@ -67,22 +65,22 @@ def test_trotter_qpe_rz_toy_model_exact_numerics(
     # implement the same single-eigenphase kickback used in the exact Rz tests.
     time_step = -4 * phi
     ham_op = zqp.RealTermSum.from_str("(0.5, Z0)")
-    controlled_step = cntrl_trotter_first_order(ham_op, 1)
     ground_phase = phi % 2
     excited_phase = (-phi) % 2
     state_preparation = make_ry_state(float(eigenmix))
-    power_oracle = make_trotter_power_oracle(controlled_step, time_step, 1)
     diagnostic_program = make_trotter_qpe_diagnostic_program(
         n_ancilla,
         1,
+        ham_op,
+        time_step,
         state_preparation,
-        power_oracle,
     )
     measurement_program = make_trotter_qpe_program(
         n_ancilla,
         1,
+        ham_op,
+        time_step,
         state_preparation,
-        power_oracle,
     )
     states = _single_shot_states(diagnostic_program, n_ancilla + 1)
     counts = _single_shot_qpe_counts(measurement_program, n_ancilla + 1)
@@ -145,12 +143,6 @@ def _assert_trotter_qpe_resolves_trotterized_phase(
 ) -> None:
     """Check that QPE resolves an eigenphase of the implemented Trotter step."""
     n_state_qubits = len(ham_op.qubits)
-    controlled_step = cntrl_trotter_first_order(ham_op, n_state_qubits)
-    power_oracle = make_trotter_power_oracle(
-        controlled_step,
-        time_step,
-        n_state_qubits,
-    )
     phase_resolution = 1 / (2**n_ancilla)
 
     trotter_phases, trotter_eigenvectors = trotterized_eigenphases(
@@ -163,8 +155,9 @@ def _assert_trotter_qpe_resolves_trotterized_phase(
     dominant_measured_phase = dominant_trotter_measured_phase(
         n_ancilla,
         n_state_qubits,
+        ham_op,
+        time_step,
         state_preparation,
-        power_oracle,
         shots=50,
     )
     phase_distance_to_trotter = min(

@@ -18,9 +18,12 @@ from guppylang.std.quantum import (
     qubit,
     ry,
 )
+import zixy.qubit.pauli as zqp
+
 from numpy.typing import NDArray
 
-from guppyalgos.algorithms.phase_estimation import iqpe, qpe
+from guppyalgos.algorithms.phase_estimation import iqpe, qpe, qpe_unitary
+from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
 from guppyalgos.primitives.subroutines.qft import iqft, qft
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.utils import dominant_measured_phase as utils_dominant_measured_phase
@@ -227,36 +230,16 @@ def make_simple_qpe_kickback_program[n_state: nat](
     return abstract_kickback_state
 
 
-def make_trotter_power_oracle[n_trotter_state: nat](
-    controlled_step: GuppyFunctionDefinition[
-        [qubit, array[qubit, n_trotter_state], float], None
-    ],
-    time_step: float,
-    n_state_qubits: int,
-) -> GuppyFunctionDefinition[[qubit, array[qubit, n_trotter_state], int], None]:
-    """Return the powered oracle wrapper used by the trotter QPE tests."""
-
-    @guppy
-    @no_type_check
-    def power_oracle(
-        control: qubit,
-        state_reg: array[qubit, n_state_qubits],
-        power: int,
-    ) -> None:
-        for _ in range(power):
-            controlled_step(control, state_reg, time_step)
-
-    return power_oracle
-
-
 def make_trotter_qpe_program[n_state: nat](
     n_ancilla: int,
     n_state_qubits: int,
+    hamiltonian: zqp.RealTermSum,
+    time_step: float,
     state_preparation: GuppyFunctionDefinition[[array[qubit, n_state]], None],
-    power_oracle: GuppyFunctionDefinition[[qubit, array[qubit, n_state], int], None],
 ) -> GuppyFunctionDefinition[[], None]:
-    """Build the canonical measurement program used by the trotter QPE tests."""
+    """Build a QPE program that controls the generated Trotter unitary directly."""
     ancilla_prep_function = make_uniform_ancilla_prep(n_ancilla)
+    trotter_step = trotter_first_order(hamiltonian, n_state_qubits)
 
     @guppy
     @no_type_check
@@ -266,7 +249,7 @@ def make_trotter_qpe_program[n_state: nat](
 
         state_preparation(state_reg)
         ancilla_prep_function(phase_reg)
-        qpe(phase_reg, state_reg, power_oracle)
+        qpe_unitary(phase_reg, state_reg, trotter_step, time_step)
         output("qpe_bitstring", collect_measurements(measure_array(phase_reg)))
         discard_array(state_reg)
 
@@ -276,11 +259,13 @@ def make_trotter_qpe_program[n_state: nat](
 def make_trotter_qpe_diagnostic_program[n_state: nat](
     n_ancilla: int,
     n_state_qubits: int,
+    hamiltonian: zqp.RealTermSum,
+    time_step: float,
     state_preparation: GuppyFunctionDefinition[[array[qubit, n_state]], None],
-    power_oracle: GuppyFunctionDefinition[[qubit, array[qubit, n_state], int], None],
 ) -> GuppyFunctionDefinition[[], None]:
     """Build a Trotter QPE program with register snapshots and measurement."""
     ancilla_prep_function = make_uniform_ancilla_prep(n_ancilla)
+    trotter_step = trotter_first_order(hamiltonian, n_state_qubits)
 
     @guppy
     @no_type_check
@@ -290,7 +275,7 @@ def make_trotter_qpe_diagnostic_program[n_state: nat](
 
         state_preparation(state_reg)
         ancilla_prep_function(phase_reg)
-        qpe(phase_reg, state_reg, power_oracle)
+        qpe_unitary(phase_reg, state_reg, trotter_step, time_step)
         state_output("system_register", state_reg)
         state_output("qpe_register", phase_reg)
         qft(phase_reg)
@@ -305,8 +290,9 @@ def make_trotter_qpe_diagnostic_program[n_state: nat](
 def dominant_trotter_measured_phase[n_state: nat](
     n_ancilla: int,
     n_state_qubits: int,
+    hamiltonian: zqp.RealTermSum,
+    time_step: float,
     state_preparation: GuppyFunctionDefinition[[array[qubit, n_state]], None],
-    power_oracle: GuppyFunctionDefinition[[qubit, array[qubit, n_state], int], None],
     shots: int = 500,
     seed: int = 5,
 ) -> float:
@@ -314,8 +300,9 @@ def dominant_trotter_measured_phase[n_state: nat](
     measurement_program = make_trotter_qpe_program(
         n_ancilla,
         n_state_qubits,
+        hamiltonian,
+        time_step,
         state_preparation,
-        power_oracle,
     )
     counts = (
         measurement_program.emulator(n_qubits=n_ancilla + n_state_qubits)
@@ -339,7 +326,6 @@ __all__ = [
     "make_simple_qpe_kickback_program",
     "make_simple_qpe_program",
     "make_simple_qpe_reversibility_program",
-    "make_trotter_power_oracle",
     "make_trotter_qpe_diagnostic_program",
     "make_trotter_qpe_program",
     "make_uniform_ancilla_prep",
