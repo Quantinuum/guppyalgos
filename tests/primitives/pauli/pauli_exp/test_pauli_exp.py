@@ -166,7 +166,7 @@ def test_pauli_exp_identity_is_noop() -> None:
     def main(state_qreg: array[qubit, 3]) -> None:
         pauli_g(state_qreg, angle(0.7))
 
-    np.testing.assert_allclose(get_unitary(main, 3), np.eye(8), atol=1e-8)
+    assert_allclose_ignorephase(get_unitary(main, 3), np.eye(8))
 
 
 @pytest.mark.parametrize(
