@@ -6,7 +6,7 @@ multiplier, the multiplicand is shifted by the corresponding amount and added in
 an accumulator modulo ``2**n``.
 
 The construction follows the standard reversible circuit decomposition described in [1]
-and uses the ripply carry adder from [2].
+and uses the ripple-carry adder from [2].
 
 References:
     [1] Rines, R., & Chuang, I. (2018). High performance quantum modular multipliers.
