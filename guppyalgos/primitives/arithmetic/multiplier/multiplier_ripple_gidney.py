@@ -208,7 +208,7 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
         b: Odd classical multiplier.
 
     Raises:
-        ValueError: If ``n`` is less than one or ``b`` is even.
+        ValueError: If ``n`` is less than one or ``b`` is negative or even.
 
     """
     comptime(_require_positive_width(n))
@@ -251,7 +251,7 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
         b: Odd classical multiplier.
 
     Raises:
-        ValueError: If ``n`` is less than one or ``b`` is even.
+        ValueError: If ``n`` is less than one or ``b`` is negative or even.
 
     """
     comptime(_require_positive_width(n))
