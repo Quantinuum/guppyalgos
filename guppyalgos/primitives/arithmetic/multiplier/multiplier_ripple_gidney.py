@@ -5,11 +5,13 @@ multiplication as a sequence of controlled modular additions. For each bit of th
 multiplier, the multiplicand is shifted by the corresponding amount and added into
 an accumulator modulo ``2**n``.
 
-The construction follows the standard reversible circuit decomposition described in [1].
+The construction follows the standard reversible circuit decomposition described in [1]
+and uses the ripply carry adder from [2].
 
 References:
     [1] Rines, R., & Chuang, I. (2018). High performance quantum modular multipliers.
     arXiv preprint arXiv:1801.01081.
+    [2] Gidney, C. (2018). Halving the cost of quantum addition. Quantum, 2, 74.
 
 """
 
