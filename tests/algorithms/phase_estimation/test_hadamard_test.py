@@ -21,7 +21,7 @@ from guppylang.std.quantum import (
 
 from guppyalgos.algorithms.phase_estimation import hadamard_test
 from guppyalgos.utils import qarray
-from tests.helpers import assert_allclose_ignorephase, get_statevector
+from guppyalgos.testing import assert_allclose_ignorephase, get_statevector
 
 
 @guppy.struct

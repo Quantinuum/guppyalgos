@@ -26,7 +26,7 @@ from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.utils import dominant_measured_phase as utils_dominant_measured_phase
 from guppyalgos.utils import fixed_point_to_float, float_to_fixed_point, qarray
 
-from tests.helpers import switch_endianness
+from guppyalgos.testing import switch_endianness
 
 
 @guppy.struct

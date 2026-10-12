@@ -1,4 +1,4 @@
-# guppy-algorithms
+# guppyalgos
 
 A library of reusable primitives for composing abstract quantum algorithms,
 written in [guppy](https://github.com/Quantinuum/guppylang).
@@ -7,7 +7,7 @@ The `guppyalgos` package includes quantum arithmetic, state preparation, QROM,
 block encoding, Hamiltonian simulation, and phase estimation. It's reusable
 components let you choose circuit implementations when assembling an algorithm.
 
-The API is experimental before version 1.0 and may change between releases.
+Any release before version 1.0.0 is experimental, and the API may change between releases.
 Pin the package version for reproducible work and review the
 [changelog](CHANGELOG.md) before upgrading.
 
@@ -17,8 +17,8 @@ Requires Python 3.12 or newer and [uv](https://docs.astral.sh/uv/).
 Install from a source checkout:
 
 ```sh
-git clone https://github.com/Quantinuum/guppy-algorithms.git
-cd guppy-algorithms
+git clone https://github.com/Quantinuum/guppyalgos.git
+cd guppyalgos
 uv sync
 ```
 
@@ -29,8 +29,9 @@ See [documentation](https://docs.quantinuum.com/guppy/algorithms) for user guide
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, checks, and our
-`gh stack` workflow for stacked pull requests.
+Contributions are welcome! See our [contributing guide](CONTRIBUTING.md) for the
+pull request process, development setup, checks, and `gh stack` workflow for
+stacked pull requests.
 
 ## Citation
 

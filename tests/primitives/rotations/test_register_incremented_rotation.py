@@ -16,7 +16,7 @@ from guppyalgos.primitives.rotations import (
     RotationRegisterIncremented,
 )
 from guppyalgos.utils import qarray
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 
 
 def _axis_expected_state(theta: float, axis: str) -> np.ndarray:

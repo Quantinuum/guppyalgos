@@ -6,7 +6,6 @@ from guppylang.decorator import guppy
 from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import cx, discard, h, qubit, t, tdg, toffoli, x
 
-from guppyalgos.primitives.measurement.utils import discard_zero
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
@@ -266,7 +265,7 @@ def _cnx_single_ancilla_aux[n_controls: nat](
     _cnx_borrowed_ancilla(control, ancilla)
     _cnx_borrowed_target(control, target, ancilla)
     _cnx_borrowed_ancilla(control, ancilla)
-    discard_zero(ancilla)
+    discard(ancilla)
 
 
 @guppy

@@ -10,7 +10,7 @@ from guppylang.std.quantum import cx, discard_array, qubit, x
 
 from guppyalgos.algorithms.block_encoding.lcu.lcu import LCU
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
-from tests.helpers import get_statevector_projected
+from guppyalgos.testing import get_statevector_projected
 
 
 @guppy.struct

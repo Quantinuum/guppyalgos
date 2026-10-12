@@ -17,7 +17,7 @@ from pytket.circuit import Circuit
 from guppyalgos.utils import ccswap, cphase, qarray
 from guppylang.std.angles import angle
 
-from tests.helpers import get_unitary, Endianness, assert_allclose_ignorephase
+from guppyalgos.testing import get_unitary, Endianness, assert_allclose_ignorephase
 
 
 def test_ccswap_qubits() -> None:

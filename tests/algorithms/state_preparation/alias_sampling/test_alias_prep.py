@@ -1,7 +1,7 @@
 """Alias Sampling Test."""
 
 from selene_sim import Quest
-from tests.helpers import project_state_onto_bitstring
+from guppyalgos.testing import project_state_onto_bitstring
 
 from math import ceil, log2
 import numpy as np
@@ -150,3 +150,48 @@ def test_alias_sampling_inverse(
 
     for state in res.partial_state_dicts()[0].values():
         assert state.as_single_state()[0] == 1
+
+
+def test_alias_workspace_is_not_clean_after_select() -> None:
+    """UNPREPARE after SELECT can leave alias workspace entangled."""
+    import zixy.qubit.pauli as zqp
+
+    from guppyalgos.algorithms.block_encoding.lcu import (
+        LCUData,
+        build_unary_iteration_select,
+    )
+
+    data = LCUData.from_hamiltonian(
+        zqp.RealTermSum.from_str(
+            "(0.25, Z0), (-0.125, X1), (0.125, Y0 Y1), (0.125, Z0 X1), "
+            "(0.125, X0), (0.125, Z1), (0.0625, X0 Z1), (-0.0625, Z0 Z1)",
+            2,
+        )
+    )
+    prepare = alias_samp_prep(np.abs(data.coeffs) / data.l1_norm, precision=1 / 16)
+    select = build_unary_iteration_select(data)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        index = qarray(3)
+        alternative = qarray(3)
+        keep = qarray(4)
+        comparison = qarray(4)
+        flag = qubit()
+        qreg = qarray(2)
+        prepare(index, alternative, keep, comparison, flag, False)
+        select(index, qreg)
+        prepare(index, alternative, keep, comparison, flag, True)
+        state_output("comparison", comparison)
+        discard_array(index)
+        discard_array(alternative)
+        discard_array(keep)
+        discard_array(comparison)
+        discard(flag)
+        discard_array(qreg)
+
+    result = main.emulator(22).run()
+    state = Quest.extract_states_dict(result.results[0].entries)["comparison"]
+    probability_zero = project_state_onto_bitstring(state, [False] * 4).probability
+    np.testing.assert_allclose(probability_zero, 13 / 16, atol=1e-10)

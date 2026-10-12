@@ -13,7 +13,7 @@ from selene_sim import Quest
 
 from guppyalgos.utils import apply_phase, qarray
 from guppyalgos.primitives.pauli import pauli_to_cntrl_gate, pauli_to_gate
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     project_state_onto_bitstring,

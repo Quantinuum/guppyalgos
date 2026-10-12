@@ -16,7 +16,7 @@ from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
     ccry_toffoli,
     ccry_cx,
 )
-from tests.helpers import get_statevector, get_unitary, assert_allclose_ignorephase
+from guppyalgos.testing import get_statevector, get_unitary, assert_allclose_ignorephase
 
 
 from typing import no_type_check
@@ -156,13 +156,15 @@ def test_ccz_gate(
 
 @pytest.mark.parametrize(
     ("input_state", "ccu"),
-    product(
-        [
-            # tuples are (control_1, control_2, target)
-            (1, 1, 0),
-            (1, 1, 1),
-        ],
-        [ccx, ccy, ccz],
+    list(
+        product(
+            [
+                # tuples are (control_1, control_2, target)
+                (1, 1, 0),
+                (1, 1, 1),
+            ],
+            [ccx, ccy, ccz],
+        )
     ),
 )
 def test_ccu_gate_are_self_adjoint(

@@ -1,6 +1,6 @@
 ---
-name: guppy-algorithms
-description: Develop and maintain the guppy-algorithms Python package by using repository code, examples, tests, and docstrings as the source of truth. Use when implementing features, fixing bugs, refactoring, or adding tests in this repo.
+name: guppyalgos
+description: Develop and maintain the guppyalgos Python package by using repository code, examples, tests, and docstrings as the source of truth. Use when implementing features, fixing bugs, refactoring, or adding tests in this repo.
 ---
 
 # Workflow

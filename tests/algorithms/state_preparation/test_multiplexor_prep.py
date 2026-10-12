@@ -15,7 +15,7 @@ from guppyalgos.algorithms.state_preparation.multiplexor_prep import (
     multiplexor_prep,
 )
 from guppyalgos.utils import qarray
-from tests.helpers import assert_allclose_ignorephase, get_statevector
+from guppyalgos.testing import assert_allclose_ignorephase, get_statevector
 
 
 @pytest.mark.parametrize(

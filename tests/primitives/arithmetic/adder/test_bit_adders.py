@@ -13,7 +13,7 @@ from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     half_adder,
     half_adder_inverse,
 )
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 
 
 def test_half_adder_truth_table() -> None:

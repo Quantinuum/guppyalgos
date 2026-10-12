@@ -227,8 +227,11 @@ def discard_alias_sampling_garbage[n_index_q: nat, n_keep_q: nat](
     """Discard cleared alias-sampling workspace and retain the index register.
 
     This helper must be called after alias-sampling UNPREPARE has restored the
-    workspace registers to zero. Retaining only ``index`` allows a subsequent
-    qubitization reflection to act on the prepared distribution's index register.
+    workspace registers to zero. PREPARE followed immediately by UNPREPARE
+    satisfies this condition. Inserting SELECT between them generally does not:
+    the alias workspace can remain entangled with the system. In that case,
+    retain it across walk steps and include it in the preparation-state
+    reflection. This function discards qubits; it does not verify zero states.
 
     Args:
         index: Alias-sampling index register to retain.

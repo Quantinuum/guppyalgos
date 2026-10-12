@@ -14,7 +14,7 @@ from selene_sim import Quest
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.subroutines.reflection.reflection_box import reflection_box
 from guppyalgos.utils import transversal, qarray, int_to_bits
-from tests.helpers import (
+from guppyalgos.testing import (
     project_state_onto_bitstring,
     get_total_state_on_only_specified_registers,
 )

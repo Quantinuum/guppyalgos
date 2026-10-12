@@ -32,7 +32,7 @@ from guppyalgos.primitives.subroutines.swap.swapup import (
     swapup_linear_qubit,
     swapup_linear_register,
 )
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,

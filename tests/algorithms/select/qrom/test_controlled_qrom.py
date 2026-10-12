@@ -31,7 +31,7 @@ from guppyalgos.algorithms.select.qrom.controlled_qrom_unary_iteration import (
     cntrl_qrom_unary_iteration,
 )
 from guppyalgos.utils import int_to_bits
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,

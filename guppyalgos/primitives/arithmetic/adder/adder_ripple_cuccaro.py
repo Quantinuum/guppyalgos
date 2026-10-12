@@ -340,7 +340,9 @@ def adder_ripple_cuccaro_mod[n: nat](
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending_dagger(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
 
@@ -365,7 +367,9 @@ def adder_ripple_cuccaro_mod[n: nat](
         x(b_reg[i + 1])
 
     # Reverse n-2 CX ladder
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
@@ -430,7 +434,9 @@ def adder_ripple_cuccaro_mod_dagger[n: nat](
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending_dagger(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
 
@@ -464,7 +470,9 @@ def adder_ripple_cuccaro_mod_dagger[n: nat](
     toffoli(ancilla, b_reg[1], a_reg[1])
 
     # Reverse n-2 CX ladder
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
@@ -549,9 +557,8 @@ def adder_ripple_cuccaro_carry_out[n: nat](
 
     # Forward n-2 Toffoli ladder
     toffoli(ancilla, b_reg[1], a_reg[1])
-    if n > 2:
-        for i in range(n - 3):
-            toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
+    for i in range(n - 3):
+        toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
 
     temp_and_compute(a_reg[n - 2], b_reg[n - 1], carry_out)
     cx(a_reg[n - 1], carry_out)
@@ -780,7 +787,9 @@ def cntrl_adder_ripple_cuccaro_mod[n: nat](
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending_dagger(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
 
@@ -801,7 +810,9 @@ def cntrl_adder_ripple_cuccaro_mod[n: nat](
     toffoli(ctrl, ancilla, b_reg[1])
 
     # Reverse n-2 CX ladder
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
@@ -873,7 +884,9 @@ def cntrl_adder_ripple_cuccaro_mod_dagger[n: nat](
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending_dagger(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
 
@@ -894,7 +907,9 @@ def cntrl_adder_ripple_cuccaro_mod_dagger[n: nat](
     toffoli(ancilla, b_reg[1], a_reg[1])
 
     # Reverse n-2 CX ladder
-    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 2), 1)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(
+        a_reg, comptime(min(1, n - 1)), comptime(max(0, n - 2)), 1
+    )
     cx_ladder.descending(cx_q)
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)

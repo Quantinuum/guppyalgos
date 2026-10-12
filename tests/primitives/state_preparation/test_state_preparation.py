@@ -19,7 +19,7 @@ from selene_sim import Quest
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.primitives.state_preparation.ghz import ghz_state
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     switch_endianness,

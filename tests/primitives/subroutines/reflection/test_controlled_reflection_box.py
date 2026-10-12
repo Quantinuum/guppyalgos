@@ -14,7 +14,7 @@ from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.subroutines.reflection import cntrl_reflection_box
 from guppyalgos.utils import int_to_bits, qarray, transversal
 from tests.primitives.gate_decompositions.cnx.test_cnx import CnxMethod
-from tests.helpers import (
+from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )

@@ -21,7 +21,7 @@ from guppyalgos.algorithms.block_encoding.lcu import (
     build_cntrl_unary_iteration_select,
 )
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
-from tests.helpers import Endianness, assert_cntrl_unitary
+from guppyalgos.testing import Endianness, assert_cntrl_unitary
 
 dagger = object()
 

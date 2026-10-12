@@ -35,7 +35,7 @@ from guppyalgos.algorithms.select.select_unary_iteration import (
     msb_diff_depths,
 )
 from guppyalgos.utils import int_to_bits, qarray, transversal
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,

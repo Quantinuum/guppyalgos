@@ -1,7 +1,15 @@
 # Contributing
 
-Open an issue for a bug, feature, or proposed algorithm before starting substantial
-work. Include a minimal reproducer for bugs and a paper reference for new algorithms.
+We welcome contributions to guppyalgos! To report a bug, request a feature, or
+propose an algorithm, open [an issue](https://github.com/Quantinuum/guppyalgos/issues/new).
+To contribute code, [fork](https://github.com/Quantinuum/guppyalgos/fork) the
+repository and open a pull request against the `main` branch. Pull requests must
+pass all CI checks before they are merged, including the
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) check for
+the pull request title.
+
+Open an issue before starting substantial work. Include a minimal reproducer for
+bugs and a paper reference for new algorithms.
 
 ## Development setup
 
@@ -88,6 +96,11 @@ marked with `!` or a `BREAKING CHANGE:` footer increments the minor version.
  API stable.
 
 ### Publishing a release
+
+The PyPI project is `guppyalgos`. Configure its GitHub Actions trusted publisher
+with owner `Quantinuum`, repository `guppyalgos`, workflow `build_wheels.yml`,
+and environment `pypi`. When renaming the GitHub repository, update the trusted
+publisher in PyPI's project publishing settings before publishing another release.
 
 1. Review and merge the Release Please PR. It creates the version tag and GitHub
    release.

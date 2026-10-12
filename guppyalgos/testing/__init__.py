@@ -1,4 +1,4 @@
-"""Helper functions for testing quantum algorithms."""
+"""Helpers for inspecting Guppy programs with a statevector simulator."""
 
 from __future__ import annotations
 from guppylang.std.platform import barrier
@@ -528,9 +528,9 @@ def get_unitary_projected(
     """Project into one or more non-state registers of a guppy circuit.
 
     This function will project into a sub-block of a unitary matrix
-    defined by the pre- and post-selection bit strings as <post|U|pre>,
-    where pre is |0> on each projected register when no ``pre_select_dict``
-    is provided.
+    defined by the matrix element mapping the pre-selected input to the
+    post-selected output. Each projected register starts in the zero state
+    when no ``pre_select_dict`` is provided.
 
     The circuit must take one, two, or three projected registers followed by the
     state register. The user-supplied circuit is responsible for applying any
@@ -775,27 +775,6 @@ def project_state_onto_bitstring(
         specified qubits determined by new_specified_qubits, with
         specified_qubits=[] if new_specified_qubits=None, and keeps track
         of which qubits have been projected out so far.
-
-    Examples:
-        Given the following guppy
-
-        q = qarray(2)
-        a = qarray(2)
-        ... some operations ...
-        state_output("out", a)
-        state_output("index_state", q)
-        ...
-
-        projected_state = project_state_onto_bitstring(
-            states["out"], [False, True],
-            new_specified_qubits=states["index_state"].specified_qubits
-        )
-
-        prob = projected_state.probability
-        state = projected_state.state
-
-        This projects the qubits from array a into the state 01, setting the specified
-        qubits of the result to those corresponding to array q.
 
     """
     if len(bitstring) != len(state.specified_qubits):
@@ -1058,8 +1037,8 @@ def extract_state_branches_in_superposition(
     Returns:
         A dictionary mapping each branch bitstring to its projected state.
         Each projected state lives on the remaining ``result_tags`` registers only,
-        with the remaining registers encoded directly
-            in ``projected_state.state.state``
+        with the remaining registers encoded directly in
+        ``projected_state.state.state``.
 
     """
     total_state, specified_qubits_dict = get_total_state_on_only_specified_registers(

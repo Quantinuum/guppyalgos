@@ -20,7 +20,7 @@ from guppylang.std.quantum import (
     discard_array,
 )
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     Endianness,

@@ -20,7 +20,8 @@ estimated modules are assigned first to the least-loaded of six batches. Directo
 are never passed alongside their children, so every test is included exactly once
 per Python version. New files get a fallback estimate of 60 seconds.
 
-`test_benchmarks.json` records per-file workload estimates for four pytest workers.
+`tests/test_benchmarks.json` records per-file workload estimates for four pytest
+workers.
 Initial estimates come from Python 3.14 CI log timestamps and include scheduling
 overhead. Balance is approximate: one slow file can still dominate a batch, and
 Python versions and runners differ. Discovery never runs tests or edits files.

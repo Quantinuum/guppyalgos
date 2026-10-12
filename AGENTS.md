@@ -1,6 +1,6 @@
 ## Skills
 ### Available skills
-- guppy-algorithms: Repo-specific workflow for implementing features, fixing bugs, refactoring, and validating changes in this codebase. (file: ./agents/skills/guppy-algorithms/SKILL.md)
+- guppyalgos: Repo-specific workflow for implementing features, fixing bugs, refactoring, and validating changes in this codebase. (file: ./agents/skills/guppyalgos/SKILL.md)
 
 ### Recommended tooling
 

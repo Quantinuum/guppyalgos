@@ -27,7 +27,7 @@ from guppyalgos.utils import (
     qarray,
     transversal,
 )
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     extract_state_branches_in_superposition,
 )

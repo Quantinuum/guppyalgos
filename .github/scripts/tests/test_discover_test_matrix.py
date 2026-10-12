@@ -107,7 +107,7 @@ def test_repository_batches_cover_every_file_once(
 ) -> None:
     """Verify the real benchmark cannot drop or duplicate library tests."""
     monkeypatch.chdir(SCRIPT.parents[2])
-    timings = json.loads(Path("test_benchmarks.json").read_text())["files"]
+    timings = json.loads(Path("tests/test_benchmarks.json").read_text())["files"]
     batches = module.balance_test_paths(module.discover_test_paths(), timings)
     assert len(batches) == 6
     paths = [Path(p) for b in batches for p in b["paths"]]

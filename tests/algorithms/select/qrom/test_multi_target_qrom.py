@@ -12,7 +12,7 @@ from selene_sim import Quest
 from guppyalgos.primitives.measurement import discard_nested_array
 from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
 from guppyalgos.utils import int_to_bits, qarray
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 
 
 def test_qrom_unary_iteration_two_target_registers() -> None:

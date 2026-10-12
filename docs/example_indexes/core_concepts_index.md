@@ -7,6 +7,7 @@ types, and composition of interchangeable Guppy components.
 :maxdepth: 1
 :titlesonly:
 
+/examples/core_concepts/getting_started
 /examples/core_concepts/transversal
 /examples/core_concepts/statevector_testing
 /examples/core_concepts/abstract_construction

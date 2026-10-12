@@ -49,7 +49,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
 )
 from guppyalgos.primitives.state_preparation import uniform_state
 from guppyalgos.utils import int_to_bits, qarray, transversal
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,

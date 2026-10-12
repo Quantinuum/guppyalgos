@@ -9,7 +9,7 @@ from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, frozenarray, owned, nat
 from guppylang.std.mem import mem_swap
 from guppylang.std.option import nothing, some
-from guppylang.std.quantum import qubit
+from guppylang.std.quantum import qubit, discard_array
 
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
@@ -17,7 +17,6 @@ from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     half_adder,
     half_adder_inverse,
 )
-from guppyalgos.primitives.measurement import discard_array_zero
 from guppyalgos.utils import qarray
 
 
@@ -276,6 +275,6 @@ def hamming_weight_func_inv[n_q: nat, logn_q: nat, nmlogn_q: nat](
                 _full_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
             ancilla_index -= 1
 
-        discard_array_zero(ancilla_reg)
+        discard_array(ancilla_reg)
 
     return hamm_uncompute

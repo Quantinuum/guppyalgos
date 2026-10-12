@@ -1,3 +1,12 @@
+---
+file_format: mystnb
+kernelspec:
+  name: python3
+mystnb:
+  execution_mode: force
+  execution_timeout: 120
+---
+
 # Core concepts
 
 Most code in the library is built from four ideas: quantum registers, functions,
@@ -12,7 +21,7 @@ $$
 \operatorname{qarray}(n) \longrightarrow |0\rangle^{\otimes n}.
 $$
 
-```python
+```{code-cell} ipython3
 from guppylang import guppy
 from guppylang.std.quantum import discard_array
 
@@ -43,9 +52,9 @@ H^{\otimes n}|0\rangle^{\otimes n}
 =|+\rangle^{\otimes n}.
 $$
 
-```python
+```{code-cell} ipython3
 from guppylang.std.builtins import array, bool, nat, owned
-from guppylang.std.quantum import collect_measurements, h, measure_array, qubit
+from guppylang.std.quantum import collect_measurements, cx, h, measure_array, qubit, rz
 
 from guppyalgos.utils import transversal
 
@@ -76,7 +85,7 @@ A higher-order function accepts another function as a value. `Function`
 records the required Guppy signature, allowing an implementation to be
 replaced without changing the surrounding algorithm:
 
-```python
+```{code-cell} ipython3
 from guppylang.std.builtins import Function
 
 
@@ -104,7 +113,7 @@ def apply_between_registers[n: nat](
 A generic quantum-register type stands for a complete quantum-register shape.
 The same function can then work with arrays, tuples, or structs:
 
-```python
+```{code-cell} ipython3
 @guppy
 def apply_register_operation[Regs](
     operation: Function[[Regs], None],
@@ -115,7 +124,7 @@ def apply_register_operation[Regs](
 
 `Regs` can be a single qubit array:
 
-```python
+```{code-cell} ipython3
 @guppy
 def array_operation[n: nat](qreg: array[qubit, n]) -> None:
     transversal(h, qreg)
@@ -124,16 +133,27 @@ def array_operation[n: nat](qreg: array[qubit, n]) -> None:
 It can also be a fixed tuple. The repository uses this shape, for example,
 for two-qubit Givens-rotation targets:
 
-```python
+```{code-cell} ipython3
 @guppy
 def tuple_operation(qregs: tuple[qubit, qubit]) -> None:
     h(qregs[0])
     cx(qregs[0], qregs[1])
 ```
 
+Starting from $|00\rangle$, this tuple operation prepares a Bell pair:
+
+```{tikz}
+:alt: A Hadamard on the first qubit followed by a controlled X to the second prepares a Bell pair from two zero qubits.
+
+\begin{tikzcd}[column sep=0.7cm]
+\lstick{$q_0: |0\rangle$} & \gate{H} & \ctrl{1} & \qw \\
+\lstick{$q_1: |0\rangle$} & \qw & \targ{} & \qw
+\end{tikzcd}
+```
+
 For a named bundle of several quantum registers, `Regs` can be a Guppy struct:
 
-```python
+```{code-cell} ipython3
 @guppy.struct
 class WorkAndTarget[n: nat]:
     work_qreg: array[qubit, n]
@@ -156,7 +176,7 @@ Composed algorithms often use more than one generic quantum-register type. For
 example, an algorithm can keep preparation and target quantum registers
 distinct without fixing their sizes or layouts:
 
-```python
+```{code-cell} ipython3
 @guppy
 def apply_select[PrepRegs, TargetRegs](
     select: Function[[PrepRegs, TargetRegs], None],
@@ -201,7 +221,7 @@ of `box_1`:
 \end{tikzcd}
 ```
 
-```python
+```{code-cell} ipython3
 from guppylang import guppy
 from guppylang.std.angles import angle
 from guppylang.std.builtins import Function, array, nat
@@ -235,12 +255,34 @@ class BoxComposition[Register0, Register1, Register2]:
 
 In this first specialization, every generic type is one qubit array:
 
-```python
-composition = BoxComposition(
-    bell_transversal[3],
-    rz_cx_transversal[3],
-)
-composition.compose(qreg_0, qreg_1, qreg_2, theta)
+```{code-cell} ipython3
+@guppy
+def bell_transversal[n: nat](
+    left_qreg: array[qubit, n], shared: array[qubit, n]
+) -> None:
+    transversal(h, left_qreg)
+    transversal(cx, left_qreg, shared)
+
+
+@guppy
+def rz_cx_transversal[n: nat](
+    shared: array[qubit, n], right_qreg: array[qubit, n], theta: angle
+) -> None:
+    for i in range(len(shared)):
+        rz(shared[i], theta)
+    transversal(cx, shared, right_qreg)
+
+
+@guppy
+def compose_arrays(
+    qreg_0: array[qubit, 3], qreg_1: array[qubit, 3],
+    qreg_2: array[qubit, 3], theta: angle,
+) -> None:
+    composition = BoxComposition(bell_transversal[3], rz_cx_transversal[3])
+    composition.compose(qreg_0, qreg_1, qreg_2, theta)
+
+
+compose_arrays.check()
 ```
 
 - Here, `Register0`, `Register1`, and `Register2` are all inferred as
@@ -254,7 +296,7 @@ A generic type can instead be a struct containing several quantum registers. The
 middle bundle can therefore contain two arrays without changing
 `BoxComposition`:
 
-```python
+```{code-cell} ipython3
 @guppy.struct
 class MiddleBundle[n: nat]:
     upper_qreg: array[qubit, n]
@@ -265,14 +307,20 @@ class MiddleBundle[n: nat]:
 def bundled_box_0[n: nat](
     left_qreg: array[qubit, n], middle: MiddleBundle[n]
 ) -> None:
-    ...
+    transversal(h, left_qreg)
+    transversal(cx, left_qreg, middle.upper_qreg)
+    transversal(cx, left_qreg, middle.lower_qreg)
 
 
 @guppy
 def bundled_box_1[n: nat](
     middle: MiddleBundle[n], right_qreg: array[qubit, n], theta: angle
 ) -> None:
-    ...
+    for i in range(n):
+        rz(middle.upper_qreg[i], theta)
+        rz(middle.lower_qreg[i], theta)
+    transversal(cx, middle.upper_qreg, right_qreg)
+    transversal(cx, middle.lower_qreg, right_qreg)
 ```
 
 ```{tikz}
@@ -288,13 +336,17 @@ def bundled_box_1[n: nat](
 
 The struct is instantiated with boxes that accept the complete middle bundle:
 
-```python
-middle = MiddleBundle(middle_upper, middle_lower)
-composition = BoxComposition(
-    bundled_box_0[3],
-    bundled_box_1[3],
-)
-composition.compose(qreg_0, middle, qreg_2, theta)
+```{code-cell} ipython3
+@guppy
+def compose_bundles(
+    qreg_0: array[qubit, 3], middle: MiddleBundle[3],
+    qreg_2: array[qubit, 3], theta: angle,
+) -> None:
+    composition = BoxComposition(bundled_box_0[3], bundled_box_1[3])
+    composition.compose(qreg_0, middle, qreg_2, theta)
+
+
+compose_bundles.check()
 ```
 
 - `Register1` is now inferred as `MiddleBundle[3]`; the outer composer is
@@ -326,7 +378,7 @@ U_A = \mathrm{PREPARE}^{\dagger}\,
 (\langle 0^a|\otimes I)U_A(|0^a\rangle\otimes I)=\frac{A}{\alpha}.
 $$
 
-```python
+```{code-cell} ipython3
 @guppy.struct
 class LCU[PrepRegs, TargetRegs]:
     prepare: Function[[PrepRegs], None]
@@ -361,9 +413,16 @@ class LCU[PrepRegs, TargetRegs]:
 
 Construct the composed oracle once, then call it where it is needed:
 
-```python
-lcu = LCU(prepare, select, unprepare)
-lcu.compose(prep_qreg, target_qreg)
+```{code-cell} ipython3
+@guppy
+def apply_lcu[PrepRegs, TargetRegs](
+    prepare: Function[[PrepRegs], None],
+    select: Function[[PrepRegs, TargetRegs], None],
+    unprepare: Function[[PrepRegs], None],
+    prep_qreg: PrepRegs, target_qreg: TargetRegs,
+) -> None:
+    lcu = LCU(prepare, select, unprepare)
+    lcu.compose(prep_qreg, target_qreg)
 ```
 
 - The struct stores the interchangeable component boxes.
@@ -383,7 +442,7 @@ A protocol defines the methods a component must provide without requiring a
 particular struct. Here, a compatible component must apply an operation
 between two equal-sized quantum registers:
 
-```python
+```{code-cell} ipython3
 @guppy.protocol
 class TwoRegisterOperation[n: nat]:
     @guppy.require
@@ -399,7 +458,7 @@ A concrete struct satisfies the protocol by providing `apply` with the same
 signature. Here it stores a function that acts on both complete quantum
 registers:
 
-```python
+```{code-cell} ipython3
 @guppy
 def entangle_registers[n: nat](
     left_qreg: array[qubit, n],
@@ -427,7 +486,7 @@ The component is passed into the algorithm when its struct is initialized.
 The algorithm can then expose its own `compose` method without requiring that
 name from every component:
 
-```python
+```{code-cell} ipython3
 @guppy.struct
 class RegisterAlgorithm[
     n: nat,

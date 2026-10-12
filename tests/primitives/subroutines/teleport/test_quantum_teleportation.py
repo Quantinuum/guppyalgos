@@ -10,7 +10,7 @@ from selene_sim import Quest
 
 from guppyalgos.primitives.subroutines.teleport import quantum_teleportation
 from guppyalgos.primitives.state_preparation import phase_gradient, ghz_state
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     get_total_state_on_only_specified_registers,

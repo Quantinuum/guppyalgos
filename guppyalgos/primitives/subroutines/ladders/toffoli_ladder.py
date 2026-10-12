@@ -8,7 +8,7 @@ from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.array import frozenarray
 from guppylang.std.quantum import qubit, toffoli
 from guppyalgos.utils import qarray
-from guppyalgos.primitives.measurement.utils import discard_array_zero
+from guppyalgos.primitives.measurement.utils import discard_array
 
 from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 
@@ -94,28 +94,28 @@ class ToffoliLadderLog:
         """Apply ascending log depth Toffoli ladder."""
         anc = qarray(comptime(log_toffoli_ladder_num_ancilla(n_q)))
         self.ascending_with_cca(qs, anc)  # ty: ignore[missing-argument]
-        discard_array_zero(anc)
+        discard_array(anc)
 
     @guppy
     def ascending_dagger[n_q: nat](self, qs: array[qubit, n_q]) -> None:
         """Apply ascending log depth Toffoli ladder dagger."""
         anc = qarray(comptime(log_toffoli_ladder_num_ancilla(n_q)))
         self.ascending_dagger_with_cca(qs, anc)  # ty: ignore[missing-argument]
-        discard_array_zero(anc)
+        discard_array(anc)
 
     @guppy
     def descending[n_q: nat](self, qs: array[qubit, n_q]) -> None:
         """Apply descending log depth Toffoli ladder."""
         anc = qarray(comptime(log_toffoli_ladder_num_ancilla(n_q)))
         self.descending_with_cca(qs, anc)  # ty: ignore[missing-argument]
-        discard_array_zero(anc)
+        discard_array(anc)
 
     @guppy
     def descending_dagger[n_q: nat](self, qs: array[qubit, n_q]) -> None:
         """Apply descending log depth Toffoli ladder dagger."""
         anc = qarray(comptime(log_toffoli_ladder_num_ancilla(n_q)))
         self.descending_dagger_with_cca(qs, anc)  # ty: ignore[missing-argument]
-        discard_array_zero(anc)
+        discard_array(anc)
 
     @guppy
     def ascending_with_cca[n_q: nat, n_a: nat](

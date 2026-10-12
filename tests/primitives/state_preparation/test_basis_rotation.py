@@ -11,7 +11,7 @@ from guppylang.std.quantum import qubit, rz
 
 from guppyalgos.primitives.rotations import givens_with_custom_rz
 from guppyalgos.primitives.state_preparation import basis_rotation_implementation
-from tests.helpers import Endianness, get_unitary
+from guppyalgos.testing import Endianness, get_unitary
 
 
 def _occupation_unitary(mode_unitary: np.ndarray) -> np.ndarray:

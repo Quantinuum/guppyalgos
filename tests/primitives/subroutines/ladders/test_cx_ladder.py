@@ -23,7 +23,7 @@ from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.utils import qarray
 
-from tests.helpers import assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
 
 
 @pytest.mark.parametrize(

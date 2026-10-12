@@ -81,11 +81,11 @@ def test_update_command_preserves_unobserved_files(
     Path("reports/run.xml").write_text(
         '<testsuite><testcase classname="tests.test_example" time="8"/></testsuite>'
     )
-    Path("test_benchmarks.json").write_text(
+    Path("tests/test_benchmarks.json").write_text(
         json.dumps({"files": {"tests/test_other.py": 30}})
     )
     module.main(["reports"])
-    assert json.loads(Path("test_benchmarks.json").read_text())["files"] == {
+    assert json.loads(Path("tests/test_benchmarks.json").read_text())["files"] == {
         "tests/test_example.py": 2.0,
         "tests/test_other.py": 30,
     }

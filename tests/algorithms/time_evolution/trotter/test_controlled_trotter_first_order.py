@@ -17,7 +17,7 @@ from scipy.linalg import expm
 
 from guppyalgos.algorithms.time_evolution.trotter import cntrl_trotter_first_order
 from guppyalgos.utils import qarray
-from tests.helpers import (
+from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     get_unitary_projected,

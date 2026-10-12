@@ -1,5 +1,5 @@
 build-docs:
-    uv run --all-extras sphinx-build -W -b html docs docs/build
+    PYTHONPATH={{justfile_directory()}} uv run --all-extras sphinx-build -W -b html docs docs/build
 
 serve-docs: build-docs
     uv run python -m http.server -d docs/build/

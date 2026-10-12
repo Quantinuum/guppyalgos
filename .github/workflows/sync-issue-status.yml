@@ -1,0 +1,70 @@
+name: Sync issue status from PR state
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, edited, converted_to_draft, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  update-linked-issue-status:
+    if: >-
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'hugrbot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Decide target status
+        id: status
+        shell: bash
+        run: |
+          if [[ "${{ github.event.pull_request.draft }}" == "true" ]]; then
+            echo "value=In Progress" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=Code Review" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Find linked issue from PR
+        id: linked_issue
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const result = await github.graphql(`
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    closingIssuesReferences(first: 10) {
+                      nodes { id number }
+                    }
+                  }
+                }
+              }
+            `, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: context.payload.pull_request.number,
+            });
+
+            const issues = result.repository.pullRequest.closingIssuesReferences.nodes;
+            if (issues.length !== 1) {
+              core.setFailed(issues.length
+                ? `Multiple closing issues found (${issues.map(({ number }) => `#${number}`).join(", ")}). Reference exactly one.`
+                : "No linked issue found. Add a closing keyword such as 'Closes #123' to the PR description.");
+              return;
+            }
+            core.setOutput("content_id", issues[0].id);
+
+      - name: Update issue status in project
+        uses: github/update-project-action@v4
+        with:
+          github_token: ${{ secrets.PROJECT_TOKEN }}
+          organization: ${{ vars.PROJECT_OWNER }}
+          project_number: ${{ vars.PROJECT_NUMBER }}
+          content_id: ${{ steps.linked_issue.outputs.content_id }}
+          field: Status
+          value: ${{ steps.status.outputs.value }}

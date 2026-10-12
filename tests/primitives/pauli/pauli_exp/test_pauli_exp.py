@@ -17,9 +17,9 @@ from guppylang.defs import GuppyFunctionDefinition
 
 from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
 
-from tests.helpers import get_unitary
+from guppyalgos.testing import get_unitary
 from tests.primitives.pauli.pauli_exp.pauli_exp_helpers import pauli_exp_matrix
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 from typing import no_type_check
 
 REPRESENTATIVE_2Q_STRINGS = [

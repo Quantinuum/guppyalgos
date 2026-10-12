@@ -1,6 +1,15 @@
+---
+file_format: mystnb
+kernelspec:
+  name: python3
+mystnb:
+  execution_mode: force
+  execution_timeout: 120
+---
+
 # Upcoming features
 
-Guppy Algorithms is under active development. This page describes planned
+guppyalgos is under active development. This page describes planned
 directions rather than APIs that users should rely on today.
 
 ## Unified control and dagger modifiers
@@ -9,7 +18,7 @@ Guppy's built-in `control` and `dagger` modifiers already work well for simple,
 straight-line unitary functions. Mark the function as `unitary` so Guppy checks
 that it can be both controlled and inverted:
 
-```python
+```{code-cell} ipython3
 from guppylang import guppy
 from guppylang.std.builtins import control, dagger
 from guppylang.std.quantum import h, qubit, s
@@ -50,7 +59,7 @@ repository:
   uniform across the library.
 
 We are waiting for custom-modifier support in Guppy before standardizing this
-across Guppy Algorithms. The intended direction is to:
+across guppyalgos. The intended direction is to:
 
 - define control and adjoint transformations through one modifier framework;
 - let higher-order functions and structs request those capabilities through

@@ -6,6 +6,7 @@ from guppylang.std.quantum import (
     project_z,
     cz,
     h,
+    reset,
 )
 
 
@@ -15,12 +16,13 @@ from typing import no_type_check
 @guppy
 @no_type_check
 def temp_and_uncompute(q_0: qubit, q_1: qubit, target_q: qubit) -> None:
-    """Uncompute the logical AND operation.
+    r"""Uncompute the logical AND operation.
 
     This function reverses the effects of the logical AND operation
     applied to the input qubits and the target qubit. It is equivalent to
     measurement based uncomputation as described in Fig 4.
-    https://arxiv.org/pdf/1805.03662. The qubit must be discarded after use.
+    https://arxiv.org/pdf/1805.03662. The target qubit is returned to $\ket{0}$:
+    the caller can reuse it or discard it.
 
     Args:
         q_0 (qubit): The first input qubit.
@@ -31,3 +33,4 @@ def temp_and_uncompute(q_0: qubit, q_1: qubit, target_q: qubit) -> None:
     h(target_q)
     if project_z(target_q).read():
         cz(q_0, q_1)
+        reset(target_q)

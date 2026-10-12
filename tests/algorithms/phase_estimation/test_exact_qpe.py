@@ -6,7 +6,7 @@ from hugr.qsystem.result import QsysResult
 from selene_sim import Quest
 
 from guppyalgos.utils import binary_fraction, phase_distance_mod_2
-from tests.helpers import assert_allclose_ignorephase
+from guppyalgos.testing import assert_allclose_ignorephase
 from tests.algorithms.phase_estimation.qpe_test_helpers import (
     exact_kickback_density_matrix,
     exact_kickback_state,
