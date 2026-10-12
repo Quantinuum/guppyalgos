@@ -52,6 +52,13 @@ def _negative_modular_inverse(value: int, modulus: int) -> int:
     return -pow(value, -1, modulus) % modulus
 
 
+def _require_positive_width(n: int) -> None:
+    """Reject zero-width multiplier registers during Guppy compilation."""
+    if n < 1:
+        msg = "n must be positive"
+        raise ValueError(msg)
+
+
 def _shifted_controlled_adder(n: int, shift: int) -> GuppyFunctionDefinition:
     """Build a controlled adder of ``a_reg << shift`` into ``product``, mod ``2**n``.
 
@@ -127,7 +134,11 @@ def multiplier_ripple_gidney_mod[n: nat](
             addend.
         product: Accumulator register, updated modulo ``2**n``.
 
+    Raises:
+        ValueError: If ``n`` is less than one.
+
     """
+    comptime(_require_positive_width(n))
     shifted_adders: array[
         Function[[qubit, array[qubit, n], array[qubit, n]], None], n
     ] = _build_shifted_adders()
@@ -163,7 +174,11 @@ def cntrl_multiplier_ripple_gidney_mod[n: nat](
             addend.
         product: Accumulator register, updated modulo ``2**n``.
 
+    Raises:
+        ValueError: If ``n`` is less than one.
+
     """
+    comptime(_require_positive_width(n))
     shifted_adders: array[
         Function[[qubit, array[qubit, n], array[qubit, n]], None], n
     ] = _build_shifted_adders()
@@ -194,9 +209,10 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
         b: Odd classical multiplier.
 
     Raises:
-        ValueError: If ``b`` is even.
+        ValueError: If ``n`` is less than one or ``b`` is even.
 
     """
+    comptime(_require_positive_width(n))
     b_bits = comptime(int_to_bits(b % 2**n, n))
     negative_inverse_bits = comptime(int_to_bits(_negative_modular_inverse(b, 2**n), n))
 
@@ -236,9 +252,10 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
         b: Odd classical multiplier.
 
     Raises:
-        ValueError: If ``b`` is even.
+        ValueError: If ``n`` is less than one or ``b`` is even.
 
     """
+    comptime(_require_positive_width(n))
     b_bits = comptime(int_to_bits(b % 2**n, n))
     negative_inverse_bits = comptime(int_to_bits(_negative_modular_inverse(b, 2**n), n))
 

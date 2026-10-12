@@ -320,6 +320,69 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
 @pytest.mark.parametrize(
     "multiplier",
     [
+        multiplier_ripple_gidney_mod,
+        cntrl_multiplier_ripple_gidney_mod,
+        multiplier_ripple_gidney_mod_in_place,
+        cntrl_multiplier_ripple_gidney_mod_in_place,
+    ],
+)
+def test_multiplier_rejects_zero_width(multiplier) -> None:
+    """Reject zero-width registers with a clear compile-time diagnostic."""
+    if multiplier is cntrl_multiplier_ripple_gidney_mod:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            ctrl = qubit()
+            a_reg = qarray(0)
+            b_reg = qarray(0)
+            product = qarray(0)
+            multiplier(ctrl, a_reg, b_reg, product)
+            discard(ctrl)
+            discard_array(a_reg)
+            discard_array(b_reg)
+            discard_array(product)
+
+    elif multiplier is cntrl_multiplier_ripple_gidney_mod_in_place:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            ctrl = qubit()
+            a_reg = qarray(0)
+            multiplier(ctrl, a_reg, 3)
+            discard(ctrl)
+            discard_array(a_reg)
+
+    elif multiplier is multiplier_ripple_gidney_mod_in_place:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            a_reg = qarray(0)
+            multiplier(a_reg, 3)
+            discard_array(a_reg)
+
+    else:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            a_reg = qarray(0)
+            b_reg = qarray(0)
+            product = qarray(0)
+            multiplier(a_reg, b_reg, product)
+            discard_array(a_reg)
+            discard_array(b_reg)
+            discard_array(product)
+
+    with pytest.raises(GuppyError, match="n must be positive"):
+        main.emulator(n_qubits=1).run()
+
+
+@pytest.mark.parametrize(
+    "multiplier",
+    [
         multiplier_ripple_gidney_mod_in_place,
         cntrl_multiplier_ripple_gidney_mod_in_place,
     ],
