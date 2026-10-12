@@ -57,6 +57,13 @@ def _shifted_controlled_adder(n: int, shift: int) -> GuppyFunctionDefinition:
     Since ``array`` sizes must be known statically, and ``shift`` varies per bit of the
     multiplier register, a distinct specialized adder is compiled for each ``shift``.
     """
+    if n < 1:
+        msg = "n must be positive"
+        raise ValueError(msg)
+    if not 0 <= shift < n:
+        msg = "shift must satisfy 0 <= shift < n"
+        raise ValueError(msg)
+
     if shift == 0:
 
         @guppy
