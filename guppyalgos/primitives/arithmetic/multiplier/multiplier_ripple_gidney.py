@@ -144,7 +144,7 @@ def _build_shifted_uncontrolled_adders[n: nat]() -> array[
 
 @guppy.comptime
 @no_type_check
-def _build_shifted_adders[n: nat]() -> array[
+def _build_shifted_controlled_adders[n: nat]() -> array[
     Function[[qubit, array[qubit, n], array[qubit, n]], None], n
 ]:
     """Build one specialized shifted controlled adder per multiplier bit position."""
@@ -182,7 +182,7 @@ def multiplier_ripple_gidney_mod[n: nat](
     comptime(_require_positive_width(n))
     shifted_adders: array[
         Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-    ] = _build_shifted_adders()
+    ] = _build_shifted_controlled_adders()
     for i in range(n):
         shifted_adders[i](b_reg[i], a_reg, product)
 
@@ -222,7 +222,7 @@ def cntrl_multiplier_ripple_gidney_mod[n: nat](
     comptime(_require_positive_width(n))
     shifted_adders: array[
         Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-    ] = _build_shifted_adders()
+    ] = _build_shifted_controlled_adders()
     for i in range(n):
         temp_control = qubit()
         temp_and_compute(ctrl, b_reg[i], temp_control)
@@ -307,7 +307,7 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
 
     shifted_adders: array[
         Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-    ] = _build_shifted_adders()
+    ] = _build_shifted_controlled_adders()
     work_reg = qarray(n)
     for i in range(n):
         if b_bits[i]:
