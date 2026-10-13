@@ -157,6 +157,7 @@ def pauli_exp[n_state_q: nat](
     )
 
     pauli_indices = list(pauli_string.get_dict().keys())
+    n_paulis = len(pauli_indices)
 
     @guppy
     @no_type_check
@@ -165,14 +166,15 @@ def pauli_exp[n_state_q: nat](
         theta: angle,
         controls: array[qubit, n_controls],
     ) -> None:
+        indices: frozenarray[int, n_paulis] = comptime(pauli_indices)
         ladder = cx_ladder()
         basis_change(qreg)
-        qubit_subset, borrowed_qreg = _take_pauli_qubits(qreg, comptime(pauli_indices))
+        qubit_subset, borrowed_qreg = _take_pauli_qubits(qreg, indices)
         ladder.ascending(qubit_subset)
         with control(controls):
             rz_method(qubit_subset[len(qubit_subset) - 1], theta)
         ladder.ascending_dagger(qubit_subset)
-        _return_pauli_qubits(qreg, qubit_subset, borrowed_qreg, comptime(pauli_indices))
+        _return_pauli_qubits(qreg, qubit_subset, borrowed_qreg, indices)
         basis_change_dagger(qreg)
 
     if not has_unitary_rz:
@@ -180,17 +182,14 @@ def pauli_exp[n_state_q: nat](
         @guppy
         @no_type_check
         def pauli_gadget_fn(qreg: array[qubit, n_qubits], angle: angle) -> None:
+            indices: frozenarray[int, n_paulis] = comptime(pauli_indices)
             ladder = cx_ladder()
             basis_change(qreg)
-            qubit_subset, borrowed_qreg = _take_pauli_qubits(
-                qreg, comptime(pauli_indices)
-            )
+            qubit_subset, borrowed_qreg = _take_pauli_qubits(qreg, indices)
             ladder.ascending(qubit_subset)
             rz_method(qubit_subset[len(qubit_subset) - 1], angle)
             ladder.ascending_dagger(qubit_subset)
-            _return_pauli_qubits(
-                qreg, qubit_subset, borrowed_qreg, comptime(pauli_indices)
-            )
+            _return_pauli_qubits(qreg, qubit_subset, borrowed_qreg, indices)
             basis_change_dagger(qreg)
 
         return pauli_gadget_fn
