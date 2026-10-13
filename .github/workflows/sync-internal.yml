@@ -38,11 +38,13 @@ jobs:
           git remote add internal \
             "https://NathanCQC:${FORK_ACCESS_TOKEN}@github.com/${INTERNAL_REPOSITORY}.git"
 
+          preserved_paths=(guppyalgos/internal tests/internal examples/internal)
           git checkout -B sync-source origin/main
           find .github/workflows -type f ! -name ci.yml \
             ! -name test-folder.yml \
             ! -name pr-title.yml -delete
-          git rm -rf --ignore-unmatch guppyalgos.internal
+          # These directories belong exclusively to the internal branch.
+          git rm -rf --ignore-unmatch -- guppyalgos.internal "${preserved_paths[@]}"
           sed -i \
             -e 's/branches: \[main\]/branches: [main-internal]/' \
             -e "s#refs/heads/main'#refs/heads/main-internal'#g" \
@@ -54,9 +56,12 @@ jobs:
             git checkout -B main-internal FETCH_HEAD
             git rm -rf --ignore-unmatch .
             git checkout sync-source -- .
-            if git cat-file -e FETCH_HEAD:guppyalgos.internal 2>/dev/null; then
-              git checkout FETCH_HEAD -- guppyalgos.internal
-            fi
+            # Restore each directory exactly as it was before the sync.
+            for path in "${preserved_paths[@]}"; do
+              if git cat-file -e "FETCH_HEAD:$path" 2>/dev/null; then
+                git checkout FETCH_HEAD -- "$path"
+              fi
+            done
             git add -A
             git commit -m "chore: sync public main ($(git rev-parse --short origin/main))" || true
           else
