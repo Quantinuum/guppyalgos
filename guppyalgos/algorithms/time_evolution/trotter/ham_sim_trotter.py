@@ -3,7 +3,7 @@
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, nat, control, Unitary
+from guppylang.std.builtins import array, nat, control, dagger, Unitary
 from guppylang.std.quantum import qubit
 
 
@@ -34,3 +34,30 @@ class ham_sim_trotter:  # noqa: D101
         for _ in range(n_steps):
             with control(controls):
                 trotter_step(state_qreg, time_step)
+
+    @guppy
+    @no_type_check
+    def daggered[n_state_q: nat](
+        state_qreg: array[qubit, n_state_q],
+        trotter_step: Unitary[[array[qubit, n_state_q], float], None],
+        n_steps: int,
+        time_step: float,
+    ) -> None:
+        """Apply the dagger of a Hamiltonian simulation using Trotter steps."""
+        for _ in range(n_steps):
+            with dagger:
+                trotter_step(state_qreg, -time_step)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n_state_q: nat, n_ctrl_q: nat](
+        state_qreg: array[qubit, n_state_q],
+        trotter_step: Unitary[[array[qubit, n_state_q], float], None],
+        n_steps: int,
+        time_step: float,
+        controls: array[qubit, n_ctrl_q],
+    ) -> None:
+        """Apply a controlled dagger of a Hamiltonian simulation using Trotter steps."""
+        for _ in range(n_steps):
+            with control(controls), dagger:
+                trotter_step(state_qreg, -time_step)
