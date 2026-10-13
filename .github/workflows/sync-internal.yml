@@ -44,7 +44,7 @@ jobs:
             ! -name test-folder.yml \
             ! -name pr-title.yml -delete
           # These directories belong exclusively to the internal branch.
-          git rm -rf --ignore-unmatch -- guppyalgos.internal "${preserved_paths[@]}"
+          git rm -rf --ignore-unmatch -- "${preserved_paths[@]}"
           sed -i \
             -e 's/branches: \[main\]/branches: [main-internal]/' \
             -e "s#refs/heads/main'#refs/heads/main-internal'#g" \
