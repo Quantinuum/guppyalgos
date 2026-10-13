@@ -180,9 +180,18 @@ def pauli_exp[n_state_q: nat](
         @guppy
         @no_type_check
         def pauli_gadget_fn(qreg: array[qubit, n_qubits], angle: angle) -> None:
-            controls: array[qubit, 0] = array()
-            apply_gadget(qreg, angle, controls)
-            controls.discard_all_taken()
+            ladder = cx_ladder()
+            basis_change(qreg)
+            qubit_subset, borrowed_qreg = _take_pauli_qubits(
+                qreg, comptime(pauli_indices)
+            )
+            ladder.ascending(qubit_subset)
+            rz_method(qubit_subset[len(qubit_subset) - 1], angle)
+            ladder.ascending_dagger(qubit_subset)
+            _return_pauli_qubits(
+                qreg, qubit_subset, borrowed_qreg, comptime(pauli_indices)
+            )
+            basis_change_dagger(qreg)
 
         return pauli_gadget_fn
 
