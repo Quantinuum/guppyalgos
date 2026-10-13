@@ -3,7 +3,7 @@
 from __future__ import annotations
 from guppylang import guppy
 
-from guppylang.std.builtins import array, control, dagger
+from guppylang.std.builtins import array, control, dagger, nat
 from guppylang.std.angles import angle
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard_array, h, qubit, rz
@@ -257,4 +257,81 @@ def test_pauli_exp_identity_multi_controlled_and_ctrl_daggered() -> None:
     assert_allclose_ignorephase(get_statevector(main, 4), expected_state)
     assert_allclose_ignorephase(
         get_statevector(main_ctrl_daggered, 4), expected_state.conj()
+    )
+
+
+def test_pauli_exp_identity_uses_custom_unitary_rz_when_controlled() -> None:
+    """The identity gadget's control modifiers must use the supplied unitary RZ."""
+    theta = 0.7
+
+    @guppy.unitary
+    class custom_rz:
+        @guppy
+        @no_type_check
+        def __call__(q: qubit, theta: angle) -> None:
+            rz(q, theta)
+            rz(q, theta)
+
+        @guppy
+        @no_type_check
+        def controlled[n_controls: nat](
+            q: qubit, theta: angle, controls: array[qubit, n_controls]
+        ) -> None:
+            with control(controls):
+                rz(q, theta)
+                rz(q, theta)
+
+        @guppy
+        @no_type_check
+        def daggered(q: qubit, theta: angle) -> None:
+            rz(q, -theta)
+            rz(q, -theta)
+
+        @guppy
+        @no_type_check
+        def ctrl_daggered[n_controls: nat](
+            q: qubit, theta: angle, controls: array[qubit, n_controls]
+        ) -> None:
+            with control(controls):
+                rz(q, -theta)
+                rz(q, -theta)
+
+    pauli_string = zqp.String.from_str("I0", 1)
+    pauli_g = pauli_exp(pauli_string, 1, CXLadderLinear, custom_rz)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    @guppy
+    @no_type_check
+    def main_ctrl_daggered() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            with dagger:
+                pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    expected_phase = np.exp(-1j * np.pi * theta)
+    expected_state = np.array([1.0, expected_phase, 0.0, 0.0]) / np.sqrt(2)
+    result_state = get_statevector(main, 2)
+    daggered_state = get_statevector(main_ctrl_daggered, 2)
+
+    assert_allclose_ignorephase(result_state, expected_state)
+    np.testing.assert_allclose(result_state[1] / result_state[0], expected_phase)
+    assert_allclose_ignorephase(daggered_state, expected_state.conj())
+    np.testing.assert_allclose(
+        daggered_state[1] / daggered_state[0], expected_phase.conjugate()
     )
