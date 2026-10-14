@@ -3,6 +3,7 @@
 from .canonical_phase_estimation import (
     qpe,
     iqpe,
+    qpe_unitary,
 )
 from .hadamard_test import hadamard_test
 from .qubitized_phase_estimation import (
@@ -16,5 +17,6 @@ __all__ = [
     "hadamard_test",
     "iqpe",
     "qpe",
+    "qpe_unitary",
     "qubitized_power_oracle",
 ]

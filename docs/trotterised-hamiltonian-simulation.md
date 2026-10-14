@@ -54,10 +54,20 @@ U_P(\theta)=e^{-i\theta P/2}.
 $
 
 ```{code-cell} ipython3
-from guppyalgos.primitives.pauli.pauli_exp import cntrl_pauli_exp, pauli_exp
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array, control
+from guppylang.std.quantum import qubit
+from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
 
 pauli_gadget = pauli_exp(pauli_string, n_qubits=2)
-controlled_pauli_gadget = cntrl_pauli_exp(pauli_string, n_qubits=2)
+
+@guppy
+def controlled_pauli_gadget(
+  controls: array[qubit, 1], qreg: array[qubit, 2]
+) -> None:
+  with control(controls):
+    pauli_gadget(qreg, angle(0.2))
 ```
 
 The input may contain any tensor product of $I$, $X$, $Y$, and $Z$. Only its
@@ -102,11 +112,11 @@ $
 - Basis changes map every non-identity Pauli to the Z basis.
 - A CX ladder computes the joint parity onto its target qubit.
 - `pauli_exp` applies `R_Z` to the parity target.
-- `cntrl_pauli_exp` replaces it with `CR_Z`, leaving the target operation
-  inactive when the external control is zero.
+- Applying `with control(controls)` around a `pauli_exp` call invokes its custom
+  controlled modifier, which controls the terminal rotation.
 - The CX ladder and basis changes are then uncomputed.
-- The uncontrolled factory rejects an identity string. The controlled factory
-  preserves its observable relative phase by rotating the control qubit.
+- An identity string is a no-op when uncontrolled; its relative phase is preserved
+  when the Pauli unitary is controlled.
 
 ### Choose the circuit construction
 
@@ -116,11 +126,10 @@ the gadget is built:
 
 | Input | Default | Other supported use |
 | --- | --- | --- |
-| `pauli_string` | Required `zqp.String` | Any $I/X/Y/Z$ tensor product; `pauli_exp` requires at least one non-identity Pauli. |
+| `pauli_string` | Required `zqp.String` | Any $I/X/Y/Z$ tensor product; an all-identity string is a no-op unless controlled. |
 | `n_qubits` | Required integer | May be larger than the Pauli support, provided every Pauli index is in range. |
 | `cx_ladder` | `CXLadderLog` | `CXLadderLinear`, or another implementation of the `Ladder` protocol. |
-| `rz_method` | `rz` | Any compatible `(qubit, angle) -> None` guppy function, including an RUS $R_Z$ construction. |
-| `controlled_rz_method` | `crz` | For `cntrl_pauli_exp`, any compatible `(control, target, angle) -> None` guppy function. |
+| `rz_method` | `rz` | Any compatible unitary `(qubit, angle) -> None` guppy function, including an RUS $R_Z$ construction. |
 
 For example, this keeps the same $e^{-i\theta P/2}$ operation while choosing a
 linear CX ladder and a repeat-until-success rotation:
@@ -181,11 +190,25 @@ choice changes the complete Trotter step consistently.
 
 | Builder | Input Hamiltonian or schedule | Result |
 | --- | --- | --- |
-| `trotter_first_order` | `zqp.RealTermSum` | One forward pass through the non-identity terms. |
-| `cntrl_trotter_first_order` | `zqp.RealTermSum` | Controlled forward pass; retains identity terms as relative phases. |
-| `trotter_higher_order` | `zqp.RealTermSum` and even `order >= 2` | Symmetric Suzuki formula; higher orders recursively reduce product-formula error. |
-| `cntrl_trotter_higher_order` | Same inputs plus controlled rotation methods | Controlled symmetric Suzuki formula. |
+| `trotter_first_order` | `zqp.RealTermSum` | One forward pass; use Guppy unitary modifiers such as `control` to modify the step. |
+| `trotter_higher_order` | `zqp.RealTermSum` and even `order >= 2` | Symmetric Suzuki formula; higher orders recursively reduce product-formula error and support Guppy unitary modifiers. |
 | `trotter_from_sequence` | Terms and `(term_index, time_factor)` pairs | Custom ordering, repeated terms, and signed time factors. |
+
+For a direct controlled step, apply Guppy's control modifier at the call site:
+
+```{code-cell} ipython3
+from guppylang import guppy
+from guppylang.std.builtins import array, control
+from guppylang.std.quantum import qubit
+
+trotter_step = trotter_first_order(hamiltonian, n_state_qubits)
+time_step = 0.1
+
+@guppy
+def controlled_step(control_q: qubit, state_qreg: array[qubit, n_state_qubits]) -> None:
+    with control(control_q):
+        trotter_step(state_qreg, time_step)
+```
 
 For example, a second-order step applies half steps forward and backward,
 
