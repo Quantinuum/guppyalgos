@@ -49,7 +49,7 @@ def test_exponentiator_ripple_gidney_mod(
         else:
             discard_array(output_reg)
 
-    required_qubits = n_exponent + 5 * n_output
+    required_qubits = n_exponent + 4 * n_output + 1
     result = main.emulator(n_qubits=required_qubits).run().results[0].as_dict()
     assert result["exponent_meas"] == exponent_bits
     if n_output > 0:
@@ -85,7 +85,7 @@ def test_exponentiator_ripple_gidney_mod_superposition(
         output("exponent_meas", collect_measurements(measure_array(exponent_reg)))
         output("output_meas", collect_measurements(measure_array(output_reg)))
 
-    required_qubits = n_exponent + 5 * n_output
+    required_qubits = n_exponent + 4 * n_output + 1
     result = (
         main.emulator(n_qubits=required_qubits).with_shots(3).run().results[0].as_dict()
     )

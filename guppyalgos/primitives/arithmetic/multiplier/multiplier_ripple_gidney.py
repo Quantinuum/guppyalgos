@@ -5,30 +5,36 @@ multiplication as a sequence of controlled modular additions. For each bit of th
 multiplier, the multiplicand is shifted by the corresponding amount and added into
 an accumulator modulo ``2**n``.
 
-The construction follows the standard reversible circuit decomposition described in [1].
+The construction follows the standard reversible circuit decomposition described in [1]
+and uses the ripple-carry adder from [2].
 
 References:
-    [1] Vedral, V., Barenco, A., & Ekert, A. (1996). Quantum networks for elementary
-    arithmetic operations. Physical Review A, 54(1), 147.
+    [1] Rines, R., & Chuang, I. (2018). High performance quantum modular multipliers.
+    arXiv preprint arXiv:1801.01081.
+    [2] Gidney, C. (2018). Halving the cost of quantum addition. Quantum, 2, 74.
 
 """
 
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.builtins import Function, array, comptime, nat
 from guppylang.std.mem import mem_swap
-from guppylang.std.quantum import discard_array, qubit
+from guppylang.std.quantum import discard, qubit
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
-    adder_ripple_gidney_mod,
     cntrl_adder_ripple_gidney_mod,
 )
 from guppyalgos.utils import apply_bitstring, cswap, int_to_bits, qarray
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow_slice,
+    _unsafe_array_unborrow_slice,
+)
 
 
 def _negative_modular_inverse(value: int, modulus: int) -> int:
@@ -45,36 +51,62 @@ def _negative_modular_inverse(value: int, modulus: int) -> int:
     return -pow(value, -1, modulus) % modulus
 
 
-@guppy
-@no_type_check
-def _compute_partial_product[n: nat](
-    a_reg: array[qubit, n],
-    b_bit: qubit,
-    partial_product: array[qubit, n],
-    i: int,
-) -> None:
-    """Compute the partial product for the i-th bit of the multiplier.
+def _require_positive_width(n: int) -> None:
+    """Reject zero-width multiplier registers during Guppy compilation."""
+    if n < 1:
+        msg = "n must be positive"
+        raise ValueError(msg)
 
-    Computes ``b_i * (a << i)`` into the partial product register. The partial product
-    register must be initialized to zero.
+
+def _shifted_controlled_adder(n: int, shift: int) -> GuppyFunctionDefinition:
+    """Build a controlled adder of ``a_reg << shift`` into ``product``, mod ``2**n``.
+
+    Since ``array`` sizes must be known statically, and ``shift`` varies per bit of the
+    multiplier register, a distinct specialized adder is compiled for each ``shift``.
     """
-    for j in range(n):
-        if j >= i:
-            temp_and_compute(b_bit, a_reg[j - i], partial_product[j])
+    if n < 1:
+        msg = "n must be positive"
+        raise ValueError(msg)
+    if not 0 <= shift < n:
+        msg = "shift must satisfy 0 <= shift < n"
+        raise ValueError(msg)
+
+    if shift == 0:
+
+        @guppy
+        @no_type_check
+        def shifted_adder(
+            ctrl: qubit, a_reg: array[qubit, n], product: array[qubit, n]
+        ) -> None:
+            cntrl_adder_ripple_gidney_mod(ctrl, a_reg, product)
+
+        return shifted_adder
+
+    @guppy
+    @no_type_check
+    def shifted_adder(
+        ctrl: qubit, a_reg: array[qubit, n], product: array[qubit, n]
+    ) -> None:
+        a_prefix, a_mid, a_suffix = _unsafe_array_borrow_slice(
+            a_reg, 0, comptime(n - shift), comptime(shift)
+        )
+        p_prefix, p_mid, p_suffix = _unsafe_array_borrow_slice(
+            product, comptime(shift), comptime(n - shift), 0
+        )
+        cntrl_adder_ripple_gidney_mod(ctrl, a_mid, p_mid)
+        _unsafe_array_unborrow_slice(a_reg, a_prefix, a_mid, a_suffix)
+        _unsafe_array_unborrow_slice(product, p_prefix, p_mid, p_suffix)
+
+    return shifted_adder
 
 
-@guppy
+@guppy.comptime
 @no_type_check
-def _uncompute_partial_product[n: nat](
-    a_reg: array[qubit, n],
-    b_bit: qubit,
-    partial_product: array[qubit, n],
-    i: int,
-) -> None:
-    """Uncompute the partial product for the i-th bit of the multiplier."""
-    for j in range(n):
-        if j >= i:
-            temp_and_uncompute(b_bit, a_reg[j - i], partial_product[j])
+def _build_shifted_adders[n: nat]() -> array[
+    Function[[qubit, array[qubit, n], array[qubit, n]], None], n
+]:
+    """Build one specialized shifted controlled adder per multiplier bit position."""
+    return [_shifted_controlled_adder(n, i) for i in range(n)]
 
 
 @guppy
@@ -101,13 +133,16 @@ def multiplier_ripple_gidney_mod[n: nat](
             addend.
         product: Accumulator register, updated modulo ``2**n``.
 
+    Raises:
+        ValueError: If ``n`` is less than one.
+
     """
+    comptime(_require_positive_width(n))
+    shifted_adders: array[
+        Function[[qubit, array[qubit, n], array[qubit, n]], None], n
+    ] = _build_shifted_adders()
     for i in range(n):
-        partial_product = qarray(n)
-        _compute_partial_product(a_reg, b_reg[i], partial_product, i)
-        adder_ripple_gidney_mod(partial_product, product)
-        _uncompute_partial_product(a_reg, b_reg[i], partial_product, i)
-        discard_array(partial_product)
+        shifted_adders[i](b_reg[i], a_reg, product)
 
 
 @guppy
@@ -138,13 +173,20 @@ def cntrl_multiplier_ripple_gidney_mod[n: nat](
             addend.
         product: Accumulator register, updated modulo ``2**n``.
 
+    Raises:
+        ValueError: If ``n`` is less than one.
+
     """
+    comptime(_require_positive_width(n))
+    shifted_adders: array[
+        Function[[qubit, array[qubit, n], array[qubit, n]], None], n
+    ] = _build_shifted_adders()
     for i in range(n):
-        partial_product = qarray(n)
-        _compute_partial_product(a_reg, b_reg[i], partial_product, i)
-        cntrl_adder_ripple_gidney_mod(ctrl, partial_product, product)
-        _uncompute_partial_product(a_reg, b_reg[i], partial_product, i)
-        discard_array(partial_product)
+        temp_control = qubit()
+        temp_and_compute(ctrl, b_reg[i], temp_control)
+        shifted_adders[i](temp_control, a_reg, product)
+        temp_and_uncompute(ctrl, b_reg[i], temp_control)
+        discard(temp_control)
 
 
 @guppy
@@ -166,9 +208,10 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
         b: Odd classical multiplier.
 
     Raises:
-        ValueError: If ``b`` is even.
+        ValueError: If ``n`` is less than one or ``b`` is negative or even.
 
     """
+    comptime(_require_positive_width(n))
     b_bits = comptime(int_to_bits(b % 2**n, n))
     negative_inverse_bits = comptime(int_to_bits(_negative_modular_inverse(b, 2**n), n))
 
@@ -177,7 +220,8 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     work_reg = qarray(n)
     multiplier_ripple_gidney_mod(constant_reg, a_reg, work_reg)
     apply_bitstring(constant_reg, b_bits)
-    discard_array(constant_reg)
+    for q in constant_reg:
+        discard(q)
 
     mem_swap(a_reg, work_reg)
 
@@ -185,8 +229,10 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     apply_bitstring(inverse_reg, negative_inverse_bits)
     multiplier_ripple_gidney_mod(inverse_reg, a_reg, work_reg)
     apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array(inverse_reg)
-    discard_array(work_reg)
+    for q in inverse_reg:
+        discard(q)
+    for q in work_reg:
+        discard(q)
 
 
 @guppy
@@ -208,9 +254,10 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
         b: Odd classical multiplier.
 
     Raises:
-        ValueError: If ``b`` is even.
+        ValueError: If ``n`` is less than one or ``b`` is negative or even.
 
     """
+    comptime(_require_positive_width(n))
     b_bits = comptime(int_to_bits(b % 2**n, n))
     negative_inverse_bits = comptime(int_to_bits(_negative_modular_inverse(b, 2**n), n))
 
@@ -219,7 +266,8 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     work_reg = qarray(n)
     cntrl_multiplier_ripple_gidney_mod(ctrl, constant_reg, a_reg, work_reg)
     apply_bitstring(constant_reg, b_bits)
-    discard_array(constant_reg)
+    for q in constant_reg:
+        discard(q)
 
     cswap(ctrl, a_reg, work_reg)
 
@@ -227,5 +275,7 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     apply_bitstring(inverse_reg, negative_inverse_bits)
     cntrl_multiplier_ripple_gidney_mod(ctrl, inverse_reg, a_reg, work_reg)
     apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array(inverse_reg)
-    discard_array(work_reg)
+    for q in inverse_reg:
+        discard(q)
+    for q in work_reg:
+        discard(q)
