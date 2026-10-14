@@ -871,7 +871,7 @@ def cntrl_adder_ripple_cuccaro_mod_dagger[n: nat](
             _cntrl_maj_umaj_bottom_mod_gate(ctrl, a_reg[1], b_reg[1], ancilla)
 
         # Boundary controlled MAJ†: uncompute the clean ancilla.
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
         toffoli(ctrl, a_reg[0], b_reg[0])
         cx(a_reg[0], b_reg[0])
         discard(ancilla)
@@ -1074,7 +1074,7 @@ def _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
         _cntrl_majority_dagger_gate(ctrl, a_reg[1], b_reg[1], ancilla)
 
         # Boundary controlled-MAJ†: uncompute the clean ancilla.
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
         toffoli(ctrl, a_reg[0], b_reg[0])
         cx(a_reg[0], b_reg[0])
         discard(ancilla)
