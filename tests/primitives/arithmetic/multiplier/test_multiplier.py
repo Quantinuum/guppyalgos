@@ -24,7 +24,26 @@ from guppyalgos.primitives.arithmetic import (
     multiplier_ripple_gidney_mod_in_place,
     multiplier_ripple_gidney_mod,
 )
+from guppyalgos.primitives.arithmetic.multiplier.multiplier_ripple_gidney import (
+    _shifted_controlled_adder,
+)
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
+
+
+@pytest.mark.parametrize("n", [0, -1])
+def test_shifted_controlled_adder_rejects_nonpositive_register_size(n: int) -> None:
+    """Reject register sizes less than one."""
+    with pytest.raises(ValueError, match="n must be positive"):
+        _shifted_controlled_adder(n, 0)
+
+
+@pytest.mark.parametrize(("n", "shift"), [(1, -1), (1, 1), (3, -1), (3, 3)])
+def test_shifted_controlled_adder_rejects_out_of_range_shift(
+    n: int, shift: int
+) -> None:
+    """Reject shifts outside the register bounds."""
+    with pytest.raises(ValueError, match="0 <= shift < n"):
+        _shifted_controlled_adder(n, shift)
 
 
 @pytest.mark.parametrize(("n", "a", "b"), [(2, 1, 1), (2, 2, 3), (3, 3, 2), (4, 5, 7)])
@@ -51,7 +70,7 @@ def test_multiplier_ripple_gidney_mod[n: nat](n: int, a: int, b: int) -> None:
         output("mult_meas", collect_measurements(measure_array(multiplier)))
         output("prod_meas", collect_measurements(measure_array(product)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == a_bits
     assert result["mult_meas"] == b_bits
@@ -98,7 +117,7 @@ def test_cntrl_multiplier_ripple_gidney_mod[n: nat](
 
         discard(ctrl)
 
-    res = main.emulator(n_qubits=5 * n + 1).run()
+    res = main.emulator(n_qubits=4 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == a_bits
     assert result["mult_meas"] == b_bits
@@ -144,7 +163,7 @@ def test_multiplier_ripple_gidney_mod_superposition[n: nat](
         output("mult_meas", collect_measurements(measure_array(multiplier)))
         output("prod_meas", collect_measurements(measure_array(product)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == a_bits
     assert result["mult_meas"] == b_bits
@@ -178,7 +197,7 @@ def test_multiplier_ripple_gidney_mod_full_superposition[n: nat](n: int) -> None
         output("mult_meas", collect_measurements(measure_array(multiplier)))
         output("prod_meas", collect_measurements(measure_array(product)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     zero_bits = [False] * n
     assert result["a_meas"] == zero_bits
@@ -206,7 +225,7 @@ def test_in_place_multiplier_ripple_gidney_mod[n: nat](
 
         output("a_meas", collect_measurements(measure_array(a_reg)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == int_to_bits((a * b) % 2**n, n)
 
@@ -231,7 +250,7 @@ def test_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
             h(a_reg[i])
         output("a_meas", collect_measurements(measure_array(a_reg)))
 
-    res = main.emulator(n_qubits=5 * n - 1).run()
+    res = main.emulator(n_qubits=4 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == [False] * n
 
@@ -263,7 +282,7 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod[n: nat](
         output("a_meas", collect_measurements(measure_array(a_reg)))
         discard(ctrl)
 
-    res = main.emulator(n_qubits=5 * n + 1).run()
+    res = main.emulator(n_qubits=4 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == int_to_bits(expected, n)
 
@@ -292,10 +311,73 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
         output("a_meas", collect_measurements(measure_array(a_reg)))
         output("ctrl_meas", measure(ctrl).read())
 
-    res = main.emulator(n_qubits=5 * n + 1).run()
+    res = main.emulator(n_qubits=4 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == [False] * n
     assert result["ctrl_meas"] == 0
+
+
+@pytest.mark.parametrize(
+    "multiplier",
+    [
+        multiplier_ripple_gidney_mod,
+        cntrl_multiplier_ripple_gidney_mod,
+        multiplier_ripple_gidney_mod_in_place,
+        cntrl_multiplier_ripple_gidney_mod_in_place,
+    ],
+)
+def test_multiplier_rejects_zero_width(multiplier) -> None:
+    """Reject zero-width registers with a clear compile-time diagnostic."""
+    if multiplier is cntrl_multiplier_ripple_gidney_mod:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            ctrl = qubit()
+            a_reg = qarray(0)
+            b_reg = qarray(0)
+            product = qarray(0)
+            multiplier(ctrl, a_reg, b_reg, product)
+            discard(ctrl)
+            discard_array(a_reg)
+            discard_array(b_reg)
+            discard_array(product)
+
+    elif multiplier is cntrl_multiplier_ripple_gidney_mod_in_place:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            ctrl = qubit()
+            a_reg = qarray(0)
+            multiplier(ctrl, a_reg, 3)
+            discard(ctrl)
+            discard_array(a_reg)
+
+    elif multiplier is multiplier_ripple_gidney_mod_in_place:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            a_reg = qarray(0)
+            multiplier(a_reg, 3)
+            discard_array(a_reg)
+
+    else:
+
+        @guppy
+        @no_type_check
+        def main() -> None:
+            a_reg = qarray(0)
+            b_reg = qarray(0)
+            product = qarray(0)
+            multiplier(a_reg, b_reg, product)
+            discard_array(a_reg)
+            discard_array(b_reg)
+            discard_array(product)
+
+    with pytest.raises(GuppyError, match="n must be positive"):
+        main.emulator(n_qubits=1).run()
 
 
 @pytest.mark.parametrize(
