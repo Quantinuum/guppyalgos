@@ -171,7 +171,7 @@ def trotter_from_sequence[n_state_q: nat](
             time_factors = comptime(array(time_factor for _, time_factor in sequence))
             exponentials = pauli_exponentials()
 
-            for i in range(n_exponentials):
+            for i in range(n_exponentials - 1, -1, -1):
                 term_index = term_indices[i]
                 exponentials[term_index](
                     state_qreg,
@@ -190,7 +190,7 @@ def trotter_from_sequence[n_state_q: nat](
             time_factors = comptime(array(time_factor for _, time_factor in sequence))
             exponentials = controlled_pauli_exponentials[n_ctrl_q]()
 
-            for i in range(n_exponentials):
+            for i in range(n_exponentials - 1, -1, -1):
                 term_index = term_indices[i]
                 exponentials[term_index](
                     state_qreg,
