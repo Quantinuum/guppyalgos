@@ -30,11 +30,10 @@ def trotter_first_order[n_state_q: nat](
     for each Pauli term. The defaults for `cx_ladder_method` and `rz_method` are set to
     use logarithmic CX ladders and standard RZ gates, respectively.
 
-    Currently, the implementation does not account for global phase factors and thus
-    identity terms are stripped from the Hamiltonian. This is because guppy does not
-    handle global phase yet. This is fine for Hamiltonian simulation as identity terms
-    only contribute a global phase to the evolution, however when doing controlled
-    Hamiltonian simulation this will need to be addressed.
+    Uncontrolled evolution omits the global phase contributed by identity terms.
+    With a unitary ``rz_method`` (including the default ``rz``), the returned step
+    supports control and dagger modifiers. Controlled evolution preserves identity
+    terms as relative phases between the inactive and active control branches.
 
     Example:
 
