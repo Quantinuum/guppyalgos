@@ -46,7 +46,7 @@ class ham_sim_trotter:  # noqa: D101
         """Apply the dagger of a Hamiltonian simulation using Trotter steps."""
         for _ in range(n_steps):
             with dagger:
-                trotter_step(state_qreg, -time_step)
+                trotter_step(state_qreg, time_step)
 
     @guppy
     @no_type_check
@@ -60,4 +60,4 @@ class ham_sim_trotter:  # noqa: D101
         """Apply a controlled dagger of a Hamiltonian simulation using Trotter steps."""
         for _ in range(n_steps):
             with control(controls), dagger:
-                trotter_step(state_qreg, -time_step)
+                trotter_step(state_qreg, time_step)
