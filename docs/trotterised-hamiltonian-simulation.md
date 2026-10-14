@@ -162,14 +162,17 @@ e^{-iHt}
 $
 
 ```{code-cell} ipython3
+from guppylang import guppy
+from guppylang.std.builtins import array
+from guppylang.std.quantum import qubit
 from guppyalgos.algorithms.time_evolution.trotter import ham_sim_trotter, trotter_first_order
 
 n_state_qubits = len(hamiltonian.qubits)
 trotter_step = trotter_first_order(hamiltonian, n_state_qubits)
-simulation = ham_sim_trotter(
-    trotter_step, n_steps=10, time_step=0.01,
-    n_state_qubits=n_state_qubits,
-)
+
+@guppy
+def simulation(state_qreg: array[qubit, n_state_qubits]) -> None:
+    ham_sim_trotter(state_qreg, trotter_step, 10, 0.01)
 ```
 
 The Hamiltonian and product-formula order determine the sequence of Pauli
