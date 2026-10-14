@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* add max_attempts to ComparatorBasedRz ([#78](https://github.com/Quantinuum/guppyalgos/issues/78))
+
+### Features
+
+* add max_attempts to ComparatorBasedRz ([#78](https://github.com/Quantinuum/guppyalgos/issues/78)) ([390b5b5](https://github.com/Quantinuum/guppyalgos/commit/390b5b52b864e16a1d058f4f02470ee1638f3e71))
+* Add testing module to package ([#30](https://github.com/Quantinuum/guppyalgos/issues/30)) ([7a2cc17](https://github.com/Quantinuum/guppyalgos/commit/7a2cc17f2bab9b4c0c6f625e7b17daabbcad7906))
+* add unitary modifier testing helper ([#76](https://github.com/Quantinuum/guppyalgos/issues/76)) ([1ae3f99](https://github.com/Quantinuum/guppyalgos/commit/1ae3f99e1ae5f1d498acb7f7740ea53beea4fcd8))
+* Multicontrolled Fucntion ([#90](https://github.com/Quantinuum/guppyalgos/issues/90)) ([0ca581e](https://github.com/Quantinuum/guppyalgos/commit/0ca581ef60e749d9a42f1fc6b5eee79eba36a1b6))
+
+
+### Bug Fixes
+
+* correct the ancilla offsets of the log-depth Toffoli ladder ([#66](https://github.com/Quantinuum/guppyalgos/issues/66)) ([e974ae6](https://github.com/Quantinuum/guppyalgos/commit/e974ae6956549d956a5b802baca6414ae97bc835))
+* Fix n=1 ripple-carry adders ([#55](https://github.com/Quantinuum/guppyalgos/issues/55)) ([c14bb2d](https://github.com/Quantinuum/guppyalgos/commit/c14bb2da05b59c5428a7362ab2202f944df0b42a))
+* n = 1 case in the Cuccaro comparator ([#73](https://github.com/Quantinuum/guppyalgos/issues/73)) ([844f483](https://github.com/Quantinuum/guppyalgos/commit/844f483cfefe8071d5a8de4bf142acc1228168a5))
+* remove discard_zero for coinflip compatibility ([#61](https://github.com/Quantinuum/guppyalgos/issues/61)) ([7f9b1f5](https://github.com/Quantinuum/guppyalgos/commit/7f9b1f57a3868f1df95cff1842e20d70cec9d43d))
+* remove the relative phase of the controlled Cuccaro adder daggers at n = 2 ([#68](https://github.com/Quantinuum/guppyalgos/issues/68)) ([08e0e6e](https://github.com/Quantinuum/guppyalgos/commit/08e0e6e0274e34169ff5f2d9a05f5d053f12845e))
+* return the target of temp_and_uncompute to |0&gt; ([#71](https://github.com/Quantinuum/guppyalgos/issues/71)) ([18ab27f](https://github.com/Quantinuum/guppyalgos/commit/18ab27f2b6f3321d52dbc6c442b57e0cf85ad9fb))
+* sync internal ([#85](https://github.com/Quantinuum/guppyalgos/issues/85)) ([f717be0](https://github.com/Quantinuum/guppyalgos/commit/f717be05a62edf954e45d9c808c802f469839ee3))
+
+
+### Performance Improvements
+
+* optimize multiplier ([#10](https://github.com/Quantinuum/guppyalgos/issues/10)) ([6fed6d6](https://github.com/Quantinuum/guppyalgos/commit/6fed6d69a20477a4811c57dc4bc231b81b9661a7))
+* Use T-depth 1 construction for temporary AND ([#75](https://github.com/Quantinuum/guppyalgos/issues/75)) ([b5ff14e](https://github.com/Quantinuum/guppyalgos/commit/b5ff14eb032250e58675e634353a8c278128c7cf))
+
+
+### Documentation
+
+* clarify contribution guidance ([#42](https://github.com/Quantinuum/guppyalgos/issues/42)) ([8125d6e](https://github.com/Quantinuum/guppyalgos/commit/8125d6eef20bcaef707235d4832a2f4bcca1ba19))
+* clarify library structure ([94ab7ac](https://github.com/Quantinuum/guppyalgos/commit/94ab7ace78daef83b851a23ade5b2891bc50a3d4))
+* expand algorithm guides ([b010cfd](https://github.com/Quantinuum/guppyalgos/commit/b010cfdc88d20defdb76a1179091c41f2eb2b3b4))
+* improve block encoding demo ([13efd85](https://github.com/Quantinuum/guppyalgos/commit/13efd85ff58e347c30d51a5131642dc87165d2e5))
+* polish phase estimation examples ([72d4892](https://github.com/Quantinuum/guppyalgos/commit/72d4892611b1cff35350ce7cc49241375e7672ac))
+
 ## 0.1.0 (2026-09-11)
 
 
