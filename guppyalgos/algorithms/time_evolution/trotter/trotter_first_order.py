@@ -57,13 +57,9 @@ def trotter_first_order[n_state_q: nat](
         A Guppy function implementing the Trotter step.
 
     """
-    strip_identity = True  # guppy does not have global phase yet
     n_qubits = len(hamiltonian.qubits) if n_state_qubits is None else n_state_qubits
 
     ham_terms: list[zqp.RealTerm] = list(hamiltonian.to_terms())  # ty: ignore[invalid-assignment]
-
-    if strip_identity:
-        ham_terms = [term for term in ham_terms if not term.string.is_identity()]
 
     sequence = [(i, 1.0) for i in range(len(ham_terms))]
     return trotter_from_sequence(ham_terms, sequence, n_qubits, cx_ladder, rz_method)
