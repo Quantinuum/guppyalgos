@@ -18,6 +18,7 @@ from guppylang.std.quantum import discard_array, qubit
 from hugr.package import Package
 from hugr.qsystem.result import QsysResult
 from numpy.typing import NDArray
+from selene_core.simulator import Simulator
 from selene_quest_plugin.state import SeleneQuestState, TracedState
 from selene_sim import Quest, build
 
@@ -140,6 +141,8 @@ def get_unitary[n_state: nat](
     n_qubits: int,
     endianness: Endianness = Endianness.BIG,
     n_extra_qubits: int = 0,
+    *,
+    simulator: Simulator | None = None,
 ) -> NDArray[np.complex128]:
     """Compute the unitary by iterating shots in a loop.
 
@@ -154,6 +157,10 @@ def get_unitary[n_state: nat](
         endianness: Convert to big endian (default)
         n_extra_qubits: Extra qubits to add to the emulator pool for internal
             ancilla. These ancilla must be returned to zero.
+        simulator: Optional statevector simulator, defaulting to QuEST. A
+            QuantumReplay instance can postselect the same zero measurement
+            branch for every column, keeping measured work slots at zero and
+            avoiding different sampled global phases between columns.
 
     Returns:
         NDArray[np.complex128]: The unitary matrix representing the circuit.
@@ -161,6 +168,8 @@ def get_unitary[n_state: nat](
     """
     size = 2**n_qubits
     emulator = _emulator_with_bit_input(circ, n_qubits, n_extra_qubits)
+    if simulator is not None:
+        emulator = emulator.with_simulator(simulator)
     flat = np.fromiter(
         (
             elem
