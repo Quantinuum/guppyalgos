@@ -21,7 +21,7 @@ from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import Function, array, comptime, nat
 from guppylang.std.mem import mem_swap
-from guppylang.std.quantum import discard, discard_array, qubit
+from guppylang.std.quantum import discard, qubit
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
@@ -220,7 +220,8 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     work_reg = qarray(n)
     multiplier_ripple_gidney_mod(constant_reg, a_reg, work_reg)
     apply_bitstring(constant_reg, b_bits)
-    discard_array(constant_reg)
+    for q in constant_reg:
+        discard(q)
 
     mem_swap(a_reg, work_reg)
 
@@ -228,8 +229,10 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     apply_bitstring(inverse_reg, negative_inverse_bits)
     multiplier_ripple_gidney_mod(inverse_reg, a_reg, work_reg)
     apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array(inverse_reg)
-    discard_array(work_reg)
+    for q in inverse_reg:
+        discard(q)
+    for q in work_reg:
+        discard(q)
 
 
 @guppy
@@ -263,7 +266,8 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     work_reg = qarray(n)
     cntrl_multiplier_ripple_gidney_mod(ctrl, constant_reg, a_reg, work_reg)
     apply_bitstring(constant_reg, b_bits)
-    discard_array(constant_reg)
+    for q in constant_reg:
+        discard(q)
 
     cswap(ctrl, a_reg, work_reg)
 
@@ -271,5 +275,7 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     apply_bitstring(inverse_reg, negative_inverse_bits)
     cntrl_multiplier_ripple_gidney_mod(ctrl, inverse_reg, a_reg, work_reg)
     apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array(inverse_reg)
-    discard_array(work_reg)
+    for q in inverse_reg:
+        discard(q)
+    for q in work_reg:
+        discard(q)

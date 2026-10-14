@@ -10,7 +10,6 @@ from guppylang.std.builtins import array, output, nat
 from guppylang.std.quantum import (
     collect_measurements,
     discard,
-    discard_array,
     h,
     measure,
     measure_array,
@@ -339,9 +338,12 @@ def test_multiplier_rejects_zero_width(multiplier) -> None:
             product = qarray(0)
             multiplier(ctrl, a_reg, b_reg, product)
             discard(ctrl)
-            discard_array(a_reg)
-            discard_array(b_reg)
-            discard_array(product)
+            for q in a_reg:
+                discard(q)
+            for q in b_reg:
+                discard(q)
+            for q in product:
+                discard(q)
 
     elif multiplier is cntrl_multiplier_ripple_gidney_mod_in_place:
 
@@ -352,7 +354,8 @@ def test_multiplier_rejects_zero_width(multiplier) -> None:
             a_reg = qarray(0)
             multiplier(ctrl, a_reg, 3)
             discard(ctrl)
-            discard_array(a_reg)
+            for q in a_reg:
+                discard(q)
 
     elif multiplier is multiplier_ripple_gidney_mod_in_place:
 
@@ -361,7 +364,8 @@ def test_multiplier_rejects_zero_width(multiplier) -> None:
         def main() -> None:
             a_reg = qarray(0)
             multiplier(a_reg, 3)
-            discard_array(a_reg)
+            for q in a_reg:
+                discard(q)
 
     else:
 
@@ -372,9 +376,12 @@ def test_multiplier_rejects_zero_width(multiplier) -> None:
             b_reg = qarray(0)
             product = qarray(0)
             multiplier(a_reg, b_reg, product)
-            discard_array(a_reg)
-            discard_array(b_reg)
-            discard_array(product)
+            for q in a_reg:
+                discard(q)
+            for q in b_reg:
+                discard(q)
+            for q in product:
+                discard(q)
 
     with pytest.raises(GuppyError, match="n must be positive"):
         main.emulator(n_qubits=1).run()
@@ -409,7 +416,8 @@ def test_in_place_multiplier_rejects_invalid_classical_multiplier(
             ctrl = qubit()
             multiplier(ctrl, a_reg, b)
             discard(ctrl)
-            discard_array(a_reg)
+            for q in a_reg:
+                discard(q)
 
     else:
 
@@ -418,7 +426,8 @@ def test_in_place_multiplier_rejects_invalid_classical_multiplier(
         def main() -> None:
             a_reg = qarray(2)
             multiplier(a_reg, b)
-            discard_array(a_reg)
+            for q in a_reg:
+                discard(q)
 
     with pytest.raises(GuppyError, match=error_message):
         main.emulator(n_qubits=1).run()
