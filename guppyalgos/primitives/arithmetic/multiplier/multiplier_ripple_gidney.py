@@ -28,9 +28,10 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_uncompute,
 )
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
+    adder_ripple_gidney_mod,
     cntrl_adder_ripple_gidney_mod,
 )
-from guppyalgos.utils import apply_bitstring, cswap, int_to_bits, qarray
+from guppyalgos.utils import cswap, int_to_bits, qarray
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
@@ -100,9 +101,50 @@ def _shifted_controlled_adder(n: int, shift: int) -> GuppyFunctionDefinition:
     return shifted_adder
 
 
+def _shifted_adder(n: int, shift: int) -> GuppyFunctionDefinition:
+    """Build an uncontrolled adder of ``a_reg << shift`` modulo ``2**n``."""
+    _require_positive_width(n)
+    if not 0 <= shift < n:
+        msg = "shift must satisfy 0 <= shift < n"
+        raise ValueError(msg)
+
+    if shift == 0:
+
+        @guppy
+        @no_type_check
+        def shifted_adder(a_reg: array[qubit, n], product: array[qubit, n]) -> None:
+            adder_ripple_gidney_mod(a_reg, product)
+
+        return shifted_adder
+
+    @guppy
+    @no_type_check
+    def shifted_adder(a_reg: array[qubit, n], product: array[qubit, n]) -> None:
+        a_prefix, a_mid, a_suffix = _unsafe_array_borrow_slice(
+            a_reg, 0, comptime(n - shift), comptime(shift)
+        )
+        p_prefix, p_mid, p_suffix = _unsafe_array_borrow_slice(
+            product, comptime(shift), comptime(n - shift), 0
+        )
+        adder_ripple_gidney_mod(a_mid, p_mid)
+        _unsafe_array_unborrow_slice(a_reg, a_prefix, a_mid, a_suffix)
+        _unsafe_array_unborrow_slice(product, p_prefix, p_mid, p_suffix)
+
+    return shifted_adder
+
+
 @guppy.comptime
 @no_type_check
-def _build_shifted_adders[n: nat]() -> array[
+def _build_shifted_uncontrolled_adders[n: nat]() -> array[
+    Function[[array[qubit, n], array[qubit, n]], None], n
+]:
+    """Build one specialized shifted uncontrolled adder per bit position."""
+    return [_shifted_adder(n, i) for i in range(n)]
+
+
+@guppy.comptime
+@no_type_check
+def _build_shifted_controlled_adders[n: nat]() -> array[
     Function[[qubit, array[qubit, n], array[qubit, n]], None], n
 ]:
     """Build one specialized shifted controlled adder per multiplier bit position."""
@@ -140,7 +182,7 @@ def multiplier_ripple_gidney_mod[n: nat](
     comptime(_require_positive_width(n))
     shifted_adders: array[
         Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-    ] = _build_shifted_adders()
+    ] = _build_shifted_controlled_adders()
     for i in range(n):
         shifted_adders[i](b_reg[i], a_reg, product)
 
@@ -180,7 +222,7 @@ def cntrl_multiplier_ripple_gidney_mod[n: nat](
     comptime(_require_positive_width(n))
     shifted_adders: array[
         Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-    ] = _build_shifted_adders()
+    ] = _build_shifted_controlled_adders()
     for i in range(n):
         temp_control = qubit()
         temp_and_compute(ctrl, b_reg[i], temp_control)
@@ -203,6 +245,9 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     Let ``M = 2**n``. The compute-swap-uncompute construction acts as
     ``(a, 0) -> (a, ba) -> (ba, a) -> (ba, a - b^{-1}(ba)) = (ba, 0) (mod M)``.
 
+    Classical constant bits select shifted uncontrolled additions directly from
+    ``a_reg``, without allocating quantum registers for the constants.
+
     Args:
         a_reg: Register modified in-place.
         b: Odd classical multiplier.
@@ -215,20 +260,19 @@ def multiplier_ripple_gidney_mod_in_place[n: nat](
     b_bits = comptime(int_to_bits(b % 2**n, n))
     negative_inverse_bits = comptime(int_to_bits(_negative_modular_inverse(b, 2**n), n))
 
-    constant_reg = qarray(n)
-    apply_bitstring(constant_reg, b_bits)
+    shifted_adders: array[Function[[array[qubit, n], array[qubit, n]], None], n] = (
+        _build_shifted_uncontrolled_adders()
+    )
     work_reg = qarray(n)
-    multiplier_ripple_gidney_mod(constant_reg, a_reg, work_reg)
-    apply_bitstring(constant_reg, b_bits)
-    discard_array(constant_reg)
+    for i in range(n):
+        if b_bits[i]:
+            shifted_adders[i](a_reg, work_reg)
 
     mem_swap(a_reg, work_reg)
 
-    inverse_reg = qarray(n)
-    apply_bitstring(inverse_reg, negative_inverse_bits)
-    multiplier_ripple_gidney_mod(inverse_reg, a_reg, work_reg)
-    apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array(inverse_reg)
+    for i in range(n):
+        if negative_inverse_bits[i]:
+            shifted_adders[i](a_reg, work_reg)
     discard_array(work_reg)
 
 
@@ -245,6 +289,9 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     acts as the identity otherwise. Since multiplication modulo ``2**n`` is
     invertible only for odd multipliers, ``b`` must be odd.
 
+    Classical constant bits select shifted additions controlled only by ``ctrl``,
+    without allocating quantum registers for the constants.
+
     Args:
         ctrl: Control qubit.
         a_reg: Register modified in-place when ``ctrl`` is set.
@@ -258,18 +305,17 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     b_bits = comptime(int_to_bits(b % 2**n, n))
     negative_inverse_bits = comptime(int_to_bits(_negative_modular_inverse(b, 2**n), n))
 
-    constant_reg = qarray(n)
-    apply_bitstring(constant_reg, b_bits)
+    shifted_adders: array[
+        Function[[qubit, array[qubit, n], array[qubit, n]], None], n
+    ] = _build_shifted_controlled_adders()
     work_reg = qarray(n)
-    cntrl_multiplier_ripple_gidney_mod(ctrl, constant_reg, a_reg, work_reg)
-    apply_bitstring(constant_reg, b_bits)
-    discard_array(constant_reg)
+    for i in range(n):
+        if b_bits[i]:
+            shifted_adders[i](ctrl, a_reg, work_reg)
 
     cswap(ctrl, a_reg, work_reg)
 
-    inverse_reg = qarray(n)
-    apply_bitstring(inverse_reg, negative_inverse_bits)
-    cntrl_multiplier_ripple_gidney_mod(ctrl, inverse_reg, a_reg, work_reg)
-    apply_bitstring(inverse_reg, negative_inverse_bits)
-    discard_array(inverse_reg)
+    for i in range(n):
+        if negative_inverse_bits[i]:
+            shifted_adders[i](ctrl, a_reg, work_reg)
     discard_array(work_reg)

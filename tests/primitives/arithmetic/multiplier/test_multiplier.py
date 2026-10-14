@@ -25,25 +25,26 @@ from guppyalgos.primitives.arithmetic import (
     multiplier_ripple_gidney_mod,
 )
 from guppyalgos.primitives.arithmetic.multiplier.multiplier_ripple_gidney import (
+    _shifted_adder,
     _shifted_controlled_adder,
 )
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
 
 
 @pytest.mark.parametrize("n", [0, -1])
-def test_shifted_controlled_adder_rejects_nonpositive_register_size(n: int) -> None:
+@pytest.mark.parametrize("adder", [_shifted_adder, _shifted_controlled_adder])
+def test_shifted_adder_rejects_nonpositive_register_size(n: int, adder) -> None:
     """Reject register sizes less than one."""
     with pytest.raises(ValueError, match="n must be positive"):
-        _shifted_controlled_adder(n, 0)
+        adder(n, 0)
 
 
 @pytest.mark.parametrize(("n", "shift"), [(1, -1), (1, 1), (3, -1), (3, 3)])
-def test_shifted_controlled_adder_rejects_out_of_range_shift(
-    n: int, shift: int
-) -> None:
+@pytest.mark.parametrize("adder", [_shifted_adder, _shifted_controlled_adder])
+def test_shifted_adder_rejects_out_of_range_shift(n: int, shift: int, adder) -> None:
     """Reject shifts outside the register bounds."""
     with pytest.raises(ValueError, match="0 <= shift < n"):
-        _shifted_controlled_adder(n, shift)
+        adder(n, shift)
 
 
 @pytest.mark.parametrize(("n", "a", "b"), [(2, 1, 1), (2, 2, 3), (3, 3, 2), (4, 5, 7)])
@@ -205,7 +206,10 @@ def test_multiplier_ripple_gidney_mod_full_superposition[n: nat](n: int) -> None
     assert result["prod_meas"] == zero_bits
 
 
-@pytest.mark.parametrize(("n", "a", "b"), [(2, 2, 1), (3, 3, 3), (4, 5, 7)])
+@pytest.mark.parametrize(
+    ("n", "a", "b"),
+    [(1, 1, 3), (2, 2, 1), (3, 3, 3), (4, 5, 7), (4, 3, 9), (3, 5, 13)],
+)
 def test_in_place_multiplier_ripple_gidney_mod[n: nat](
     n: int,
     a: int,
@@ -225,12 +229,12 @@ def test_in_place_multiplier_ripple_gidney_mod[n: nat](
 
         output("a_meas", collect_measurements(measure_array(a_reg)))
 
-    res = main.emulator(n_qubits=4 * n).run()
+    res = main.emulator(n_qubits=3 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == int_to_bits((a * b) % 2**n, n)
 
 
-@pytest.mark.parametrize(("n", "b"), [(2, 3), (3, 5), (4, 7)])
+@pytest.mark.parametrize(("n", "b"), [(1, 3), (2, 3), (3, 5), (4, 7), (4, 9)])
 def test_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
     n: int,
     b: int,
@@ -250,12 +254,15 @@ def test_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
             h(a_reg[i])
         output("a_meas", collect_measurements(measure_array(a_reg)))
 
-    res = main.emulator(n_qubits=4 * n).run()
+    res = main.emulator(n_qubits=3 * n).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == [False] * n
 
 
-@pytest.mark.parametrize(("n", "a", "b"), [(1, 1, 3), (2, 2, 1), (3, 3, 3), (4, 5, 7)])
+@pytest.mark.parametrize(
+    ("n", "a", "b"),
+    [(1, 1, 3), (2, 2, 1), (3, 3, 3), (4, 5, 7), (4, 3, 9), (3, 5, 13)],
+)
 @pytest.mark.parametrize("ctrl_active", [False, True])
 def test_cntrl_in_place_multiplier_ripple_gidney_mod[n: nat](
     n: int,
@@ -282,12 +289,12 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod[n: nat](
         output("a_meas", collect_measurements(measure_array(a_reg)))
         discard(ctrl)
 
-    res = main.emulator(n_qubits=4 * n + 2).run()
+    res = main.emulator(n_qubits=3 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == int_to_bits(expected, n)
 
 
-@pytest.mark.parametrize(("n", "b"), [(1, 3), (2, 3), (3, 5), (4, 7)])
+@pytest.mark.parametrize(("n", "b"), [(1, 3), (2, 3), (3, 5), (4, 7), (4, 9)])
 def test_cntrl_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
     n: int,
     b: int,
@@ -311,7 +318,7 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
         output("a_meas", collect_measurements(measure_array(a_reg)))
         output("ctrl_meas", measure(ctrl).read())
 
-    res = main.emulator(n_qubits=4 * n + 2).run()
+    res = main.emulator(n_qubits=3 * n + 2).run()
     result = res.results[0].as_dict()
     assert result["a_meas"] == [False] * n
     assert result["ctrl_meas"] == 0
