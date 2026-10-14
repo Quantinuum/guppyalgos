@@ -5,6 +5,68 @@ Run the full library suite with `uv run pytest tests --ignore=tests/notebooks -n
 and execute notebooks separately with `uv run pytest tests/notebooks -v`.
 Notebook execution must remain sequential.
 
+## Unitary modifier coverage
+
+Each new capability must have explicit coverage. A separate test function for
+each capability is not required: `assert_unitary_modifiers` checks forward
+unitarity, dagger, control, and controlled dagger with one invocation:
+
+```python
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array, control, nat
+from guppylang.std.quantum import qubit, rz
+from guppyalgos.testing import assert_unitary_modifiers
+
+
+@guppy.unitary
+class rotation:
+    @guppy
+    def __call__(qs: array[qubit, 1]) -> None:
+        rz(qs[0], angle(0.7))
+
+    @guppy
+    def daggered(qs: array[qubit, 1]) -> None:
+        rz(qs[0], angle(-0.7))
+
+    @guppy
+    def controlled[n: nat](qs: array[qubit, 1], cs: array[qubit, n]) -> None:
+        with control(cs):
+            rz(qs[0], angle(0.7))
+
+    @guppy
+    def ctrl_daggered[n: nat](qs: array[qubit, 1], cs: array[qubit, n]) -> None:
+        with control(cs):
+            rz(qs[0], angle(-0.7))
+
+
+def test_rotation_modifiers() -> None:
+    assert_unitary_modifiers(rotation, 1)
+```
+
+Use this helper to test manually implemented custom modifiers, as above.
+Automatically generated modifiers are the compiler's testing responsibility
+and do not need additional modifier tests here.
+
+The helper works with circuits that accept a single qubit array, including
+wrappers around `@guppy.unitary` custom implementations. It checks one control qubit;
+additional supported control counts need their own coverage. Failures name the
+mode. Keep existing algorithm correctness tests, or pass `expected_unitary` to
+compare the forward matrix with an independent reference (up to global phase).
+
+Controlled references preserve the extracted forward matrix's phase relative to
+the inactive branch. Do not phase-align that matrix before building a controlled
+reference. The helper compares the full controlled matrix with one shared phase
+alignment.
+Each mode first checks matrix unitarity, then correctness, with distinct failure
+messages for a nonunitary matrix and an incorrect unitary operation.
+
+Use this helper only for small, fully unitary circuits because matrix extraction
+scales exponentially. `endianness`, `n_extra_qubits`, and `threshold` configure
+matrix ordering, extra simulator qubits, and absolute tolerance. Internal ancilla
+must return to zero. Promised-input or measurement-cleanup routines still need
+specialized tests.
+
 ## CI test discovery
 
 `.github/workflows/ci.yml` runs library tests on Python 3.12, 3.13, and 3.14.

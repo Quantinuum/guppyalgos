@@ -12,7 +12,7 @@ from numpy.polynomial.chebyshev import chebval
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.emulator import EmulatorInstance
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.std.builtins import array, comptime, control, dagger, nat
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard_array, qubit
 from hugr.package import Package
@@ -22,6 +22,11 @@ from selene_quest_plugin.state import SeleneQuestState, TracedState
 from selene_sim import Quest, build
 
 from guppyalgos.utils import apply_bitstring, qarray, int_to_bits
+from guppyalgos.utils.guppy.array import join_arrays, split_array
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow,
+    _unsafe_array_unborrow,
+)
 
 
 class Endianness(IntEnum):
@@ -749,6 +754,139 @@ def assert_cntrl_unitary(
         ]
     )
     assert_allclose_ignorephase(actual_blocks, expected_blocks, threshold)
+
+
+def _assert_modifier_matrix(
+    actual: NDArray[np.complex128],
+    mode: str,
+    threshold: float,
+    expected: NDArray[np.complex128] | None = None,
+) -> None:
+    """Distinguish nonunitary extracted matrices from incorrect unitary actions."""
+    try:
+        np.testing.assert_allclose(
+            actual.conj().T @ actual,
+            np.eye(actual.shape[0]),
+            atol=threshold,
+            rtol=0,
+        )
+    except AssertionError as exc:
+        raise AssertionError(
+            f"{mode} mode: extracted matrix is not unitary. "
+            "Consider specialized tests for custom modifiers involving "
+            "measurement, reset, or input-dependent classical control."
+        ) from exc
+    if expected is not None:
+        try:
+            assert_allclose_ignorephase(actual, expected, threshold)
+        except AssertionError as exc:
+            raise AssertionError(
+                f"{mode} mode: extracted matrix is unitary, but does not match "
+                "the expected operation."
+            ) from exc
+
+
+def assert_unitary_modifiers[n_state: nat](
+    circ: GuppyFunctionDefinition[[array[qubit, n_state]], None],
+    n_qubits: int,
+    *,
+    expected_unitary: NDArray[np.complex128] | None = None,
+    endianness: Endianness = Endianness.BIG,
+    n_extra_qubits: int = 0,
+    threshold: float = 1e-8,
+) -> None:
+    """Check the extracted matrices of all four custom modifier modes.
+
+    ``circ`` must accept a single qubit array and support both modifiers.
+    Use this helper for manually implemented custom modifiers; automatically
+    generated modifiers are the compiler's testing responsibility.
+    The forward matrix is extracted once. Each mode must have a unitary matrix
+    before it is compared with its expected operation. ``expected_unitary``
+    optionally checks forward correctness up to global phase; otherwise keep
+    independent algorithm correctness tests.
+
+    Dagger is compared with the forward adjoint up to global phase. Controlled
+    modes extract the full matrix including one control qubit, comparing with
+    identity on the inactive branch and the forward matrix or its adjoint on
+    the active branch. One shared global phase is allowed, preserving the
+    relative phase between branches. Other control counts need separate tests.
+
+    Use only for small systems where extracting a full matrix is practical;
+    the cost scales exponentially. Internal ancilla require ``n_extra_qubits``
+    and must return to zero. Reset is compatible with a unitary logical action
+    when work qubits are correctly uncomputed and disentangled. For measurement-
+    based cleanup, separately check superposition inputs and measurement outcomes
+    to establish correct uncomputation and preserved coherence. This helper
+    samples one execution per basis input: outcome-dependent phases can be
+    incorrectly combined into relative column phases, and basis inputs alone
+    can hide lost coherence. Passing does not prove a unitary quantum channel.
+
+    Specialized tests can be added case by case when another strategy is
+    available, including for promised-input routines. ``threshold`` is the
+    absolute tolerance. Assertion and extraction errors identify the mode;
+    nonunitary matrices and incorrect unitary matrices have distinct messages.
+    """
+
+    def extract(
+        wrapper: GuppyFunctionDefinition, width: int, mode: str
+    ) -> NDArray[np.complex128]:
+        try:
+            return get_unitary(wrapper, width, endianness, n_extra_qubits)
+        except ValueError as exc:
+            raise ValueError(f"{mode} mode: matrix extraction failed: {exc}") from exc
+        except AssertionError as exc:
+            raise AssertionError(
+                f"{mode} mode: matrix extraction failed: {exc}"
+            ) from exc
+
+    unitary = extract(circ, n_qubits, "Forward")
+    _assert_modifier_matrix(unitary, "Forward", threshold, expected_unitary)
+
+    @guppy
+    @no_type_check
+    def adjoint(qs: array[qubit, n_qubits]) -> None:
+        with dagger:
+            circ(qs)
+
+    n_controlled_qubits = n_qubits + 1
+
+    @guppy
+    @no_type_check
+    def controlled(qs: array[qubit, n_controlled_qubits]) -> None:
+        controls, targets = split_array(_unsafe_array_borrow(qs), 1, n_qubits)
+        with control(controls[0]):
+            circ(targets)
+        _unsafe_array_unborrow(qs, join_arrays(controls, targets, n_controlled_qubits))
+
+    @guppy
+    @no_type_check
+    def controlled_adjoint(qs: array[qubit, n_controlled_qubits]) -> None:
+        controls, targets = split_array(_unsafe_array_borrow(qs), 1, n_qubits)
+        with control(controls[0]):
+            with dagger:
+                circ(targets)
+        _unsafe_array_unborrow(qs, join_arrays(controls, targets, n_controlled_qubits))
+
+    expected_adjoint = unitary.conj().T
+    _assert_modifier_matrix(
+        extract(adjoint, n_qubits, "Dagger"), "Dagger", threshold, expected_adjoint
+    )
+    identity = np.eye(2**n_qubits)
+    control_off = np.diag([1, 0])
+    control_on = np.diag([0, 1])
+    for mode, wrapper, active in (
+        ("Control", controlled, unitary),
+        ("Controlled dagger", controlled_adjoint, expected_adjoint),
+    ):
+        if endianness == Endianness.BIG:
+            # Control comes before the target register.
+            expected = np.kron(control_off, identity) + np.kron(control_on, active)
+        else:
+            # Control comes after the target register.
+            expected = np.kron(identity, control_off) + np.kron(active, control_on)
+        _assert_modifier_matrix(
+            extract(wrapper, n_qubits + 1, mode), mode, threshold, expected
+        )
 
 
 def project_state_onto_bitstring(
