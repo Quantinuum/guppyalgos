@@ -12,6 +12,7 @@ each capability is not required: `assert_unitary_modifiers` checks forward
 unitarity, dagger, control, and controlled dagger with one invocation:
 
 ```python
+import numpy as np
 from guppylang import guppy
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, control, nat
@@ -41,7 +42,8 @@ class rotation:
 
 
 def test_rotation_modifiers() -> None:
-    assert_unitary_modifiers(rotation, 1)
+    expected = np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j])))
+    assert_unitary_modifiers(rotation, 1, expected_unitary=expected)
 ```
 
 Use this helper to test manually implemented custom modifiers, as above.
@@ -51,15 +53,18 @@ and do not need additional modifier tests here.
 The helper works with circuits that accept a single qubit array, including
 wrappers around `@guppy.unitary` custom implementations. It checks one control qubit;
 additional supported control counts need their own coverage. Failures name the
-mode. Keep existing algorithm correctness tests, or pass `expected_unitary` to
-compare the forward matrix with an independent reference (up to global phase).
+mode. The required `expected_unitary` checks the full forward matrix up to one
+overall global phase and uses the reference's exact phase for full controlled-matrix
+expectations. The dagger is compared with the reference adjoint. The reference
+must be independent of the controlled result being tested.
 
-Controlled references preserve the extracted forward matrix's phase relative to
-the inactive branch. Do not phase-align that matrix before building a controlled
-reference. The helper compares the full controlled matrix with one shared phase
-alignment.
-Each mode first checks matrix unitarity, then correctness, with distinct failure
-messages for a nonunitary matrix and an incorrect unitary operation.
+Control checks extract the complete matrix over the control and target registers.
+The expected matrix is built with `np.kron`: identity when the control is off and
+the supplied reference (or its adjoint) when it is on. This covers both control
+inputs, control-register preservation, and relative phase between branches.
+Only one shared overall global phase is ignored for the complete matrix.
+A reference is always required so arbitrary compilation phases from the
+extracted forward matrix cannot determine the controlled expectation.
 
 Use this helper only for small, fully unitary circuits because matrix extraction
 scales exponentially. `endianness`, `n_extra_qubits`, and `threshold` configure
