@@ -799,26 +799,29 @@ def assert_unitary_modifiers[n_state: nat](
     circ: GuppyFunctionDefinition[[array[qubit, n_state]], None],
     n_qubits: int,
     *,
-    expected_unitary: NDArray[np.complex128] | None = None,
+    expected_unitary: NDArray[np.complex128],
     endianness: Endianness = Endianness.BIG,
     n_extra_qubits: int = 0,
     threshold: float = 1e-8,
 ) -> None:
-    """Check the extracted matrices of all four custom modifier modes.
+    """Check forward unitarity and the dagger, control, and controlled dagger modes.
 
     ``circ`` must accept a single qubit array and support both modifiers.
     Use this helper for manually implemented custom modifiers; automatically
     generated modifiers are the compiler's testing responsibility.
-    The forward matrix is extracted once. Each mode must have a unitary matrix
-    before it is compared with its expected operation. ``expected_unitary``
-    optionally checks forward correctness up to global phase; otherwise keep
-    independent algorithm correctness tests.
 
-    Dagger is compared with the forward adjoint up to global phase. Controlled
-    modes extract the full matrix including one control qubit, comparing with
-    identity on the inactive branch and the forward matrix or its adjoint on
-    the active branch. One shared global phase is allowed, preserving the
-    relative phase between branches. Other control counts need separate tests.
+    The required ``expected_unitary`` checks the full forward matrix up to
+    one overall global phase. Dagger is checked against the reference's
+    adjoint. Controlled modes extract the full matrix including one control
+    qubit, checking identity on the inactive branch and the reference or its
+    adjoint on the active branch. One shared global phase is allowed for each
+    full controlled matrix, preserving relative phases between both branches.
+    The reference must be independent of the controlled result being tested;
+    it is not normalized or phase-fitted.
+
+    Requiring a reference avoids using arbitrary compilation phases from the
+    extracted forward matrix in controlled expectations. Other control counts
+    need separate tests.
 
     Use only for small systems where extracting a full matrix is practical;
     the cost scales exponentially. Internal ancilla require ``n_extra_qubits``
@@ -876,7 +879,7 @@ def assert_unitary_modifiers[n_state: nat](
                 circ(targets)
         _unsafe_array_unborrow(qs, join_arrays(controls, targets, n_controlled_qubits))
 
-    expected_adjoint = unitary.conj().T
+    expected_adjoint = expected_unitary.conj().T
     _assert_modifier_matrix(
         extract(adjoint, n_qubits, "Dagger"), "Dagger", threshold, expected_adjoint
     )
@@ -884,7 +887,7 @@ def assert_unitary_modifiers[n_state: nat](
     control_off = np.diag([1, 0])
     control_on = np.diag([0, 1])
     for mode, wrapper, active in (
-        ("Control", controlled, unitary),
+        ("Control", controlled, expected_unitary),
         ("Controlled dagger", controlled_adjoint, expected_adjoint),
     ):
         if endianness == Endianness.BIG:
@@ -894,7 +897,7 @@ def assert_unitary_modifiers[n_state: nat](
             # Control comes after the target register.
             expected = np.kron(identity, control_off) + np.kron(active, control_on)
         _assert_modifier_matrix(
-            extract(wrapper, n_qubits + 1, mode), mode, threshold, expected
+            extract(wrapper, n_controlled_qubits, mode), mode, threshold, expected
         )
 
 

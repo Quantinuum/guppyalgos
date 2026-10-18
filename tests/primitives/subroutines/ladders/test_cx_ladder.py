@@ -6,7 +6,7 @@ from typing import Any, no_type_check
 
 import numpy as np
 import pytest
-from guppylang import guppy
+from guppylang import comptime, guppy
 from guppylang.std.builtins import array
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard_array, qubit
@@ -15,6 +15,7 @@ from selene_sim import Quest
 from guppyalgos.primitives.subroutines.ladders.cx_ladder import (
     CXLadderLinear,
     CXLadderLog,
+    _cx_ladder_apply_from_inds,
     ladder_inds_from_ascending,
     _lin_cx_ladder_indices,
     log_cx_ladder_indices,
@@ -23,7 +24,11 @@ from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.utils import qarray
 
-from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import (
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+    get_unitary,
+)
 
 
 @pytest.mark.parametrize(
@@ -114,6 +119,28 @@ def test_linear_and_log_depth_unitary_equivalence(n_qubits: int) -> None:
         CXLadderLog().ascending(qs)
 
     assert_allclose_ignorephase(get_unitary(lin, n_qubits), get_unitary(log, n_qubits))
+
+
+def test_cx_ladder_modifiers() -> None:
+    """Test the custom dagger, control, and controlled dagger implementations."""
+    n_qubits = 4
+    gate_indices = log_cx_ladder_indices(n_qubits)
+
+    @guppy(unitary=True)
+    @no_type_check
+    def ladder(qs: array[qubit, n_qubits]) -> None:
+        _cx_ladder_apply_from_inds(qs, comptime(gate_indices))
+
+    # Construct the intended permutation independently of simulator phases.
+    expected = np.zeros((2**n_qubits, 2**n_qubits), dtype=np.complex128)
+    for column in range(2**n_qubits):
+        bits = [(column >> (n_qubits - 1 - i)) & 1 for i in range(n_qubits)]
+        for ctrl, target in gate_indices:
+            bits[target] ^= bits[ctrl]
+        row = sum(bit << (n_qubits - 1 - i) for i, bit in enumerate(bits))
+        expected[row, column] = 1
+
+    assert_unitary_modifiers(ladder, n_qubits, expected_unitary=expected)
 
 
 @pytest.mark.parametrize(

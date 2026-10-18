@@ -8,9 +8,15 @@ from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, control, dagger, nat
-from guppylang.std.quantum import cx, discard, qubit, reset, rz
+from guppylang.std.quantum import cx, discard, h, qubit, reset, ry, rz, x
 
-from guppyalgos.testing import Endianness, assert_unitary_modifiers
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+    get_unitary,
+    switch_matrix_endianness,
+)
 
 
 @guppy.unitary
@@ -127,25 +133,37 @@ def test_custom_unitary_modifiers() -> None:
     [
         ("Dagger", _rotation_with_wrong_dagger),
         ("Control", _rotation_with_wrong_control),
-        ("Controlled dagger", _rotation_with_wrong_controlled_phase),
     ],
 )
 def test_rejects_incorrect_custom_modifiers(
     mode: str, circuit: GuppyFunctionDefinition
 ) -> None:
-    """Reject wrong inverses, controls, and active-branch phase errors."""
+    """Reject incorrect target operations in dagger and control modes."""
     with pytest.raises(
         AssertionError,
-        match=f"{mode} mode: extracted matrix is unitary, but does not match",
+        match=f"{mode} mode:",
     ):
-        assert_unitary_modifiers(circuit, 1)
-
-
-def test_rejects_incorrect_forward_reference() -> None:
-    """Modifier consistency alone cannot establish algorithm correctness."""
-    with pytest.raises(AssertionError, match="Forward mode"):
         assert_unitary_modifiers(
-            _rotation_with_correct_implementation, 1, expected_unitary=np.eye(2)
+            circuit,
+            1,
+            expected_unitary=np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j]))),
+        )
+
+
+def test_forward_correctness_separately() -> None:
+    """Check the intended unitary separately from modifier consistency."""
+    expected = np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j])))
+    assert_allclose_ignorephase(
+        get_unitary(_rotation_with_correct_implementation, 1), expected
+    )
+
+
+def test_rejects_wrong_controlled_dagger_phase() -> None:
+    """Coherent checks reject a phase error confined to the active branch."""
+    expected = np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j])))
+    with pytest.raises(AssertionError, match="Controlled dagger mode:"):
+        assert_unitary_modifiers(
+            _rotation_with_wrong_controlled_phase, 1, expected_unitary=expected
         )
 
 
@@ -181,7 +199,11 @@ def test_bad_reset() -> None:
         AssertionError,
         match=r"Forward mode: extracted matrix is not unitary.*specialized tests",
     ):
-        assert_unitary_modifiers(circuit, 1)
+        assert_unitary_modifiers(
+            circuit,
+            1,
+            expected_unitary=np.eye(2),
+        )
 
 
 @guppy
@@ -274,14 +296,223 @@ class _rotation_with_bad_reset:
     [(1, "Dagger"), (2, "Control"), (3, "Controlled dagger")],
 )
 def test_nonunitary_modifier(fault_mode: int, mode: str) -> None:
-    """Report target reset as nonunitarity rather than a wrong unitary action."""
+    """Reject a reset in any modifier, identifying the failing mode."""
 
     @guppy(unitary=True)
     @no_type_check
     def circuit(qs: array[qubit, 1]) -> None:
         _rotation_with_bad_reset(qs, fault_mode)
 
+    with pytest.raises(AssertionError, match=f"{mode} mode:"):
+        assert_unitary_modifiers(
+            circuit,
+            1,
+            expected_unitary=np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j]))),
+        )
+
+
+def test_native_h_modifiers() -> None:
+    """A reference resolves H's extracted forward global phase."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def circuit(qs: array[qubit, 1]) -> None:
+        h(qs[0])
+
+    expected = np.array([[1, 1], [1, -1]], dtype=np.complex128) / np.sqrt(2)
+    assert_unitary_modifiers(circuit, 1, expected_unitary=expected)
+
+
+@guppy.unitary
+class _rotation_with_incorrect_projected_block:
+    @guppy
+    @no_type_check
+    def __call__(qs: array[qubit, 1], fault: int) -> None:
+        _rotation_with_correct_implementation(qs)
+
+    @guppy
+    @no_type_check
+    def daggered(qs: array[qubit, 1], fault: int) -> None:
+        with dagger:
+            _rotation_with_correct_implementation(qs)
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat](
+        qs: array[qubit, 1], fault: int, cs: array[qubit, n]
+    ) -> None:
+        if fault == 1:
+            # Incorrectly act on the target when the control is off too.
+            _rotation_with_correct_implementation(qs)
+        else:
+            with control(cs):
+                _rotation_with_correct_implementation(qs)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat](
+        qs: array[qubit, 1], fault: int, cs: array[qubit, n]
+    ) -> None:
+        if fault == 2:
+            with control(cs):
+                _rotation_with_correct_implementation(qs)
+        else:
+            with control(cs), dagger:
+                _rotation_with_correct_implementation(qs)
+
+
+@pytest.mark.parametrize(("fault", "mode"), [(1, "Control"), (2, "Controlled dagger")])
+def test_rejects_incorrect_projected_blocks(fault: int, mode: str) -> None:
+    """Reject a nonidentity inactive block and a wrong controlled adjoint."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def circuit(qs: array[qubit, 1]) -> None:
+        _rotation_with_incorrect_projected_block(qs, fault)
+
     with pytest.raises(
-        AssertionError, match=f"{mode} mode: extracted matrix is not unitary"
+        AssertionError,
+        match=f"{mode} mode:",
     ):
-        assert_unitary_modifiers(circuit, 1)
+        assert_unitary_modifiers(
+            circuit,
+            1,
+            expected_unitary=np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j]))),
+        )
+
+
+def test_rejects_incorrect_forward_reference() -> None:
+    """Even consistent modifiers cannot hide an incorrect forward unitary."""
+    with pytest.raises(AssertionError, match=r"Forward mode:.*does not match"):
+        assert_unitary_modifiers(
+            _rotation_with_correct_implementation, 1, expected_unitary=np.eye(2)
+        )
+
+
+def test_reference_phase_is_not_normalized() -> None:
+    """Forward phase equivalence must not erase the controlled reference phase."""
+    expected = np.exp(0.2j) * np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j])))
+    with pytest.raises(AssertionError, match="Control mode:"):
+        assert_unitary_modifiers(
+            _rotation_with_correct_implementation, 1, expected_unitary=expected
+        )
+
+
+# Rz on the first qubit, an ascending CX chain, then Ry on the last qubit.
+@guppy.unitary
+class _entangling_rotation_with_custom_modifiers:
+    @guppy
+    @no_type_check
+    def __call__[n_targets: nat](qs: array[qubit, n_targets]) -> None:
+        rz(qs[0], angle(0.4))
+        for i in range(n_targets - 1):
+            cx(qs[i], qs[i + 1])
+        ry(qs[n_targets - 1], angle(0.3))
+
+    @guppy
+    @no_type_check
+    def daggered[n_targets: nat](qs: array[qubit, n_targets]) -> None:
+        ry(qs[n_targets - 1], angle(-0.3))
+        for offset in range(n_targets - 1):
+            i = n_targets - 2 - offset
+            cx(qs[i], qs[i + 1])
+        rz(qs[0], angle(-0.4))
+
+    @guppy
+    @no_type_check
+    def controlled[n_targets: nat, n_controls: nat](
+        qs: array[qubit, n_targets], cs: array[qubit, n_controls]
+    ) -> None:
+        with control(cs):
+            rz(qs[0], angle(0.4))
+        for i in range(n_targets - 1):
+            with control(cs):
+                cx(qs[i], qs[i + 1])
+        with control(cs):
+            ry(qs[n_targets - 1], angle(0.3))
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n_targets: nat, n_controls: nat](
+        qs: array[qubit, n_targets], cs: array[qubit, n_controls]
+    ) -> None:
+        with control(cs):
+            ry(qs[n_targets - 1], angle(-0.3))
+        for offset in range(n_targets - 1):
+            i = n_targets - 2 - offset
+            with control(cs):
+                cx(qs[i], qs[i + 1])
+        with control(cs):
+            rz(qs[0], angle(-0.4))
+
+
+@pytest.mark.parametrize("n_qubits", [2, 3])
+@pytest.mark.parametrize("endianness", list(Endianness))
+def test_multi_qubit_custom_modifiers(n_qubits: int, endianness: Endianness) -> None:
+    """Check all custom modifiers of an entangling, non-self-adjoint unitary."""
+    dimension = 2**n_qubits
+    z_rotation = np.diag(np.exp(np.pi * np.array([-0.2j, 0.2j])))
+    c, s = np.cos(0.15 * np.pi), np.sin(0.15 * np.pi)
+    y_rotation = np.array([[c, -s], [s, c]], dtype=np.complex128)
+
+    # An ascending CX chain maps each output bit to the input prefix parity.
+    ladder = np.zeros((dimension, dimension), dtype=np.complex128)
+    for column in range(dimension):
+        input_bits = [(column >> i) & 1 for i in reversed(range(n_qubits))]
+        output_bits = np.bitwise_xor.accumulate(input_bits)
+        row = sum(int(bit) << i for i, bit in enumerate(reversed(output_bits)))
+        ladder[row, column] = 1
+
+    expected = (
+        np.kron(np.eye(dimension // 2), y_rotation)
+        @ ladder
+        @ np.kron(z_rotation, np.eye(dimension // 2))
+    )
+    if endianness == Endianness.LITTLE:
+        expected = switch_matrix_endianness(expected)
+
+    @guppy(unitary=True)
+    @no_type_check
+    def circuit(qs: array[qubit, n_qubits]) -> None:
+        _entangling_rotation_with_custom_modifiers(qs)
+
+    assert_unitary_modifiers(
+        circuit, n_qubits, expected_unitary=expected, endianness=endianness
+    )
+
+
+@guppy.unitary
+class _rotation_with_flipped_control:
+    @guppy
+    @no_type_check
+    def __call__(qs: array[qubit, 1]) -> None:
+        _rotation_with_correct_implementation(qs)
+
+    @guppy
+    @no_type_check
+    def daggered(qs: array[qubit, 1]) -> None:
+        with dagger:
+            _rotation_with_correct_implementation(qs)
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat](qs: array[qubit, 1], cs: array[qubit, n]) -> None:
+        # X leaves a |+> control unchanged but flips computational basis inputs.
+        x(cs[0])
+        with control(cs):
+            _rotation_with_correct_implementation(qs)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat](qs: array[qubit, 1], cs: array[qubit, n]) -> None:
+        with control(cs), dagger:
+            _rotation_with_correct_implementation(qs)
+
+
+def test_rejects_flipped_control_register() -> None:
+    """Cover a control-input error invisible to a single |+> control probe."""
+    expected = np.diag(np.exp(np.pi * np.array([-0.35j, 0.35j])))
+    with pytest.raises(AssertionError, match=r"Control mode:.*does not match"):
+        assert_unitary_modifiers(
+            _rotation_with_flipped_control, 1, expected_unitary=expected
+        )
