@@ -12,22 +12,22 @@ mystnb:
 Trotterization approximates Hamiltonian time evolution by applying
 exponentials of simpler terms:
 
-$
+$$
 H=\sum_{j=1}^{m}h_j,
 \qquad
 U(t)=e^{-iHt}.
-$
+$$
 
 ## Zixy Hamiltonians
 
-[Zixy](https://github.com/CQCL/zixy) stores a Hamiltonian as a sum of
+[Zixy](https://github.com/Quantinuum/zixy) stores a Hamiltonian as a sum of
 coefficient-weighted Pauli strings:
 
-$
+$$
 H=\sum_{j=1}^{m}a_jP_j,
 \qquad
 P_j\in\{I,X,Y,Z\}^{\otimes n}.
-$
+$$
 
 ```{code-cell} ipython3
 import zixy.qubit.pauli as zqp
@@ -49,9 +49,9 @@ hamiltonian = zqp.RealTermSum.from_str(
 `pauli_exp` constructs a Guppy function implementing
 a Pauli-string exponential:
 
-$
+$$
 U_P(\theta)=e^{-i\theta P/2}.
-$
+$$
 
 ```{code-cell} ipython3
 from guppyalgos.primitives.pauli.pauli_exp import cntrl_pauli_exp, pauli_exp
@@ -84,10 +84,10 @@ For $P = Z_0X_1$, the ordinary gadget is:
 The controlled form uses the same basis changes and parity ladder, but the
 external qubit controls the central rotation:
 
-$
+$$
 C(U_P)=|0\rangle\!\langle 0|\otimes I
 +|1\rangle\!\langle 1|\otimes U_P(\theta).
-$
+$$
 
 ```{tikz}
 :alt: A controlled Pauli gadget for Z on q_0 and X on q_1. The parity ladder surrounds an RZ rotation on q_1 controlled by an external control qubit.
@@ -153,13 +153,13 @@ complete executable example and alternative rotation implementations.
 A first-order Trotter simulation applies the Zixy term exponentials
 sequentially, then repeats the resulting step:
 
-$
+$$
 e^{-iHt}
 \approx
 \left(\prod_{j=1}^{m}e^{-ih_jt/r}\right)^r,
 \qquad
 \text{error}=O\!\left(\frac{t^2}{r}\right).
-$
+$$
 
 ```{code-cell} ipython3
 from guppyalgos.algorithms.time_evolution.trotter import ham_sim_trotter, trotter_first_order
