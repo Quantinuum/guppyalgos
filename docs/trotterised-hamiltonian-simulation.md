@@ -20,7 +20,7 @@ $
 
 ## Zixy Hamiltonians
 
-[Zixy](https://github.com/CQCL/zixy) stores a Hamiltonian as a sum of
+[Zixy](https://github.com/Quantinuum/zixy) stores a Hamiltonian as a sum of
 coefficient-weighted Pauli strings:
 
 $
