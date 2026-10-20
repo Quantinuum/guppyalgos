@@ -9,7 +9,7 @@ components let you choose circuit implementations when assembling an algorithm.
 
 Any release before version 1.0.0 is experimental, and the API may change between releases.
 Pin the package version for reproducible work and review the
-[changelog](CHANGELOG.md) before upgrading.
+[changelog](https://github.com/Quantinuum/guppyalgos/blob/main/CHANGELOG.md) before upgrading.
 
 ## Getting started
 
@@ -22,23 +22,23 @@ cd guppyalgos
 uv sync
 ```
 
-Explore the [example notebooks](examples/) and the
-[getting-started guide](docs/getting-started.md) for usage and compilation examples.
+Explore the [example notebooks](https://github.com/Quantinuum/guppyalgos/tree/main/examples) and the
+[getting-started guide](https://github.com/Quantinuum/guppyalgos/blob/main/docs/getting-started.md) for usage and compilation examples.
 
-See [documentation](https://docs.quantinuum.com/guppy/algorithms) for user guide.
+See [documentation](https://docs.quantinuum.com/guppy/algorithms/) for user guide.
 
 ## Contributing
 
-Contributions are welcome! See our [contributing guide](CONTRIBUTING.md) for the
+Contributions are welcome! See our [contributing guide](https://github.com/Quantinuum/guppyalgos/blob/main/CONTRIBUTING.md) for the
 pull request process, development setup, checks, and `gh stack` workflow for
 stacked pull requests.
 
 ## Citation
 
-If you use this library in research, please cite it using [CITATION.cff](CITATION.cff)
+If you use this library in research, please cite it using [CITATION.cff](https://github.com/Quantinuum/guppyalgos/blob/main/CITATION.cff)
 and include the version or commit you used.
 
 ## License
 
-The `guppyalgos` package is licensed under the [Apache License 2.0](LICENSE).
+The `guppyalgos` package is licensed under the [Apache License 2.0](https://github.com/Quantinuum/guppyalgos/blob/main/LICENSE).
 Bundled material with a separate license retains its own license terms.
