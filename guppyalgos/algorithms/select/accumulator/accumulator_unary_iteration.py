@@ -70,6 +70,10 @@ def accumulator_unary_iteration[
         state_qreg: The state qubit register.
 
     """
+    if n_index_qubits == 1:
+        controlled_ops[0](index_qreg[0], state_qreg)
+        return
+
     index_bools, msb_diff_depths = _get_bools_and_diffs(
         n_index_qubits, n_index_elements
     )
