@@ -63,7 +63,7 @@ include = ["guppyalgos", "guppyalgos.*"]
 
 [project.urls]
 Repository = "https://github.com/Quantinuum/guppyalgos"
-Documentation = "https://github.com/Quantinuum/guppyalgos/tree/main/docs"
+Documentation = "https://docs.quantinuum.com/guppy/algorithms/"
 Issues = "https://github.com/Quantinuum/guppyalgos/issues"
 Changelog = "https://github.com/Quantinuum/guppyalgos/blob/main/CHANGELOG.md"
 
