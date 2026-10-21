@@ -21,7 +21,8 @@ env:
 jobs:
   test:
     name: Test sphinx docs
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04's texlive-pictures includes the Quantikz 2 library.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
@@ -34,6 +35,8 @@ jobs:
           enable-cache: true
       - name: Install TeX dependencies
         run: sudo apt-get update && sudo apt-get install -y texlive-latex-extra texlive-pictures pdf2svg
+      - name: Verify Quantikz is available
+        run: kpsewhich tikzlibraryquantikz2.code.tex
       - run: uv sync --all-extras
       - run: uv run sphinx-build -W --keep-going docs docs/_build/html
         env:
