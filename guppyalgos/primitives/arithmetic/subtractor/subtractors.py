@@ -2,23 +2,39 @@
 
 from typing import no_type_check
 
+from guppylang.std.builtins import control, dagger
 from guppylang import guppy
-from guppylang.std.quantum import qubit
-from guppylang.std.builtins import array, nat
+from guppylang.std.quantum import qubit, cx, x, toffoli, discard, discard_array
+from guppylang.std.builtins import array, comptime, nat
 
+from guppyalgos.primitives.arithmetic import (
+    adder_ripple_cuccaro_mod,
+    adder_ripple_gidney_mod,
+)
+
+
+from guppyalgos.utils import qarray, transversal
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow_slice,
+    _unsafe_array_unborrow_slice,
+)
+from guppyalgos.primitives.subroutines.ladders import CXLadderLinear
+from guppyalgos.primitives.gate_decompositions.and_op import (
+    temp_and_compute,
+    temp_and_uncompute,
+)
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_cuccaro import (
-    _adder_ripple_cuccaro_carry_out_dagger_impl,
-    _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl,
+    _maj_umaj_bottom_carry_out_inverse_gate,
+    _unmajority_gate,
+    _cntrl_majority_dagger_gate,
 )
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
-    _adder_ripple_gidney_carry_out_dagger_impl,
-    _cntrl_adder_ripple_gidney_carry_out_dagger_impl,
-)
-from guppyalgos.primitives.arithmetic import (
-    adder_ripple_cuccaro_mod_dagger,
-    adder_ripple_gidney_mod_dagger,
-    cntrl_adder_ripple_cuccaro_mod_dagger,
-    cntrl_adder_ripple_gidney_mod_dagger,
+    _g_unmajority_inverse_gate,
+    _g_majority_inverse_gate,
+    _gmaj_gumaj_bottom_carry_out_inverse_gate,
+    _cntrl_g_majority_inverse_gate,
+    _cntrl_gmaj_gumaj_bottom_carry_out_inverse_gate,
+    _ccx,
 )
 
 
@@ -50,7 +66,8 @@ def subtractor_ripple_cuccaro_mod[n: nat](
             Modified in-place: b_reg -= a_reg mod 2^n.
 
     """
-    return adder_ripple_cuccaro_mod_dagger(a_reg, b_reg)
+    with dagger:
+        adder_ripple_cuccaro_mod(a_reg, b_reg)
 
 
 @guppy
@@ -86,7 +103,78 @@ def subtractor_ripple_cuccaro_carry_out[n: nat](
             This is flipped iff b < a.
 
     """
-    return _adder_ripple_cuccaro_carry_out_dagger_impl(a_reg, b_reg, borrow_out, False)
+    cx_ladder = CXLadderLinear()
+    ancilla = qubit()
+
+    if n == 1:
+        cx(a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], borrow_out)
+        discard(ancilla)
+        return
+
+    if n == 2:
+        # Boundary UMAJ†: carry-in is known to be 0 and ancilla is clean.
+        cx(a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+
+        _maj_umaj_bottom_carry_out_inverse_gate(
+            a_reg[1], b_reg[1], ancilla, borrow_out, False
+        )
+
+        # Boundary MAJ†: uncompute the clean ancilla.
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        discard(ancilla)
+        return
+
+    transversal(cx, a_reg, b_reg)
+
+    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+
+    # Forward n-1 CX ladder
+    cx(a_reg[1], ancilla)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 1), 0)
+    cx_ladder.descending_dagger(cx_q)
+    _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
+
+    for i in range(n - 2):
+        x(b_reg[i + 1])
+
+    toffoli(ancilla, b_reg[1], a_reg[1])
+
+    # Forward n-2 Toffoli ladder
+    for i in range(n - 4, -1, -1):
+        toffoli(
+            a_reg[n - i - 3],
+            b_reg[n - i - 2],
+            a_reg[n - i - 2],
+        )
+
+    for i in range(n - 2):
+        cx(a_reg[i + 1], b_reg[i + 2])
+    cx(ancilla, b_reg[1])
+
+    for i in range(n - 2):
+        x(b_reg[i + 1])
+
+    temp_and_compute(a_reg[n - 2], b_reg[n - 1], borrow_out)
+    cx(a_reg[n - 1], borrow_out)
+
+    # Reverse n-2 Toffoli ladder
+    for i in range(n - 4, -1, -1):
+        toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
+    toffoli(ancilla, b_reg[1], a_reg[1])
+
+    # Reverse n-1 CX ladder
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 1), 0)
+    cx_ladder.descending(cx_q)
+    _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
+    cx(a_reg[1], ancilla)
+
+    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+
+    transversal(cx, a_reg, b_reg, 1, n)
+
+    discard(ancilla)
 
 
 @guppy
@@ -117,7 +205,8 @@ def cntrl_subtractor_ripple_cuccaro_mod[n: nat](
             Modified in-place: b_reg -= a_reg mod 2^n.
 
     """
-    return cntrl_adder_ripple_cuccaro_mod_dagger(ctrl, a_reg, b_reg)
+    with control(ctrl), dagger:
+        adder_ripple_cuccaro_mod(a_reg, b_reg)
 
 
 @guppy
@@ -155,9 +244,69 @@ def cntrl_subtractor_ripple_cuccaro_carry_out[n: nat](
             This is flipped iff b < a.
 
     """
-    return _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl(
-        ctrl, a_reg, b_reg, borrow_out, False
-    )
+    cx_ladder = CXLadderLinear()
+    ancilla = qubit()
+
+    if n == 1:
+        toffoli(ctrl, a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and_compute(ctrl, ancilla, borrow_out)
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        discard(ancilla)
+        return
+
+    if n == 2:
+        # Boundary UMAJ†: carry-in is known to be 0 and ancilla is clean.
+        cx(a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+
+        with dagger:
+            _unmajority_gate(a_reg[1], b_reg[1], ancilla)
+        temp_and_compute(ctrl, a_reg[1], borrow_out)
+        _cntrl_majority_dagger_gate(ctrl, a_reg[1], b_reg[1], ancilla)
+
+        # Boundary controlled-MAJ†: uncompute the clean ancilla.
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        toffoli(ctrl, a_reg[0], b_reg[0])
+        cx(a_reg[0], b_reg[0])
+        discard(ancilla)
+        return
+
+    toffoli(ctrl, a_reg[0], b_reg[0])
+    transversal(cx, a_reg, b_reg, 1, n)
+
+    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+
+    # Forward n-1 CX ladder
+    cx(a_reg[1], ancilla)
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 1), 0)
+    cx_ladder.descending_dagger(cx_q)
+    _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
+
+    # Forward n-1 Toffoli ladders
+    toffoli(ctrl, ancilla, b_reg[1])
+    toffoli(ancilla, b_reg[1], a_reg[1])
+    for i in range(n - 3, -1, -1):
+        toffoli(ctrl, a_reg[n - i - 2], b_reg[n - i - 1])
+        toffoli(a_reg[n - i - 2], b_reg[n - i - 1], a_reg[n - i - 1])
+
+    # Reverse n-1 Toffoli ladder
+    temp_and_compute(ctrl, a_reg[n - 1], borrow_out)
+    for i in range(n - 3, -1, -1):
+        toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
+    toffoli(ancilla, b_reg[1], a_reg[1])
+
+    # Reverse n-1 CX ladder
+    cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 1), 0)
+    cx_ladder.descending(cx_q)
+    _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
+    cx(a_reg[1], ancilla)
+
+    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+
+    transversal(cx, a_reg, b_reg, 1, n)
+
+    discard(ancilla)
 
 
 @guppy
@@ -183,7 +332,8 @@ def subtractor_ripple_gidney_mod[n: nat](
             Modified in-place: b_reg -= a_reg mod 2^n.
 
     """
-    return adder_ripple_gidney_mod_dagger(a_reg, b_reg)
+    with dagger:
+        adder_ripple_gidney_mod(a_reg, b_reg)
 
 
 @guppy
@@ -215,7 +365,38 @@ def subtractor_ripple_gidney_carry_out[n: nat](
             This is flipped iff b < a.
 
     """
-    return _adder_ripple_gidney_carry_out_dagger_impl(a_reg, b_reg, borrow_out, False)
+    if n == 1:
+        cx(a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], borrow_out)
+        return
+
+    anc = qarray(comptime(n - 1))
+
+    cx(a_reg[0], b_reg[0])
+    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+
+    # ------------------------------------------------------------------ #
+    # Forward sweep                                                      #
+    # ------------------------------------------------------------------ #
+    for i in range(n - 2):
+        _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+
+    _gmaj_gumaj_bottom_carry_out_inverse_gate(
+        a_reg[n - 1], b_reg[n - 1], anc[n - 2], borrow_out, False
+    )
+
+    # ------------------------------------------------------------------ #
+    # Reverse sweep                                                      #
+    # ------------------------------------------------------------------ #
+
+    for i in range(n - 2):
+        _g_majority_inverse_gate(
+            a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+        )
+
+    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+
+    discard_array(anc)
 
 
 @guppy
@@ -240,7 +421,8 @@ def cntrl_subtractor_ripple_gidney_mod[n: nat](
             Modified in-place: b_reg -= a_reg mod 2^n.
 
     """
-    return cntrl_adder_ripple_gidney_mod_dagger(ctrl, a_reg, b_reg)
+    with control(ctrl), dagger:
+        adder_ripple_gidney_mod(a_reg, b_reg)
 
 
 @guppy
@@ -272,6 +454,39 @@ def cntrl_subtractor_ripple_gidney_carry_out[n: nat](
             This is flipped iff b < a.
 
     """
-    return _cntrl_adder_ripple_gidney_carry_out_dagger_impl(
-        ctrl, a_reg, b_reg, borrow_out, False
+    if n == 1:
+        ancilla = qubit()
+        toffoli(ctrl, a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and_compute(ctrl, ancilla, borrow_out)
+        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        discard(ancilla)
+        return
+
+    anc = qarray(comptime(n - 1))
+
+    _ccx(ctrl, a_reg[0], b_reg[0])
+    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+
+    # ------------------------------------------------------------------ #
+    # Forward sweep                                                      #
+    # ------------------------------------------------------------------ #
+    for i in range(n - 2):
+        _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+
+    _cntrl_gmaj_gumaj_bottom_carry_out_inverse_gate(
+        ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2], borrow_out, False
     )
+
+    # ------------------------------------------------------------------ #
+    # Reverse sweep                                                      #
+    # ------------------------------------------------------------------ #
+
+    for i in range(n - 2):
+        _cntrl_g_majority_inverse_gate(
+            ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+        )
+
+    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+
+    discard_array(anc)

@@ -4,19 +4,24 @@ from __future__ import annotations
 
 from typing import no_type_check
 
+from guppylang.std.builtins import control
 from guppylang import guppy
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import cx, qubit
 
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
-    cntrl_adder_ripple_gidney_mod,
+    adder_ripple_gidney_mod,
 )
 from guppyalgos.primitives.arithmetic.subtractor.subtractors import (
     cntrl_subtractor_ripple_gidney_mod,
 )
 from guppyalgos.primitives.rotations.register_incremented_givens_rotation import (
     xx_basis_change,
+)
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow,
+    _unsafe_array_unborrow,
 )
 
 
@@ -88,11 +93,12 @@ class GivensCascadePhaseGradient[
                     self.phase_gradient[bit_index],
                 )
 
-            cntrl_adder_ripple_gidney_mod(
-                rotation_targets[0],
-                data_qregs[rotation_index],
-                self.phase_gradient,
-            )
+            phase_register = _unsafe_array_borrow(self.phase_gradient)
+            data_register = data_qregs.take(rotation_index)
+            with control(rotation_targets[0]):
+                adder_ripple_gidney_mod(data_register, phase_register)
+            data_qregs.put(data_register, rotation_index)
+            _unsafe_array_unborrow(self.phase_gradient, phase_register)
 
             for bit_index in range(n_data_q):
                 cx(

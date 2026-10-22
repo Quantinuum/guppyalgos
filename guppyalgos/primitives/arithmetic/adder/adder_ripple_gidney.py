@@ -19,6 +19,10 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_uncompute,
 )
 from guppyalgos.utils import qarray
+from guppyalgos.primitives.arithmetic.adder._controls import (
+    _acquire_control,
+    _release_control,
+)
 
 
 @guppy
@@ -251,241 +255,6 @@ def _gmaj_gumaj_bottom_carry_out_inverse_gate(
 
 @guppy
 @no_type_check
-def adder_ripple_gidney_mod[n: nat](
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-) -> None:
-    """Apply a modular Gidney ripple-carry adder.
-
-    This circuit performs in-place modular addition of a_reg into b_reg:
-
-    ``|a>|b> -> |a>|a + b mod 2^n>``
-
-    The circuit has linear depth and requires n - 1 ancilla qubits.
-
-    Reference:
-    Gidney, C. (2018). Halving the cost of quantum addition. Quantum, 2, 74.
-
-    Args:
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-
-    """
-    if n == 1:
-        cx(a_reg[0], b_reg[0])
-        return
-
-    anc = qarray(comptime(n - 1))
-
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
-
-    for i in range(n - 2):
-        _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
-
-    cx(a_reg[n - 1], b_reg[n - 1])
-    cx(anc[n - 2], b_reg[n - 1])
-
-    for i in range(n - 2):
-        _g_unmajority_gate(
-            a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
-        )
-
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
-    cx(a_reg[0], b_reg[0])
-
-    discard_array(anc)
-
-
-@guppy
-@no_type_check
-def adder_ripple_gidney_mod_dagger[n: nat](
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-) -> None:
-    """Apply the inverse of the modular Gidney ripple-carry adder.
-
-    This circuit performs subtraction of ``a_reg`` from ``b_reg`` and
-    computes the final borrow bit:
-
-    ``|a>|b + a mod 2^n> -> |a>|b>``
-
-    The circuit has linear depth and requires n - 1 ancilla qubits.
-
-    Reference:
-    Gidney, C. (2018). Halving the cost of quantum addition. Quantum, 2, 74.
-
-    Args:
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg -= a_reg mod 2^n.
-
-    """
-    if n == 1:
-        cx(a_reg[0], b_reg[0])
-        return
-
-    anc = qarray(comptime(n - 1))
-
-    cx(a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
-
-    for i in range(n - 2):
-        _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
-
-    cx(a_reg[n - 1], b_reg[n - 1])
-    cx(anc[n - 2], b_reg[n - 1])
-
-    for i in range(n - 2):
-        _g_majority_inverse_gate(
-            a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
-        )
-
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
-
-    discard_array(anc)
-
-
-@guppy
-@no_type_check
-def adder_ripple_gidney_carry_out[n: nat](
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-    carry_out: qubit,
-) -> None:
-    """Apply a Gidney non-modular ripple-carry adder.
-
-    The circuit implements the transformation:
-
-    ``|a>|b>|0> -> |a>|b + a mod 2^n>|carry_out>``
-
-    Args:
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-        carry_out (qubit): Qubit that is flipped if the addition produces a final carry
-            out.
-
-    """
-    if n == 1:
-        temp_and_compute(a_reg[0], b_reg[0], carry_out)
-        cx(a_reg[0], b_reg[0])
-        return
-
-    anc = qarray(comptime(n - 1))
-
-    # ------------------------------------------------------------------ #
-    # Forward sweep                                                      #
-    # ------------------------------------------------------------------ #
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
-
-    for i in range(n - 2):
-        _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
-
-    _gmaj_gumaj_bottom_carry_out_gate(a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out)
-
-    # ------------------------------------------------------------------ #
-    # Reverse sweep                                                      #
-    # ------------------------------------------------------------------ #
-    for i in range(n - 2):
-        _g_unmajority_gate(
-            a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
-        )
-
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
-    cx(a_reg[0], b_reg[0])
-
-    discard_array(anc)
-
-
-@guppy
-@no_type_check
-def _adder_ripple_gidney_carry_out_dagger_impl[n: nat](
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-    carry_out: qubit,
-    uncompute_carry_out: bool,
-) -> None:
-    """Apply the dagger of the non-modular Gidney ripple-carry adder.
-
-    The circuit implements the transformation:
-
-    ``|a>|b + a mod 2^n>|carry_out> -> |a>|b>|0>``
-
-    Args:
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-        carry_out (qubit): Qubit that is flipped iff the subtraction produces a
-            final borrow (i.e. iff ``b < a``).
-        uncompute_carry_out: If `True`, uncompute the carry-out already stored in
-            `carry_out`. If `False`, `carry_out` must be a clean ancilla and is
-            populated with the carry-out produced by the inverse circuit.
-
-    """
-    if n == 1:
-        cx(a_reg[0], b_reg[0])
-        if uncompute_carry_out:
-            temp_and_uncompute(a_reg[0], b_reg[0], carry_out)
-        else:
-            temp_and_compute(a_reg[0], b_reg[0], carry_out)
-        return
-
-    anc = qarray(comptime(n - 1))
-
-    cx(a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
-
-    # ------------------------------------------------------------------ #
-    # Forward sweep                                                      #
-    # ------------------------------------------------------------------ #
-    for i in range(n - 2):
-        _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
-
-    _gmaj_gumaj_bottom_carry_out_inverse_gate(
-        a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out, uncompute_carry_out
-    )
-
-    # ------------------------------------------------------------------ #
-    # Reverse sweep                                                      #
-    # ------------------------------------------------------------------ #
-
-    for i in range(n - 2):
-        _g_majority_inverse_gate(
-            a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
-        )
-
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
-
-    discard_array(anc)
-
-
-@guppy
-@no_type_check
-def adder_ripple_gidney_carry_out_dagger[n: nat](
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-    carry_out: qubit,
-) -> None:
-    """Apply the dagger of the non-modular Gidney ripple-carry adder.
-
-    The circuit implements the transformation:
-
-    ``|a>|b + a mod 2^n>|carry_out> -> |a>|b>|0>``
-
-    Args:
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-        carry_out (qubit): Qubit that is flipped iff the subtraction produces a
-            final borrow (i.e. iff ``b < a``).
-
-    """
-    return _adder_ripple_gidney_carry_out_dagger_impl(a_reg, b_reg, carry_out, True)
-
-
-@guppy
-@no_type_check
 def _cntrl_g_unmajority_gate(
     ctrl: qubit, a: qubit, b: qubit, c: qubit, carry_out: qubit
 ) -> None:
@@ -593,267 +362,473 @@ def _cntrl_gmaj_gumaj_bottom_carry_out_inverse_gate(
     cx(a, b)
 
 
-@guppy
-@no_type_check
-def cntrl_adder_ripple_gidney_mod[n: nat](
-    ctrl: qubit,
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-) -> None:
-    """Apply a controlled modular Gidney ripple-carry adder.
+@guppy.unitary
+class adder_ripple_gidney_mod:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__[n: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+    ) -> None:
+        """Apply a modular Gidney ripple-carry adder.
 
-    The circuit implements the transformation:
+        This circuit performs in-place modular addition of a_reg into b_reg:
 
-    ``|ctrl>|a>|b> -> |ctrl>|a>|b + ctrl * a mod 2^n>``
+        ``|a>|b> -> |a>|a + b mod 2^n>``
 
-    Implements the controlled modular addition circuit from Figure 4 of
-    https://quantum-journal.org/papers/q-2018-06-18-74/pdf/.
+        The circuit has linear depth and requires n - 1 ancilla qubits.
 
-    Each intermediate bit gadget costs 8T gates: one ``temp_and_compute`` for
-    the carry and one temporary logical-AND pair in the backward pass for the
-    controlled addend contribution.
+        Reference:
+        Gidney, C. (2018). Halving the cost of quantum addition. Quantum, 2, 74.
 
-    Args:
-        ctrl (qubit): The control qubit.
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
+        Args:
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg += a_reg mod 2^n.
 
-    """
-    if n == 1:
+        """
+        if n == 1:
+            cx(a_reg[0], b_reg[0])
+            return
+
+        anc = qarray(comptime(n - 1))
+
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
+
+        for i in range(n - 2):
+            _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+
+        cx(a_reg[n - 1], b_reg[n - 1])
+        cx(anc[n - 2], b_reg[n - 1])
+
+        for i in range(n - 2):
+            _g_unmajority_gate(
+                a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
+
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+        cx(a_reg[0], b_reg[0])
+
+        discard_array(anc)
+
+    @guppy
+    @no_type_check
+    def daggered[n: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+    ) -> None:
+        """Apply the inverse of the modular Gidney ripple-carry adder.
+
+        This circuit performs subtraction of ``a_reg`` from ``b_reg`` and
+        computes the final borrow bit:
+
+        ``|a>|b + a mod 2^n> -> |a>|b>``
+
+        The circuit has linear depth and requires n - 1 ancilla qubits.
+
+        Reference:
+        Gidney, C. (2018). Halving the cost of quantum addition. Quantum, 2, 74.
+
+        Args:
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg -= a_reg mod 2^n.
+
+        """
+        if n == 1:
+            cx(a_reg[0], b_reg[0])
+            return
+
+        anc = qarray(comptime(n - 1))
+
+        cx(a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
+
+        for i in range(n - 2):
+            _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+
+        cx(a_reg[n - 1], b_reg[n - 1])
+        cx(anc[n - 2], b_reg[n - 1])
+
+        for i in range(n - 2):
+            _g_majority_inverse_gate(
+                a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
+
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+
+        discard_array(anc)
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat, m: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+        controls: array[qubit, m],
+    ) -> None:
+        """Apply a controlled modular Gidney ripple-carry adder.
+
+        The circuit implements the transformation:
+
+        ``|ctrl>|a>|b> -> |ctrl>|a>|b + ctrl * a mod 2^n>``
+
+        Implements the controlled modular addition circuit from Figure 4 of
+        https://quantum-journal.org/papers/q-2018-06-18-74/pdf/.
+
+        Each intermediate bit gadget costs 8T gates: one ``temp_and_compute`` for
+        the carry and one temporary logical-AND pair in the backward pass for the
+        controlled addend contribution.
+
+        Args:
+            controls: Control register; the operation applies when all controls are one.
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg += a_reg mod 2^n.
+
+        """
+        control_work = qarray(comptime(max(0, m - 1)))
+        ctrl = _acquire_control(controls, control_work)
+
+        if n == 1:
+            _ccx(ctrl, a_reg[0], b_reg[0])
+            _release_control(controls, control_work, ctrl)
+            discard_array(control_work)
+            return
+
+        anc = qarray(comptime(n - 1))
+
+        # ------------------------------------------------------------------ #
+        # Forward sweep                                                      #
+        # ------------------------------------------------------------------ #
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
+
+        for i in range(n - 2):
+            _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+
+        _cntrl_gmaj_gumaj_bottom_mod_gate(ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2])
+
+        # ------------------------------------------------------------------ #
+        # Reverse sweep                                                      #
+        # ------------------------------------------------------------------ #
+        for i in range(n - 2):
+            _cntrl_g_unmajority_gate(
+                ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
+
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
         _ccx(ctrl, a_reg[0], b_reg[0])
-        return
 
-    anc = qarray(comptime(n - 1))
+        discard_array(anc)
 
-    # ------------------------------------------------------------------ #
-    # Forward sweep                                                      #
-    # ------------------------------------------------------------------ #
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+        _release_control(controls, control_work, ctrl)
+        discard_array(control_work)
 
-    for i in range(n - 2):
-        _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat, m: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+        controls: array[qubit, m],
+    ) -> None:
+        """Apply the dagger of the controlled modular Gidney ripple-carry adder.
 
-    _cntrl_gmaj_gumaj_bottom_mod_gate(ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2])
+        The circuit implements the transformation:
 
-    # ------------------------------------------------------------------ #
-    # Reverse sweep                                                      #
-    # ------------------------------------------------------------------ #
-    for i in range(n - 2):
-        _cntrl_g_unmajority_gate(
-            ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
-        )
+        ``|ctrl>|a>|b + ctrl * a mod 2^n> -> |ctrl>|a>|b>``
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
-    _ccx(ctrl, a_reg[0], b_reg[0])
+        Implements the inverse of the controlled modular addition circuit from Figure 4
+        of
+        https://quantum-journal.org/papers/q-2018-06-18-74/pdf/.
 
-    discard_array(anc)
+        Args:
+            controls: Control register; the operation applies when all controls are one.
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg += a_reg mod 2^n.
 
+        """
+        control_work = qarray(comptime(max(0, m - 1)))
+        ctrl = _acquire_control(controls, control_work)
 
-@guppy
-@no_type_check
-def cntrl_adder_ripple_gidney_mod_dagger[n: nat](
-    ctrl: qubit,
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-) -> None:
-    """Apply the dagger of the controlled modular Gidney ripple-carry adder.
+        if n == 1:
+            _ccx(ctrl, a_reg[0], b_reg[0])
+            _release_control(controls, control_work, ctrl)
+            discard_array(control_work)
+            return
 
-    The circuit implements the transformation:
+        anc = qarray(comptime(n - 1))
 
-    ``|ctrl>|a>|b + ctrl * a mod 2^n> -> |ctrl>|a>|b>``
-
-    Implements the inverse of the controlled modular addition circuit from Figure 4 of
-    https://quantum-journal.org/papers/q-2018-06-18-74/pdf/.
-
-    Args:
-        ctrl (qubit): The control qubit.
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-
-    """
-    if n == 1:
+        # ------------------------------------------------------------------ #
+        # Forward sweep                                                      #
+        # ------------------------------------------------------------------ #
         _ccx(ctrl, a_reg[0], b_reg[0])
-        return
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
 
-    anc = qarray(comptime(n - 1))
+        for i in range(n - 2):
+            _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
 
-    # ------------------------------------------------------------------ #
-    # Forward sweep                                                      #
-    # ------------------------------------------------------------------ #
-    _ccx(ctrl, a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+        _cntrl_gmaj_gumaj_bottom_mod_gate(ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2])
 
-    for i in range(n - 2):
-        _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+        # ------------------------------------------------------------------ #
+        # Reverse sweep                                                      #
+        # ------------------------------------------------------------------ #
+        for i in range(n - 2):
+            _cntrl_g_majority_inverse_gate(
+                ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
 
-    _cntrl_gmaj_gumaj_bottom_mod_gate(ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2])
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
 
-    # ------------------------------------------------------------------ #
-    # Reverse sweep                                                      #
-    # ------------------------------------------------------------------ #
-    for i in range(n - 2):
-        _cntrl_g_majority_inverse_gate(
-            ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+        discard_array(anc)
+
+        _release_control(controls, control_work, ctrl)
+        discard_array(control_work)
+
+
+@guppy.unitary
+class adder_ripple_gidney_carry_out:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__[n: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+        carry_out: qubit,
+    ) -> None:
+        """Apply a Gidney non-modular ripple-carry adder.
+
+        The circuit implements the transformation:
+
+        ``|a>|b>|0> -> |a>|b + a mod 2^n>|carry_out>``
+
+        Args:
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg += a_reg mod 2^n.
+            carry_out (qubit): Qubit that is flipped if the addition produces a final
+            carry
+                out.
+
+        """
+        if n == 1:
+            temp_and_compute(a_reg[0], b_reg[0], carry_out)
+            cx(a_reg[0], b_reg[0])
+            return
+
+        anc = qarray(comptime(n - 1))
+
+        # ------------------------------------------------------------------ #
+        # Forward sweep                                                      #
+        # ------------------------------------------------------------------ #
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
+
+        for i in range(n - 2):
+            _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+
+        _gmaj_gumaj_bottom_carry_out_gate(
+            a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+        # ------------------------------------------------------------------ #
+        # Reverse sweep                                                      #
+        # ------------------------------------------------------------------ #
+        for i in range(n - 2):
+            _g_unmajority_gate(
+                a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
 
-    discard_array(anc)
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+        cx(a_reg[0], b_reg[0])
+
+        discard_array(anc)
+
+    @guppy
+    @no_type_check
+    def daggered[n: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+        carry_out: qubit,
+    ) -> None:
+        """Apply the dagger of the non-modular Gidney ripple-carry adder.
+
+        The circuit implements the transformation:
+
+        ``|a>|b + a mod 2^n>|carry_out> -> |a>|b>|0>``
+
+        Args:
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg += a_reg mod 2^n.
+            carry_out (qubit): Qubit that is flipped iff the subtraction produces a
+                final borrow (i.e. iff ``b < a``).
 
 
-@guppy
-@no_type_check
-def cntrl_adder_ripple_gidney_carry_out[n: nat](
-    ctrl: qubit,
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-    carry_out: qubit,
-) -> None:
-    """Apply a controlled Gidney ripple-carry adder.
+        """
+        if n == 1:
+            cx(a_reg[0], b_reg[0])
+            temp_and_uncompute(a_reg[0], b_reg[0], carry_out)
+            return
 
-    The circuit implements the transformation:
+        anc = qarray(comptime(n - 1))
 
-    ``|ctrl>|a>|b>|0> -> |ctrl>|a>|b + ctrl * a mod 2^n>|ctrl * carry_out>``
+        cx(a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
 
-    Args:
-        ctrl (qubit): The control qubit.
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-        carry_out (qubit): Qubit that is flipped if the addition produces a final carry
-            out.
+        # ------------------------------------------------------------------ #
+        # Forward sweep                                                      #
+        # ------------------------------------------------------------------ #
+        for i in range(n - 2):
+            _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
 
-    """
-    if n == 1:
-        ancilla = qubit()
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
-        temp_and_compute(ctrl, ancilla, carry_out)
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
-        toffoli(ctrl, a_reg[0], b_reg[0])
-        discard(ancilla)
-        return
-
-    anc = qarray(comptime(n - 1))
-
-    # ------------------------------------------------------------------ #
-    # Forward sweep                                                      #
-    # ------------------------------------------------------------------ #
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
-
-    for i in range(n - 2):
-        _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
-
-    _cntrl_gmaj_gumaj_bottom_carry_out_gate(
-        ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out
-    )
-
-    # ------------------------------------------------------------------ #
-    # Reverse sweep                                                      #
-    # ------------------------------------------------------------------ #
-    for i in range(n - 2):
-        _cntrl_g_unmajority_gate(
-            ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+        _gmaj_gumaj_bottom_carry_out_inverse_gate(
+            a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out, True
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
-    _ccx(ctrl, a_reg[0], b_reg[0])
+        # ------------------------------------------------------------------ #
+        # Reverse sweep                                                      #
+        # ------------------------------------------------------------------ #
 
-    discard_array(anc)
+        for i in range(n - 2):
+            _g_majority_inverse_gate(
+                a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
 
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
 
-@guppy
-@no_type_check
-def _cntrl_adder_ripple_gidney_carry_out_dagger_impl[n: nat](
-    ctrl: qubit,
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-    carry_out: qubit,
-    uncompute_carry_out: bool,
-) -> None:
-    """Apply the dagger of the controlled Gidney ripple-carry adder.
+        discard_array(anc)
 
-    The circuit implements the transformation:
+    @guppy
+    @no_type_check
+    def controlled[n: nat, m: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+        carry_out: qubit,
+        controls: array[qubit, m],
+    ) -> None:
+        """Apply a controlled Gidney ripple-carry adder.
 
-    ``|ctrl>|a>|b + ctrl * a mod 2^n>|ctrl * carry_out> -> |ctrl>|a>|b>|0>``
+        The circuit implements the transformation:
 
-    Args:
-        ctrl (qubit): The control qubit.
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-        carry_out (qubit): Qubit that is flipped iff the subtraction produces a
-            final borrow (i.e. iff ``b < a``).
-        uncompute_carry_out: If `True`, uncompute the carry-out already stored in
-            `carry_out`. If `False`, `carry_out` must be a clean ancilla and is
-            populated with the carry-out produced by the inverse circuit.
+        ``|ctrl>|a>|b>|0> -> |ctrl>|a>|b + ctrl * a mod 2^n>|ctrl * carry_out>``
 
-    """
-    if n == 1:
-        ancilla = qubit()
-        toffoli(ctrl, a_reg[0], b_reg[0])
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
-        if uncompute_carry_out:
-            temp_and_uncompute(ctrl, ancilla, carry_out)
-        else:
+        Args:
+            controls: Control register; the operation applies when all controls are one.
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg += a_reg mod 2^n.
+            carry_out (qubit): Qubit that is flipped if the addition produces a final
+            carry
+                out.
+
+        """
+        control_work = qarray(comptime(max(0, m - 1)))
+        ctrl = _acquire_control(controls, control_work)
+
+        if n == 1:
+            ancilla = qubit()
+            temp_and_compute(a_reg[0], b_reg[0], ancilla)
             temp_and_compute(ctrl, ancilla, carry_out)
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
-        discard(ancilla)
-        return
+            temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+            toffoli(ctrl, a_reg[0], b_reg[0])
+            discard(ancilla)
+            _release_control(controls, control_work, ctrl)
+            discard_array(control_work)
+            return
 
-    anc = qarray(comptime(n - 1))
+        anc = qarray(comptime(n - 1))
 
-    _ccx(ctrl, a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+        # ------------------------------------------------------------------ #
+        # Forward sweep                                                      #
+        # ------------------------------------------------------------------ #
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
 
-    # ------------------------------------------------------------------ #
-    # Forward sweep                                                      #
-    # ------------------------------------------------------------------ #
-    for i in range(n - 2):
-        _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+        for i in range(n - 2):
+            _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
 
-    _cntrl_gmaj_gumaj_bottom_carry_out_inverse_gate(
-        ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out, uncompute_carry_out
-    )
-
-    # ------------------------------------------------------------------ #
-    # Reverse sweep                                                      #
-    # ------------------------------------------------------------------ #
-
-    for i in range(n - 2):
-        _cntrl_g_majority_inverse_gate(
-            ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+        _cntrl_gmaj_gumaj_bottom_carry_out_gate(
+            ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+        # ------------------------------------------------------------------ #
+        # Reverse sweep                                                      #
+        # ------------------------------------------------------------------ #
+        for i in range(n - 2):
+            _cntrl_g_unmajority_gate(
+                ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
 
-    discard_array(anc)
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+        _ccx(ctrl, a_reg[0], b_reg[0])
+
+        discard_array(anc)
+
+        _release_control(controls, control_work, ctrl)
+        discard_array(control_work)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat, m: nat](
+        a_reg: array[qubit, n],
+        b_reg: array[qubit, n],
+        carry_out: qubit,
+        controls: array[qubit, m],
+    ) -> None:
+        """Apply the dagger of the controlled Gidney ripple-carry adder.
+
+        The circuit implements the transformation:
+
+        ``|ctrl>|a>|b + ctrl * a mod 2^n>|ctrl * carry_out> -> |ctrl>|a>|b>|0>``
+
+        Args:
+            controls: Control register; the operation applies when all controls are one.
+            a_reg (array[qubit, n]): The addend register.
+            b_reg (array[qubit, n]): The target register.
+                Modified in-place: b_reg += a_reg mod 2^n.
+            carry_out (qubit): Qubit that is flipped iff the subtraction produces a
+                final borrow (i.e. iff ``b < a``).
 
 
-@guppy
-@no_type_check
-def cntrl_adder_ripple_gidney_carry_out_dagger[n: nat](
-    ctrl: qubit,
-    a_reg: array[qubit, n],
-    b_reg: array[qubit, n],
-    carry_out: qubit,
-) -> None:
-    """Apply the dagger of the controlled Gidney ripple-carry adder.
+        """
+        control_work = qarray(comptime(max(0, m - 1)))
+        ctrl = _acquire_control(controls, control_work)
 
-    The circuit implements the transformation:
+        if n == 1:
+            ancilla = qubit()
+            toffoli(ctrl, a_reg[0], b_reg[0])
+            temp_and_compute(a_reg[0], b_reg[0], ancilla)
+            temp_and_uncompute(ctrl, ancilla, carry_out)
+            temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+            discard(ancilla)
+            _release_control(controls, control_work, ctrl)
+            discard_array(control_work)
+            return
 
-    ``|ctrl>|a>|b + ctrl * a mod 2^n>|ctrl * carry_out> -> |ctrl>|a>|b>|0>``
+        anc = qarray(comptime(n - 1))
 
-    Args:
-        ctrl (qubit): The control qubit.
-        a_reg (array[qubit, n]): The addend register.
-        b_reg (array[qubit, n]): The target register.
-            Modified in-place: b_reg += a_reg mod 2^n.
-        carry_out (qubit): Qubit that is flipped iff the subtraction produces a
-            final borrow (i.e. iff ``b < a``).
+        _ccx(ctrl, a_reg[0], b_reg[0])
+        temp_and_compute(a_reg[0], b_reg[0], anc[0])
 
-    """
-    return _cntrl_adder_ripple_gidney_carry_out_dagger_impl(
-        ctrl, a_reg, b_reg, carry_out, True
-    )
+        # ------------------------------------------------------------------ #
+        # Forward sweep                                                      #
+        # ------------------------------------------------------------------ #
+        for i in range(n - 2):
+            _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
+
+        _cntrl_gmaj_gumaj_bottom_carry_out_inverse_gate(
+            ctrl, a_reg[n - 1], b_reg[n - 1], anc[n - 2], carry_out, True
+        )
+
+        # ------------------------------------------------------------------ #
+        # Reverse sweep                                                      #
+        # ------------------------------------------------------------------ #
+
+        for i in range(n - 2):
+            _cntrl_g_majority_inverse_gate(
+                ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
+            )
+
+        temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+
+        discard_array(anc)
+
+        _release_control(controls, control_work, ctrl)
+        discard_array(control_work)
