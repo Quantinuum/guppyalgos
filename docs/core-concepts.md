@@ -528,3 +528,53 @@ def apply_cx_layer() -> None:
 - The elementary example uses explicit array types. The {ref}`advanced
   register-composition example <advanced-register-composition>` shows how
   generic register bundles extend this pattern.
+
+## Parameterized multi-control composition
+
+`MultiCntrlFunctionParams` extends the `MultiCntrlFunction` pattern with a
+copyable classical parameter value. Its operation has signature
+`(control, targets, params)`, and `.compose(controls, targets, params)` forwards
+that value unchanged. Use a tuple to bundle several classical parameters:
+
+```python
+from guppylang import guppy
+from guppylang.std.builtins import array, nat
+from guppylang.std.quantum import angle, crz, qubit
+
+from guppyalgos.primitives.gate_decompositions.cnx.cnu import (
+    MultiCntrlFunctionParams,
+)
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+
+
+@guppy
+def controlled_rotations(
+    c: qubit, targets: array[qubit, 2], params: tuple[angle, int]
+) -> None:
+    theta, count = params
+    for _ in range(count):
+        crz(c, targets[0], theta)
+        crz(c, targets[1], theta)
+
+
+@guppy
+def rotate[m: nat](
+    controls: array[qubit, m], targets: array[qubit, 2], theta: angle, count: int
+) -> None:
+    op = MultiCntrlFunctionParams[m, array[qubit, 2], tuple[angle, int]](
+        controlled_rotations, cnx[m]
+    )
+    op.compose(controls, targets, (theta, count))
+```
+
+Use at least one control. One control is passed directly to the operation;
+multiple controls use one clean work qubit plus any CNX workspace. The operation
+must preserve its control, and the CNX kernel must preserve its controls, be
+self-inverse, and restore its internal workspace. Randomized kernels must replay
+the same randomness for uncomputation.
+
+The target type can also bundle multiple registers. When packing separately
+borrowed registers, use the existing borrowing helpers and restore every register
+after composition. Keep quantum targets separate from copyable classical
+parameters. The adapter does not generate inverses: supply a controlled-inverse
+kernel or mathematically valid inverse parameters when needed.
