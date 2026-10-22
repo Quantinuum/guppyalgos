@@ -94,29 +94,9 @@ def controlled_add(
 ) -> None:
   with control(ctrl):
     adder_ripple_gidney_mod(a_qreg, b_qreg)
-
-
-@guppy
-def controlled_subtract(
-  ctrl: qubit, a_qreg: array[qubit, 3], b_qreg: array[qubit, 3],
-) -> None:
-  with control(ctrl), dagger:
-    adder_ripple_gidney_mod(a_qreg, b_qreg)
 ```
 
 Controlled subtractors perform the corresponding update $b\mapsto b-ca$.
-All adders, including the single-bit adders, support `dagger` and `control`
-contexts through custom implementations. A control register applies the
-operation only when all its qubits are one. Multiple controls are combined
-once with a temporary logical-AND ladder and measurement-based uncomputation.
-For $m>1$ controls this adds $m-1$ work qubits and $4(m-1)$ T gates; a single
-control uses the legacy circuit and workspace without a reduction ancilla.
-Carry-out adders retain the legacy clean-carry promise: the forward operation
-starts with carry zero, and its dagger uncomputes the corresponding carry.
-Use the borrow-out subtractors to produce a borrow into a fresh zero qubit.
-For an uncontrolled operation, omit the `control` context rather than passing
-an empty control register, which the current compiler cannot normalize for
-these adders.
 
 ## Comparison
 
