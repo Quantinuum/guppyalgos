@@ -4,6 +4,7 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import Function, array, nat
+from guppylang.std.lang import Copy
 from guppylang.std.quantum import discard, qubit
 
 
@@ -36,5 +37,39 @@ class MultiCntrlFunction[m: nat, TargetRegs]:
             work = qubit()
             self.cnx_kernel(controls, work)
             self.operation(work, targets)
+            self.cnx_kernel(controls, work)
+            discard(work)
+
+
+@guppy.struct
+@no_type_check
+class MultiCntrlFunctionParams[m: nat, TargetRegs, Params: Copy]:
+    """Apply a singly controlled operation with copyable classical parameters.
+
+    This follows the control and CNX kernel contract of ``MultiCntrlFunction``.
+    Use at least one control. One control is passed directly to ``operation``;
+    multiple controls use one clean work qubit in addition to kernel ancillas.
+
+    ``TargetRegs`` can bundle multiple registers. ``Params`` can be a copyable
+    value or tuple, such as ``tuple[angle, int]``. Pack and restore separately
+    borrowed target registers at the call site; keep quantum targets out of
+    ``Params``. Supply a controlled-inverse operation for inverse composition.
+    """
+
+    operation: Function[[qubit, TargetRegs, Params], None]
+    cnx_kernel: Function[[array[qubit, m], qubit], None]
+
+    @guppy
+    @no_type_check
+    def compose(
+        self, controls: array[qubit, m], targets: TargetRegs, params: Params
+    ) -> None:
+        """Compute the control predicate, apply with parameters, and uncompute."""
+        if m == 1:
+            self.operation(controls[0], targets, params)
+        else:
+            work = qubit()
+            self.cnx_kernel(controls, work)
+            self.operation(work, targets, params)
             self.cnx_kernel(controls, work)
             discard(work)
