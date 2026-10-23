@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Quantinuum/guppyalgos/compare/v0.2.0...v0.2.1) (2026-10-23)
+
+
+### Features
+
+* add parameterized multi-controlled function composition ([#110](https://github.com/Quantinuum/guppyalgos/issues/110)) ([ad11380](https://github.com/Quantinuum/guppyalgos/commit/ad11380c865e8fa86cf4f53f664497d6d2cf32e9))
+
 ## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
