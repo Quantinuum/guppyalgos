@@ -84,7 +84,8 @@ library convention used below.
 from guppylang import guppy
 from guppylang.std.builtins import array
 from guppylang.std.quantum import qubit
-from guppyalgos.algorithms.time_evolution.trotter import cntrl_trotter_first_order
+from guppyalgos.algorithms.phase_estimation import qpe_unitary
+from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
 
 import zixy.qubit.pauli as zqp
 
@@ -92,23 +93,23 @@ hamiltonian = zqp.RealTermSum.from_str(
     "(-0.5, Z0 X1), (-0.1, X0 Z1), (-0.2, Y0 Y1)"
 )
 n_state_qubits = len(hamiltonian.qubits)
-cntrl_trotter_step = cntrl_trotter_first_order(hamiltonian, n_state_qubits)
+trotter_step = trotter_first_order(hamiltonian, n_state_qubits)
+n_phase_qubits = 4
 time_step = 0.1
 
-
 @guppy
-def trotter_power_oracle(
-    control: qubit,
+def trotter_qpe_step(
+  phase_reg: array[qubit, n_phase_qubits],
     state_qreg: array[qubit, n_state_qubits],
-    power: int,
 ) -> None:
-    for _ in range(power):
-        cntrl_trotter_step(control, state_qreg, time_step)
+    qpe_unitary(phase_reg, state_qreg, trotter_step, time_step)
 ```
 
+- `qpe_unitary` applies each power by repeating the Trotter step under the phase-qubit control.
+- The unitary's `controlled` custom modifier handles each Pauli exponential, including identity-term relative phases.
+
 - A power of $2^k$ repeats the step $2^k$ times under the same phase-qubit control.
-- Pass this oracle to `qpe(phase_qreg, state_qreg, trotter_power_oracle)`
-  after preparing the phase superposition and the target state.
+- Call `qpe_unitary` after preparing the phase superposition and the target state.
 - The library's dimensionless `time_step` convention gives
   $U_{\mathrm{step}}\approx e^{-i\pi\,\mathrm{time\_step}\,H/2}$.
   Keep that scaling when converting phases to energies.
