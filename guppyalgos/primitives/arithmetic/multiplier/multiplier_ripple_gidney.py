@@ -17,9 +17,9 @@ References:
 
 from typing import no_type_check
 
+from guppylang.std.builtins import control
 from guppylang import guppy
-from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import Function, array, comptime, nat
+from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import discard, qubit
 
@@ -28,7 +28,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_uncompute,
 )
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
-    cntrl_adder_ripple_gidney_mod,
+    adder_ripple_gidney_mod,
 )
 from guppyalgos.utils import apply_bitstring, cswap, int_to_bits, qarray
 from guppyalgos.utils.guppy.unsafe_borrow import (
@@ -56,57 +56,6 @@ def _require_positive_width(n: int) -> None:
     if n < 1:
         msg = "n must be positive"
         raise ValueError(msg)
-
-
-def _shifted_controlled_adder(n: int, shift: int) -> GuppyFunctionDefinition:
-    """Build a controlled adder of ``a_reg << shift`` into ``product``, mod ``2**n``.
-
-    Since ``array`` sizes must be known statically, and ``shift`` varies per bit of the
-    multiplier register, a distinct specialized adder is compiled for each ``shift``.
-    """
-    if n < 1:
-        msg = "n must be positive"
-        raise ValueError(msg)
-    if not 0 <= shift < n:
-        msg = "shift must satisfy 0 <= shift < n"
-        raise ValueError(msg)
-
-    if shift == 0:
-
-        @guppy
-        @no_type_check
-        def shifted_adder(
-            ctrl: qubit, a_reg: array[qubit, n], product: array[qubit, n]
-        ) -> None:
-            cntrl_adder_ripple_gidney_mod(ctrl, a_reg, product)
-
-        return shifted_adder
-
-    @guppy
-    @no_type_check
-    def shifted_adder(
-        ctrl: qubit, a_reg: array[qubit, n], product: array[qubit, n]
-    ) -> None:
-        a_prefix, a_mid, a_suffix = _unsafe_array_borrow_slice(
-            a_reg, 0, comptime(n - shift), comptime(shift)
-        )
-        p_prefix, p_mid, p_suffix = _unsafe_array_borrow_slice(
-            product, comptime(shift), comptime(n - shift), 0
-        )
-        cntrl_adder_ripple_gidney_mod(ctrl, a_mid, p_mid)
-        _unsafe_array_unborrow_slice(a_reg, a_prefix, a_mid, a_suffix)
-        _unsafe_array_unborrow_slice(product, p_prefix, p_mid, p_suffix)
-
-    return shifted_adder
-
-
-@guppy.comptime
-@no_type_check
-def _build_shifted_adders[n: nat]() -> array[
-    Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-]:
-    """Build one specialized shifted controlled adder per multiplier bit position."""
-    return [_shifted_controlled_adder(n, i) for i in range(n)]
 
 
 @guppy
@@ -138,11 +87,24 @@ def multiplier_ripple_gidney_mod[n: nat](
 
     """
     comptime(_require_positive_width(n))
-    shifted_adders: array[
-        Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-    ] = _build_shifted_adders()
-    for i in range(n):
-        shifted_adders[i](b_reg[i], a_reg, product)
+    with control(b_reg[0]):
+        adder_ripple_gidney_mod(a_reg, product)
+    if n == 1:
+        return
+
+    a_prefix, a_mid, a_suffix = _unsafe_array_borrow_slice(
+        a_reg, 0, comptime(max(1, n - 1)), comptime(min(1, n - 1))
+    )
+    b_prefix, b_mid, b_suffix = _unsafe_array_borrow_slice(
+        b_reg, comptime(min(1, n - 1)), comptime(max(1, n - 1)), 0
+    )
+    p_prefix, p_mid, p_suffix = _unsafe_array_borrow_slice(
+        product, comptime(min(1, n - 1)), comptime(max(1, n - 1)), 0
+    )
+    multiplier_ripple_gidney_mod(a_mid, b_mid, p_mid)
+    _unsafe_array_unborrow_slice(a_reg, a_prefix, a_mid, a_suffix)
+    _unsafe_array_unborrow_slice(b_reg, b_prefix, b_mid, b_suffix)
+    _unsafe_array_unborrow_slice(product, p_prefix, p_mid, p_suffix)
 
 
 @guppy
@@ -178,15 +140,28 @@ def cntrl_multiplier_ripple_gidney_mod[n: nat](
 
     """
     comptime(_require_positive_width(n))
-    shifted_adders: array[
-        Function[[qubit, array[qubit, n], array[qubit, n]], None], n
-    ] = _build_shifted_adders()
-    for i in range(n):
-        temp_control = qubit()
-        temp_and_compute(ctrl, b_reg[i], temp_control)
-        shifted_adders[i](temp_control, a_reg, product)
-        temp_and_uncompute(ctrl, b_reg[i], temp_control)
-        discard(temp_control)
+    temp_control = qubit()
+    temp_and_compute(ctrl, b_reg[0], temp_control)
+    with control(temp_control):
+        adder_ripple_gidney_mod(a_reg, product)
+    temp_and_uncompute(ctrl, b_reg[0], temp_control)
+    discard(temp_control)
+    if n == 1:
+        return
+
+    a_prefix, a_mid, a_suffix = _unsafe_array_borrow_slice(
+        a_reg, 0, comptime(max(1, n - 1)), comptime(min(1, n - 1))
+    )
+    b_prefix, b_mid, b_suffix = _unsafe_array_borrow_slice(
+        b_reg, comptime(min(1, n - 1)), comptime(max(1, n - 1)), 0
+    )
+    p_prefix, p_mid, p_suffix = _unsafe_array_borrow_slice(
+        product, comptime(min(1, n - 1)), comptime(max(1, n - 1)), 0
+    )
+    cntrl_multiplier_ripple_gidney_mod(ctrl, a_mid, b_mid, p_mid)
+    _unsafe_array_unborrow_slice(a_reg, a_prefix, a_mid, a_suffix)
+    _unsafe_array_unborrow_slice(b_reg, b_prefix, b_mid, b_suffix)
+    _unsafe_array_unborrow_slice(product, p_prefix, p_mid, p_suffix)
 
 
 @guppy
