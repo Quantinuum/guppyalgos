@@ -134,7 +134,8 @@ def fanout_measurement_uncompute[n_state_qubits: nat](
         bit_a ^= bits[i]
     if bit_a:
         z(q_target)
-    transversal(reset, qs_copies)
+    for i in range(len(qs_copies)):
+        reset(qs_copies[i])
 
 
 def fanout_measurement_parity_total_qubits(n_state_qubits: int) -> int:
