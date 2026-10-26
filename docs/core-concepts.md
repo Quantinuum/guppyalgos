@@ -578,3 +578,22 @@ borrowed registers, use the existing borrowing helpers and restore every registe
 after composition. Keep quantum targets separate from copyable classical
 parameters. The adapter does not generate inverses: supply a controlled-inverse
 kernel or mathematically valid inverse parameters when needed.
+
+## Phase primitive modifiers
+
+`apply_phase`, `t_state`, `ccz_rel_phase`, and `ccu_phase_correction` support
+`with dagger`, `with control(c)`, and `with control(controls), dagger`.
+Import `control` and `dagger` from `guppylang.std.builtins`.
+Replace `ccz_rel_phase_dg` and `ccu_phase_correction_dg` with dagger blocks
+around their forward operations.
+
+`apply_phase(q, theta)` retains the Rz matrix
+$\mathrm{diag}(e^{-i\pi\theta/2},e^{i\pi\theta/2})$.
+Its global phase matters when adding controls. `t_state(q)` applies H then T
+on arbitrary inputs; a zero input prepares the T state.
+
+Known compiler limitation (Guppy 1.1.1): the default optimizer can panic when
+a runtime-angle `apply_phase` and its adjoint occur together with controlled
+calls in one function. Compiling that composition with
+`program.with_minimal_opt().compile_function()` succeeds. Individual modifier
+paths compile with the default optimizer.
