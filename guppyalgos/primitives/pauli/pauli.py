@@ -5,8 +5,8 @@ from typing import no_type_check
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import cx, cy, cz, qubit, x, y, z, h, sdg, s
+from guppylang.std.builtins import array, nat, dagger
+from guppylang.std.quantum import cx, cy, cz, qubit, x, y, z, h, sdg
 
 from guppyalgos.utils.guppy.gates import apply_phase
 
@@ -81,19 +81,18 @@ def pauli_to_cntrl_gate[n_q: nat](
 
 
 def pauli_to_z_basis[n_q: nat](
-    pauli_string: zqp.String, size: int, dagger: bool = False
+    pauli_string: zqp.String, size: int
 ) -> GuppyFunctionDefinition[array[qubit, n_q], None]:
     """Produce a guppy function to change basis to/from Z-basis for a zixy String.
 
-    Maps the given Pauli to the Z-basis (or from Z-basis if dagger=True) on a
-    register of given size. Typically should be used as a pair for a GPG^dagger change
+    Maps the given Pauli to the Z-basis on a register of given size.
+    Use ``with dagger`` to restore the original basis and ``with control``
+    to add external controls. Typically should be used as a pair for a GPG^dagger change
     of basis surrounding a Pauli operation.
 
     Args:
         pauli_string (zqp.String): zixy string for the Pauli to change basis for
         size (int): size of the register to apply the basis change on
-        dagger (bool): whether to return the dagger operation (i.e. from Z-basis to
-            Pauli basis). Default False (i.e. from Pauli basis to Z-basis).
 
     Returns:
         GuppyFunctionDefinition that takes in a qarray[size] and applies the basis
@@ -101,7 +100,7 @@ def pauli_to_z_basis[n_q: nat](
 
     """
 
-    @guppy.comptime
+    @guppy.comptime(unitary=True)
     @no_type_check
     def pauli_gate(q: array[qubit, size]) -> None:
         for idx, p in pauli_string.get_dict().items():
@@ -111,11 +110,26 @@ def pauli_to_z_basis[n_q: nat](
                 case zqp.X:
                     h(q[idx])
                 case zqp.Y:
-                    if not dagger:
-                        sdg(q[idx])
-                        h(q[idx])
-                    else:
-                        h(q[idx])
-                        s(q[idx])
+                    sdg(q[idx])
+                    h(q[idx])
 
     return pauli_gate
+
+
+def _daggered_basis_change[n_q: nat](
+    basis_change: GuppyFunctionDefinition[[array[qubit, n_q]], None],
+    size: int,
+) -> GuppyFunctionDefinition[[array[qubit, n_q]], None]:
+    """Bridge generated callers to the public dagger path.
+
+    Guppy 1.1.1 tracing cannot execute modifier context managers directly.
+    A compiled wrapper keeps the inverse definition on the public operation.
+    """
+
+    @guppy
+    @no_type_check
+    def restore_basis(qs: array[qubit, size]) -> None:
+        with dagger:
+            basis_change(qs)
+
+    return restore_basis

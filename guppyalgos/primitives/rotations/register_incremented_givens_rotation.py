@@ -10,7 +10,7 @@ from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import crz, cx, h, qubit, rz, x
 
 
-@guppy
+@guppy(unitary=True)
 def xx_basis_change(theta: angle, q0: qubit, q1: qubit) -> None:
     """Apply ``exp(-i pi theta XX / 2)`` using a Pauli gadget."""
     h(q0)

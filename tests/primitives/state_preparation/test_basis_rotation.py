@@ -70,7 +70,7 @@ def _sample_three_mode_rotation() -> np.ndarray:
     )
 
 
-@guppy
+@guppy(unitary=True)
 def _custom_phase(q: qubit, theta: angle) -> None:
     """Provide an injectable single-mode phase implementation."""
     rz(q, theta)
