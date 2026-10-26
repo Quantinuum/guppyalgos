@@ -8,6 +8,7 @@ from guppylang.std.angles import angle
 from guppylang.std.quantum import qubit, rz, crz
 
 from guppyalgos.primitives.pauli import pauli_to_z_basis
+from guppyalgos.primitives.pauli.pauli import _daggered_basis_change
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
 
 import zixy.qubit.pauli as zqp
@@ -70,10 +71,7 @@ def pauli_exp[n_state_q: nat](
         )
 
     basis_change = pauli_to_z_basis(pauli_string=pauli_string, size=n_qubits)
-
-    basis_change_dagger = pauli_to_z_basis(
-        pauli_string=pauli_string, size=n_qubits, dagger=True
-    )
+    restore_basis = _daggered_basis_change(basis_change, n_qubits)
 
     pauli_indices = tuple(pauli_string.get_dict().keys())
 
@@ -93,7 +91,7 @@ def pauli_exp[n_state_q: nat](
         if len(qubit_subset) > 1:
             ladder.ascending_dagger(qubit_subset)
 
-        basis_change_dagger(qreg)
+        restore_basis(qreg)
 
     return pauli_gadget_fn
 
@@ -151,10 +149,7 @@ def cntrl_pauli_exp[n_state_q: nat](
         return cntrl_pauli_gadget_fn
 
     basis_change = pauli_to_z_basis(pauli_string=pauli_string, size=n_qubits)
-
-    basis_change_dagger = pauli_to_z_basis(
-        pauli_string=pauli_string, size=n_qubits, dagger=True
-    )
+    restore_basis = _daggered_basis_change(basis_change, n_qubits)
 
     pauli_indices = tuple(pauli_string.get_dict().keys())
 
@@ -178,6 +173,6 @@ def cntrl_pauli_exp[n_state_q: nat](
         if len(qubit_subset) > 1:
             ladder.ascending_dagger(qubit_subset)
 
-        basis_change_dagger(qreg)
+        restore_basis(qreg)
 
     return cntrl_pauli_gadget_fn
