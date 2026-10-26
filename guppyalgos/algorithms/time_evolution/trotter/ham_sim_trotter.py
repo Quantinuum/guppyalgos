@@ -1,6 +1,9 @@
 """Hamiltonian Simulation using Trotterization."""
 
+from typing import no_type_check
+
 from guppylang import guppy
+from guppylang_internals.tys.ty import UnitaryFlags
 from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import qubit
 from guppylang.defs import GuppyFunctionDefinition
@@ -48,6 +51,8 @@ def ham_sim_trotter[n_state_q: nat](
 
     Args:
         trotter_step: A Guppy function implementing a single Trotter step.
+            The returned circuit inherits its declared dagger/control capabilities.
+            Forward-only production steps remain supported until their migration.
         n_steps: The number of Trotter steps to apply.
         time_step: The time step for each Trotter step.
         n_state_qubits: The number of qubits in the quantum state register.
@@ -56,8 +61,15 @@ def ham_sim_trotter[n_state_q: nat](
         A Guppy function implementing the full Hamiltonian simulation.
 
     """
+    # Forward-only production steps remain supported during their migration.
+    # Match the emitted circuit's capabilities to the concrete supplied step.
+    flags = getattr(trotter_step.wrapped, "unitary_flags", UnitaryFlags.NoFlags)
 
-    @guppy
+    @guppy.comptime(
+        daggerable=UnitaryFlags.Dagger in flags,
+        controllable=UnitaryFlags.Control in flags,
+    )
+    @no_type_check
     def ham_sim_fn(state_qreg: array[qubit, n_state_qubits]) -> None:
         for _ in range(n_steps):
             trotter_step(state_qreg, time_step)
