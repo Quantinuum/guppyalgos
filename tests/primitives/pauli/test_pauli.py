@@ -1,6 +1,7 @@
 """Tests for pauli utils."""
 
 import numpy as np
+import pytest
 from collections.abc import Iterable
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
@@ -13,9 +14,14 @@ from selene_sim import Quest
 
 from guppyalgos.primitives.utilities.gates import apply_phase
 from guppyalgos.utils import qarray
-from guppyalgos.primitives.pauli import pauli_to_cntrl_gate, pauli_to_gate
+from guppyalgos.primitives.pauli import (
+    pauli_to_cntrl_gate,
+    pauli_to_gate,
+    pauli_to_z_basis,
+)
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
+    assert_unitary_modifiers,
     get_statevector,
     project_state_onto_bitstring,
 )
@@ -192,4 +198,22 @@ def test_pauli_to_cntrl_gate_applies_phase_once() -> None:
         get_statevector(cntrl_pauli_with_phase, 3),
         get_statevector(manual_cntrl_pauli_with_phase, 3),
         atol=1e-12,
+    )
+
+
+@pytest.mark.parametrize("paulis", ["X0 Y1", "Y0 I1", "Z0 I1"])
+def test_pauli_to_z_basis_modifiers(paulis: str) -> None:
+    """Check basis changes and all modifiers, including empty X/Y supports."""
+    hadamard = np.array([[1, 1], [1, -1]], dtype=np.complex128) / np.sqrt(2)
+    matrices = {
+        "I": np.eye(2, dtype=np.complex128),
+        "X": hadamard,
+        "Y": hadamard @ np.diag([1, -1j]),
+        "Z": np.eye(2, dtype=np.complex128),
+    }
+    pauli_string = zqp.String.from_str(paulis, 2)
+    first, second = paulis.split()
+    expected = np.kron(matrices[first[0]], matrices[second[0]])
+    assert_unitary_modifiers(
+        pauli_to_z_basis(pauli_string, 2), 2, expected_unitary=expected
     )

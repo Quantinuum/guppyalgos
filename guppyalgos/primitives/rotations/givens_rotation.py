@@ -7,7 +7,20 @@ from typing import no_type_check
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.quantum import cx, h, qubit, rz, s, sdg
+from guppylang.std.builtins import array, control, dagger, nat
+from guppylang.std.quantum import cx, h, qubit, rz, sdg
+
+
+@guppy(daggerable=True)
+@no_type_check
+def _change_basis(q0: qubit, q1: qubit) -> None:
+    """Put both Givens rotation factors into the Z basis."""
+    h(q0)
+    cx(q0, q1)
+    sdg(q0)
+    h(q0)
+    sdg(q1)
+    h(q1)
 
 
 def givens_with_custom_rz(
@@ -16,30 +29,61 @@ def givens_with_custom_rz(
     """Build a two-mode Givens rotation with a supplied RZ implementation.
 
     The returned callable has signature ``(qubit, qubit, angle) -> None`` and
-    uses Guppy's half-turn angle convention.
+    uses Guppy's half-turn angle convention. The supplied Rz implementation
+    must support both dagger and control modifiers.
     """
 
-    @guppy
+    @guppy(unitary=True)
     @no_type_check
-    def givens_rotation_fn(q0: qubit, q1: qubit, theta: angle) -> None:
-        """Apply the configured two-mode Givens rotation."""
-        h(q0)
-        cx(q0, q1)
-
-        sdg(q0)
-        h(q0)
+    def rotate_z(q0: qubit, q1: qubit, theta: angle) -> None:
+        """Apply the two Z rotations in the transformed basis."""
         rz_method(q0, -theta)
-        h(q0)
-        s(q0)
-
-        sdg(q1)
-        h(q1)
         rz_method(q1, -theta)
-        h(q1)
-        s(q1)
 
-        cx(q0, q1)
-        h(q0)
+    @guppy.unitary
+    class givens_rotation_fn:
+        @guppy
+        @no_type_check
+        def __call__(q0: qubit, q1: qubit, theta: angle) -> None:
+            """Apply the configured two-mode Givens rotation."""
+            _change_basis(q0, q1)
+            rotate_z(q0, q1, theta)
+            with dagger:
+                _change_basis(q0, q1)
+
+        @guppy
+        @no_type_check
+        def daggered(q0: qubit, q1: qubit, theta: angle) -> None:
+            """Apply the inverse Givens rotation."""
+            _change_basis(q0, q1)
+            with dagger:
+                rotate_z(q0, q1, theta)
+            with dagger:
+                _change_basis(q0, q1)
+
+        @guppy
+        @no_type_check
+        def controlled[n: nat](
+            q0: qubit, q1: qubit, theta: angle, ctrls: array[qubit, n]
+        ) -> None:
+            """Apply external controls only to the Z rotations."""
+            _change_basis(q0, q1)
+            with control(ctrls):
+                rotate_z(q0, q1, theta)
+            with dagger:
+                _change_basis(q0, q1)
+
+        @guppy
+        @no_type_check
+        def ctrl_daggered[n: nat](
+            q0: qubit, q1: qubit, theta: angle, ctrls: array[qubit, n]
+        ) -> None:
+            """Apply external controls only to the inverse Z rotations."""
+            _change_basis(q0, q1)
+            with control(ctrls), dagger:
+                rotate_z(q0, q1, theta)
+            with dagger:
+                _change_basis(q0, q1)
 
     return givens_rotation_fn
 
