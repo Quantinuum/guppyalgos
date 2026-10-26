@@ -4,6 +4,7 @@ from typing import no_type_check
 
 import numpy as np
 from guppylang.decorator import guppy
+from guppylang.std.builtins import array, control, dagger
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, qubit, x
 from selene_sim import Quest
@@ -11,7 +12,6 @@ from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
     full_adder_inverse,
     half_adder,
-    half_adder_inverse,
 )
 from guppyalgos.testing import assert_allclose_ignorephase
 
@@ -115,7 +115,7 @@ def test_full_adder_truth_table() -> None:
 
 
 def test_half_adder_inverse() -> None:
-    """Verify half_adder_inverse acts as the inverse."""
+    """Verify daggered half_adder acts as the inverse."""
 
     @guppy
     @no_type_check
@@ -130,7 +130,8 @@ def test_half_adder_inverse() -> None:
             x(b)
 
         half_adder(a, b, c_out)
-        half_adder_inverse(a, b, c_out)
+        with dagger:
+            half_adder(a, b, c_out)
         if a_bit:
             x(a)
         if b_bit:
@@ -205,3 +206,20 @@ def test_full_adder_inverse() -> None:
         zero_state = np.array([1, 0], dtype=np.complex128)
         for state in states.values():
             assert_allclose_ignorephase(state.get_single_state(), zero_state)
+
+
+def test_half_adder_modifier_compilation() -> None:
+    """Compile all public modes while keeping carry and external controls separate."""
+
+    @guppy
+    @no_type_check
+    def program(qs: array[qubit, 3], controls: array[qubit, 2]) -> None:
+        half_adder(qs[0], qs[1], qs[2])
+        with dagger:
+            half_adder(qs[0], qs[1], qs[2])
+        with control(controls):
+            half_adder(qs[0], qs[1], qs[2])
+        with control(controls), dagger:
+            half_adder(qs[0], qs[1], qs[2])
+
+    program.compile_function()

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `half_adder` supports dagger and control modifiers. Replace
+  `half_adder_inverse(a, b, carry)` with `with dagger: half_adder(a, b, carry)`.
+
 ## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
