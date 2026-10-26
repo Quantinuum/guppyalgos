@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Phase primitives support dagger and control modifiers. Replace `ccz_rel_phase_dg`
-  and `ccu_phase_correction_dg` calls with `with dagger` on the forward operation.
-  `apply_phase` retains its Rz convention; `t_state` applies H then T on any input.
-
 ## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
