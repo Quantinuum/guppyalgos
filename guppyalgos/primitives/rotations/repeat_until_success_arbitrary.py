@@ -9,7 +9,7 @@ from guppylang.defs import GuppyFunctionDefinition
 from typing import no_type_check
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def dummy_theta_resource_state(q: qubit, theta: angle) -> None:
     """Prepare ``|0> + exp(-i * theta)|1>`` using Rz and H gates.

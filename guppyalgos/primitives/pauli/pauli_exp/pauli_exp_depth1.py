@@ -25,6 +25,7 @@ import zixy.qubit.pauli as zqp
 
 from guppyalgos.utils import qarray
 from guppyalgos.primitives.pauli import pauli_to_z_basis
+from guppyalgos.primitives.pauli.pauli import _daggered_basis_change
 
 
 @guppy
@@ -148,9 +149,7 @@ def pauli_exp_depth1[n_state_q: nat](
         )
 
     basis_change = pauli_to_z_basis(pauli_string=pauli_string, size=n_qubits)
-    basis_change_dagger = pauli_to_z_basis(
-        pauli_string=pauli_string, size=n_qubits, dagger=True
-    )
+    restore_basis = _daggered_basis_change(basis_change, n_qubits)
 
     id_indices = [i for i in range(n_qubits) if pauli_string[i] == zqp.I]
 
@@ -184,7 +183,7 @@ def pauli_exp_depth1[n_state_q: nat](
             _z_correction_disconnnected(
                 qreg, result_ancilla, array(nat(el) for el in comptime(id_indices))
             )
-            basis_change_dagger(qreg)
+            restore_basis(qreg)
 
         return pauli_phasor_fn
     else:
@@ -212,6 +211,6 @@ def pauli_exp_depth1[n_state_q: nat](
                 res_a, res_b
             )
             _z_correction(qreg, result_ancilla)
-            basis_change_dagger(qreg)
+            restore_basis(qreg)
 
         return pauli_phasor_fn

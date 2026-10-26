@@ -14,10 +14,11 @@ def givens_with_custom_rz(
     """Build a two-mode Givens rotation with a supplied RZ implementation.
 
     The returned callable has signature ``(qubit, qubit, angle) -> None`` and
-    uses Guppy's half-turn angle convention.
+    uses Guppy's half-turn angle convention. The supplied Rz implementation
+    must support both dagger and control modifiers.
     """
 
-    @guppy
+    @guppy(unitary=True)
     def givens_rotation_fn(q0: qubit, q1: qubit, theta: angle) -> None:
         """Apply the configured two-mode Givens rotation."""
         h(q0)
