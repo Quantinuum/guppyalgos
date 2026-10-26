@@ -578,3 +578,23 @@ borrowed registers, use the existing borrowing helpers and restore every registe
 after composition. Keep quantum targets separate from copyable classical
 parameters. The adapter does not generate inverses: supply a controlled-inverse
 kernel or mathematically valid inverse parameters when needed.
+
+## Controlled rotation modifiers
+
+`ccry_toffoli` and `ccry_cx` in
+`guppyalgos.primitives.gate_decompositions.cnx.ccu` support `with dagger`,
+`with control(c)`, and `with control(controls), dagger`. Import `control`
+and `dagger` from `guppylang.std.builtins`.
+Both retain their existing rotation decompositions and runtime `angle` argument.
+Added external controls are separate from the two intrinsic control arguments:
+
+```python
+with control(external_controls), dagger:
+    ccry_cx(control1, control2, target, theta)
+```
+
+Known compiler limitation (Guppy 1.1.1): the default optimizer can panic when
+runtime-angle forward, inverse, and controlled calls appear together in one
+function. Compiling that composition with
+`program.with_minimal_opt().compile_function()` succeeds. Individual modifier
+paths compile with the default optimizer.
