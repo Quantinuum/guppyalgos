@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import no_type_check
+
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
@@ -18,6 +20,7 @@ def givens_with_custom_rz(
     """
 
     @guppy
+    @no_type_check
     def givens_rotation_fn(q0: qubit, q1: qubit, theta: angle) -> None:
         """Apply the configured two-mode Givens rotation."""
         h(q0)

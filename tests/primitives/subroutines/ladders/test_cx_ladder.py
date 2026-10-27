@@ -111,10 +111,12 @@ def test_linear_and_log_depth_unitary_equivalence(n_qubits: int) -> None:
     """Test that linear and log CX ladder indices produce the same unitaries."""
 
     @guppy
+    @no_type_check
     def lin(qs: array[qubit, n_qubits]) -> None:
         CXLadderLinear().ascending(qs)
 
     @guppy
+    @no_type_check
     def log(qs: array[qubit, n_qubits]) -> None:
         CXLadderLog().ascending(qs)
 

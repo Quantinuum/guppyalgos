@@ -208,6 +208,7 @@ def _test_qsvt_given_lcu[n_prep_q: nat, n_state_q: nat](
             prepare(prep)
 
     @guppy
+    @no_type_check
     def qsvt_circ(
         prep_qreg: array[qubit, n_prep_qubits],
         signal_qreg: array[qubit, 1],

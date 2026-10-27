@@ -104,9 +104,9 @@ def _apply_block_ladders(blocks_a, blocks_b, bottom_cca, inverse: bool = False) 
             ]
             ladder_qs.append(blocks_a[j][-1])
             if inverse:
-                ToffoliLadderLog().ascending_dagger_with_cca(ladder_qs, cca)
+                ToffoliLadderLog().ascending_dagger_with_cca(ladder_qs, cca)  # ty: ignore[missing-argument]
             else:
-                ToffoliLadderLog().ascending_with_cca(ladder_qs, cca)
+                ToffoliLadderLog().ascending_with_cca(ladder_qs, cca)  # ty: ignore[missing-argument]
             if borrowing:
                 for cca_qubit in cca:
                     x(cca_qubit)
