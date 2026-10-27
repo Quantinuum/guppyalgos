@@ -1,62 +1,167 @@
 """General utils for guppyalgos."""
 
-from collections.abc import Callable
-
-from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat, frozenarray
-from guppylang.std.quantum import qubit, t, h, x, cx, toffoli, discard
-from guppylang.std.quantum import crz, rz
-from guppylang.std.angles import angle
-
 from typing import no_type_check
 
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import (
+    Unitary,
+    array,
+    comptime,
+    control,
+    dagger,
+    frozenarray,
+    nat,
+)
+from guppylang.std.quantum import (
+    crz,
+    cx,
+    discard,
+    h,
+    qubit,
+    rz,
+    t,
+    toffoli,
+    x,
+)
 
-@guppy
-@no_type_check
-def transversal1[n: nat, m: nat](
-    op: Callable[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
-) -> None:
-    """Apply a single qubit operator register-wise ignoring the indices in ``ignore_``.
 
-    Args:
-        op: The operator to apply.
-        qs: The qubit array to apply the operator to.
-        ignore_: The indices to ignore.
+@guppy.unitary
+class transversal1:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__[n: nat, m: nat](
+        op: Unitary[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
+    ) -> None:
+        """Apply single qubit unitary register-wise ignoring the indices in ``ignore_``.
 
-    """
-    for i in range(n):
-        apply_gate = True
-        for j in range(m):
-            if i == ignore_[j]:
-                apply_gate = False
-        if apply_gate:
+        Args:
+            op: The operator to apply.
+            qs: The qubit array to apply the operator to.
+            ignore_: The indices to ignore.
+
+        """
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                op(qs[i])
+
+    @guppy
+    @no_type_check
+    def daggered[n: nat, m: nat](  # noqa: D102
+        op: Unitary[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
+    ) -> None:
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                with dagger:
+                    op(qs[i])
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat, m: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit], None],
+        qs: array[qubit, n],
+        ignore_: array[nat, m],
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                with control(ctrls):
+                    op(qs[i])
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat, m: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit], None],
+        qs: array[qubit, n],
+        ignore_: array[nat, m],
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                with control(ctrls), dagger:
+                    op(qs[i])
+
+
+@guppy.unitary
+class transversal1_start_end:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__[n: nat](
+        op: Unitary[[qubit], None],
+        qs: array[qubit, n],
+        start: nat,
+        end: nat,
+    ) -> None:
+        """Apply a single qubit operator to register from start to end (non-inclusive).
+
+        Args:
+            op: The operator to apply.
+            qs: The qubit array to apply the operator to.
+            start: The start index of the slice.
+            end: The end index of the slice (non-inclusive).
+
+        """
+        for i in range(start, end):
             op(qs[i])
 
+    @guppy
+    @no_type_check
+    def daggered[n: nat](  # noqa: D102
+        op: Unitary[[qubit], None],
+        qs: array[qubit, n],
+        start: nat,
+        end: nat,
+    ) -> None:
+        for i in range(start, end):
+            with dagger:
+                op(qs[i])
 
-@guppy
+    @guppy
+    @no_type_check
+    def controlled[n: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit], None],
+        qs: array[qubit, n],
+        start: nat,
+        end: nat,
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(start, end):
+            with control(ctrls):
+                op(qs[i])
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit], None],
+        qs: array[qubit, n],
+        start: nat,
+        end: nat,
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(start, end):
+            with control(ctrls), dagger:
+                op(qs[i])
+
+
+@guppy(unitary=True)
 @no_type_check
-def transversal1_start_end[n: nat](
-    op: Callable[[qubit], None],
-    qs: array[qubit, n],
-    start: nat,
-    end: nat,
-) -> None:
-    """Apply a single qubit operator to register from start to end (non-inclusive).
-
-    Args:
-        op: The operator to apply.
-        qs: The qubit array to apply the operator to.
-        start: The start index of the slice.
-        end: The end index of the slice (non-inclusive).
-
-    """
-    for i in range(start, end):
-        op(qs[i])
-
-
-@guppy
-@no_type_check
-def transversal1_all[n: nat](op: Callable[[qubit], None], qs: array[qubit, n]) -> None:
+def transversal1_all[n: nat](op: Unitary[[qubit], None], qs: array[qubit, n]) -> None:
     """Apply a single qubit operator register-wise.
 
     Args:
@@ -67,59 +172,157 @@ def transversal1_all[n: nat](op: Callable[[qubit], None], qs: array[qubit, n]) -
     transversal1(op, qs, array())
 
 
-@guppy
-@no_type_check
-def transversal2[n: nat, m: nat](
-    op: Callable[[qubit, qubit], None],
-    qs0: array[qubit, n],
-    qs1: array[qubit, n],
-    ignore_: array[nat, m],
-) -> None:
-    """Apply a two qubit operator register-wise ignoring the indices in ``ignore_``.
+@guppy.unitary
+class transversal2:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__[n: nat, m: nat](
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        ignore_: array[nat, m],
+    ) -> None:
+        """Apply a two qubit operator register-wise ignoring the indices in ``ignore_``.
 
-    Args:
-        op: The operator to apply.
-        qs0: The first qubit array to apply the operator to.
-        qs1: The second qubit array to apply the operator to.
-        ignore_: The indices to ignore.
+        Args:
+            op: The operator to apply.
+            qs0: The first qubit array to apply the operator to.
+            qs1: The second qubit array to apply the operator to.
+            ignore_: The indices to ignore.
 
-    """
-    for i in range(n):
-        apply_gate = True
-        for j in range(m):
-            if i == ignore_[j]:
-                apply_gate = False
-        if apply_gate:
+        """
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                op(qs0[i], qs1[i])
+
+    @guppy
+    @no_type_check
+    def daggered[n: nat, m: nat](  # noqa: D102
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        ignore_: array[nat, m],
+    ) -> None:
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                with dagger:
+                    op(qs0[i], qs1[i])
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat, m: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        ignore_: array[nat, m],
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                with control(ctrls):
+                    op(qs0[i], qs1[i])
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat, m: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        ignore_: array[nat, m],
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(n):
+            apply_gate = True
+            for j in range(m):
+                if i == ignore_[j]:
+                    apply_gate = False
+            if apply_gate:
+                with control(ctrls), dagger:
+                    op(qs0[i], qs1[i])
+
+
+@guppy.unitary
+class traversal2_start_end:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__[n: nat](
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        start: nat,
+        end: nat,
+    ) -> None:
+        """Apply a two qubit operator to register from start to end (non-inclusive).
+
+        Args:
+            op: The operator to apply.
+            qs0: The first qubit array to apply the operator to.
+            qs1: The second qubit array to apply the operator to.
+            start: The start index of the slice.
+            end: The end index of the slice (non-inclusive).
+
+        """
+        for i in range(start, end):
             op(qs0[i], qs1[i])
 
+    @guppy
+    @no_type_check
+    def daggered[n: nat](  # noqa: D102
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        start: nat,
+        end: nat,
+    ) -> None:
+        for i in range(start, end):
+            with dagger:
+                op(qs0[i], qs1[i])
 
-@guppy
-@no_type_check
-def traversal2_start_end[n: nat](
-    op: Callable[[qubit, qubit], None],
-    qs0: array[qubit, n],
-    qs1: array[qubit, n],
-    start: nat,
-    end: nat,
-) -> None:
-    """Apply a two qubit operator to register from start to end (non-inclusive).
+    @guppy
+    @no_type_check
+    def controlled[n: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        start: nat,
+        end: nat,
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(start, end):
+            with control(ctrls):
+                op(qs0[i], qs1[i])
 
-    Args:
-        op: The operator to apply.
-        qs0: The first qubit array to apply the operator to.
-        qs1: The second qubit array to apply the operator to.
-        start: The start index of the slice.
-        end: The end index of the slice (non-inclusive).
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat, n_ctrl: nat](  # noqa: D102
+        op: Unitary[[qubit, qubit], None],
+        qs0: array[qubit, n],
+        qs1: array[qubit, n],
+        start: nat,
+        end: nat,
+        ctrls: array[qubit, n_ctrl],
+    ) -> None:
+        for i in range(start, end):
+            with control(ctrls), dagger:
+                op(qs0[i], qs1[i])
 
-    """
-    for i in range(start, end):
-        op(qs0[i], qs1[i])
 
-
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def transversal2_all[n: nat](
-    op: Callable[[qubit, qubit], None],
+    op: Unitary[[qubit, qubit], None],
     qs0: array[qubit, n],
     qs1: array[qubit, n],
 ) -> None:
@@ -174,7 +377,7 @@ def apply_phase(q: qubit, theta: angle) -> None:
     rz(q, theta)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def t_state(qubit: qubit) -> None:
     """Directly generate a T state on a qubit."""
