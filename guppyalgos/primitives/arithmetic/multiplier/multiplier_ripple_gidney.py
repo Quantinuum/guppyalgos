@@ -19,7 +19,7 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import Function, array, comptime, nat
+from guppylang.std.builtins import Function, array, comptime, control, nat
 from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import discard, qubit
 
@@ -30,7 +30,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
     cntrl_adder_ripple_gidney_mod,
 )
-from guppyalgos.utils import apply_bitstring, cswap, int_to_bits, qarray
+from guppyalgos.utils import apply_bitstring, int_to_bits, qarray, swap
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
@@ -269,7 +269,8 @@ def cntrl_multiplier_ripple_gidney_mod_in_place[n: nat](
     for q in constant_reg:
         discard(q)
 
-    cswap(ctrl, a_reg, work_reg)
+    with control(ctrl):
+        swap(a_reg, work_reg)
 
     inverse_reg = qarray(n)
     apply_bitstring(inverse_reg, negative_inverse_bits)

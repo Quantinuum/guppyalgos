@@ -32,6 +32,7 @@ from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import (
     array,
     comptime,
+    control,
     nat,
     owned,
 )
@@ -46,7 +47,7 @@ from guppyalgos.algorithms.state_preparation.alias_sampling.alias_table import A
 from guppyalgos.utils import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
-    cswap,
+    swap,
     float_to_fixed_point,
     int_to_bits,
 )
@@ -192,10 +193,12 @@ def alias_samp_prep[n: nat, n_prob_bits: nat](
             comparison_prob_prep(compare_alternative_val_reg)
             compare_box(compare_alternative_val_reg, keep_prob_reg, compare_out)
             x(compare_out)
-            cswap(compare_out, alternative_val_reg, index_reg)
+            with control(compare_out):
+                swap(alternative_val_reg, index_reg)
 
         else:
-            cswap(compare_out, alternative_val_reg, index_reg)
+            with control(compare_out):
+                swap(alternative_val_reg, index_reg)
             x(compare_out)
             compare_box(compare_alternative_val_reg, keep_prob_reg, compare_out)
             comparison_prob_prep(compare_alternative_val_reg)

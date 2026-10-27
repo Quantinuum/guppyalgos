@@ -3,9 +3,6 @@
 from guppylang import guppy
 from guppylang.std.quantum import qubit, t, tdg, cx, h, s
 
-from guppyalgos.utils import t_state
-
-
 from typing import no_type_check
 
 
@@ -56,5 +53,6 @@ def temp_and_compute(q0: qubit, q1: qubit, t_qubit: qubit) -> None:
         t_qubit (qubit): The target qubit to store the result. Begins in $\ket{0}$
 
     """
-    t_state(t_qubit)
+    h(t_qubit)
+    t(t_qubit)
     temp_and_t_state_compute(q0, q1, t_qubit)
