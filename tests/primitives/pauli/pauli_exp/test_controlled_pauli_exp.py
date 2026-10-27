@@ -251,6 +251,7 @@ def test_controlled_pauli_exp_identity_phase_custom_rz() -> None:
                 rz(q, theta)
 
         @guppy
+        @no_type_check
         def daggered(q: qubit, theta: angle) -> None:
             rz(q, -theta)
             rz(q, -theta)
