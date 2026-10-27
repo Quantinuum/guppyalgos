@@ -55,7 +55,7 @@ class Qubitization[n_prep_q: nat, n_ctrl_q: nat, TargetRegs]:
     """
 
     block_encoding: LCU[
-        array[qubit, n_prep_q],  # ty: ignore[not-subscriptable]
+        array[qubit, n_prep_q],
         TargetRegs,
     ]  # TODO: generalize to arbitrary block encodings
     reflection: Reflection[n_prep_q, n_ctrl_q]
@@ -119,7 +119,7 @@ class QubitizationCntrl[n_prep_q: nat, TargetRegs]:
 
     cntrl_block_encoding: LCUCntrl[
         qubit,
-        array[qubit, n_prep_q],  # ty: ignore[not-subscriptable]
+        array[qubit, n_prep_q],
         TargetRegs,
     ]  # TODO: generalize to arbitrary block encodings
     controlled_reflection: ReflectionCntrl[n_prep_q]

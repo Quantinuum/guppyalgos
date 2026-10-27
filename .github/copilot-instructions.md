@@ -7,7 +7,7 @@ In addition to these review instructions, also view the instructions in ./AGENTS
 E.g.
 ```python
 @guppy
-def func[n: nat](qs: array[qubit, n])->None: ...
+def func[n: nat](qs: array[qubit, n]) -> None: ...
 ```
 - Prefer `qarray(n)` over `array(qubit() for _ in range(n))` (and in general prefer using methods in `utils` if one is relevant)
 - `result` and `state_result` functions for getting outputs of guppy programs are deprecated, use `output` and `state_output` instead
