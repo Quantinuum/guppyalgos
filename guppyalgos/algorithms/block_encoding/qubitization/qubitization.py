@@ -20,7 +20,7 @@ def _assert_positive_power(power: nat @ comptime) -> None:
 
 @guppy.struct
 @no_type_check
-class Qubitization[n_prep_q: nat, n_ctrl_q: nat, TargetRegs]:
+class Qubitization[n_prep_q: nat, TargetRegs]:
     r"""Guppy struct representing the qubitization walk operator.
 
     The walk operator is
@@ -58,7 +58,7 @@ class Qubitization[n_prep_q: nat, n_ctrl_q: nat, TargetRegs]:
         array[qubit, n_prep_q],
         TargetRegs,
     ]  # TODO: generalize to arbitrary block encodings
-    reflection: Reflection[n_prep_q, n_ctrl_q]
+    reflection: Reflection[n_prep_q]
 
     @guppy
     @no_type_check

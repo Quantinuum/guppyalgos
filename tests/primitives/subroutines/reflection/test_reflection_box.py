@@ -1,4 +1,5 @@
 """Tests for the Reflection box implementation."""
+from guppylang_internals.error import GuppyError
 
 from typing import no_type_check
 
@@ -203,7 +204,7 @@ def test_conjugated_reflection_box_statevector(
 def test_reflection_box_invalid_n_qubits(
     n_qubits: int, n_controls: int, cnx_method: CnxMethod
 ) -> None:
-    """Test that ``reflection_box`` raises ``ValueError`` for invalid ``n_qubits``."""
+    """Test that ``reflection_box`` fails to compile with invalid size cnx."""
     cnxmethod = cnx_method.cnx_func
 
     @guppy
@@ -214,6 +215,6 @@ def test_reflection_box_invalid_n_qubits(
         discard_array(qreg)
 
     with pytest.raises(
-        ValueError, match="reflection_box requires n_qubits == n_controls \\+ 1"
+        GuppyError, match="Expected argument of type"
     ):
         main.emulator(n_qubits).run()

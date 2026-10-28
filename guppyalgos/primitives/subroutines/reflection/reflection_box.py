@@ -1,5 +1,7 @@
 """Reflection box based on the CnZ implementation."""
 
+from __future__ import annotations
+
 from typing import no_type_check
 
 from guppylang.decorator import guppy
@@ -12,17 +14,6 @@ from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
 )
-
-
-@guppy.comptime
-def _assert_n_qubits_is_one_more_than_cntrls(
-    n_qubits: nat @ comptime, n_controls: nat @ comptime
-) -> None:
-    if n_qubits != n_controls + 1:
-        raise ValueError(
-            f"""reflection_box requires n_qubits == n_controls + 1,
-            got {n_qubits} n_qubits and {n_controls} n_controls"""
-        )
 
 
 @guppy
@@ -47,9 +38,9 @@ def reflect_zero[n_controls: nat](
 
 @guppy
 @no_type_check
-def reflection_box[n_qubits: nat, n_controls: nat](
+def reflection_box[n_qubits: nat](
     qreg: array[qubit, n_qubits],
-    cnx_box: Function[[array[qubit, n_controls], qubit], None],
+    cnx_box: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None],
 ) -> None:
     r"""Apply a Householder reflection about the all-zero state.
 
@@ -68,11 +59,9 @@ def reflection_box[n_qubits: nat, n_controls: nat](
     every control qubit is in state :math:`\lvert 0\rangle`.
 
     """
-    _assert_n_qubits_is_one_more_than_cntrls(n_qubits, n_controls)
-
     borrowed_qreg = _unsafe_array_borrow(qreg)
-    controls = array(borrowed_qreg.take(i) for i in range(n_controls))
-    target = borrowed_qreg.take(n_controls)
+    controls = array(borrowed_qreg.take(i) for i in range(comptime(n_qubits - 1)))
+    target = borrowed_qreg.take(n_qubits - 1)
 
     reflect_zero(controls, target, cnx_box)
 
@@ -80,14 +69,14 @@ def reflection_box[n_qubits: nat, n_controls: nat](
     for q in controls:
         borrowed_qreg.put(q, i)
         i += 1
-    borrowed_qreg.put(target, n_controls)
+    borrowed_qreg.put(target, n_qubits - 1)
 
     _unsafe_array_unborrow(qreg, borrowed_qreg)
 
 
 @guppy.struct
 @no_type_check
-class Reflection[n_qubits: nat, n_controls: nat]:
+class Reflection[n_qubits: nat]:
     r"""Guppy struct representing a reflection operator.
 
     The operator is
@@ -99,7 +88,7 @@ class Reflection[n_qubits: nat, n_controls: nat]:
     and is used in the qubitization walk operator :math:`W = R L`.
     """
 
-    cnx_method: Function[[array[qubit, n_controls], qubit], None]
+    cnx_method: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None]
 
     @guppy
     @no_type_check
