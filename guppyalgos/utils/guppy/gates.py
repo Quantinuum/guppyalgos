@@ -14,6 +14,7 @@ from guppylang.std.builtins import (
     frozenarray,
     nat,
 )
+from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import (
     crz,
     cx,
@@ -25,7 +26,6 @@ from guppylang.std.quantum import (
     toffoli,
     x,
 )
-
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 
