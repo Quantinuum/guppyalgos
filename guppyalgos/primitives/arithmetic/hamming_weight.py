@@ -17,7 +17,6 @@ from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     half_adder,
 )
 from guppyalgos.utils import qarray
-from guppyalgos.utils.guppy.gates import swap
 
 
 def _adder_indices(n: int) -> tuple[list[list[int]], list[int]]:
@@ -141,7 +140,7 @@ def hamming_weight[n: nat](
     main_reg: array[qubit, n],
 ) -> tuple[
     array[qubit, comptime(num_hamming_weight_bits(n))],
-    array[qubit, comptime(2 * n - num_hamming_weight_bits(n))],
+    array[qubit, comptime(2 * n - num_hamming_weight_bits(n))],  # ty: ignore[unsupported-operator]
 ]:
     """Produce a guppy function for computing the hamming weight of a register.
 
@@ -214,8 +213,8 @@ def hamming_weight[n: nat](
 @no_type_check
 def hamming_weight_uncompute[n: nat](
     main_reg: array[qubit, n],
-    ham_reg: array[qubit, comptime(num_hamming_weight_bits(n))] @ owned,
-    junk_reg: array[qubit, comptime(2 * n - num_hamming_weight_bits(n))] @ owned,
+    ham_reg: array[qubit, comptime(num_hamming_weight_bits(n))] @ owned,  # ty: ignore[not-subscriptable]
+    junk_reg: array[qubit, comptime(2 * n - num_hamming_weight_bits(n))] @ owned,  # ty: ignore[not-subscriptable, unsupported-operator]
 ) -> None:
     """Uncompute the hamming weight of a register.
 
@@ -243,7 +242,9 @@ def hamming_weight_uncompute[n: nat](
             mem_swap(temporig[i], junkopt[i - comptime(num_hamming_weight_bits(n))])
 
     for i in range(n):
-        mem_swap(tempancilla[i], junkopt[i + (comptime(n - num_hamming_weight_bits(n)))])
+        mem_swap(
+            tempancilla[i], junkopt[i + (comptime(n - num_hamming_weight_bits(n)))]
+        )
 
     for opt in hamopt:
         opt.unwrap_nothing()
@@ -263,14 +264,13 @@ def hamming_weight_uncompute[n: nat](
     for k in range(len(idxs)):
         mem_swap(main_reg[idxs[k]], ancilla_reg[k])
 
-        # undo adders
-        ancilla_index = len(ops_rev) - 1
-        for op in ops_rev:
-            if op[2] == -1:
-                _half_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
-            else:
-                _full_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
-            ancilla_index -= 1
+    # undo adders
+    ancilla_index = len(ops_rev) - 1
+    for op in ops_rev:
+        if op[2] == -1:
+            _half_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
+        else:
+            _full_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
+        ancilla_index -= 1
 
     discard_array(ancilla_reg)
-
