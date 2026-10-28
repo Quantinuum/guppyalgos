@@ -17,13 +17,37 @@ from guppylang.std.quantum import (
     crz,
     cx,
     discard,
-    h,
     qubit,
     rz,
-    t,
     toffoli,
     x,
 )
+
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.utils.guppy.t_state import t_state  # noqa: F401
+
+
+@guppy
+@no_type_check
+def _transversal1_internal_control[n: nat, m: nat](
+    op: Unitary[[qubit], None],
+    qs: array[qubit, n],
+    ignore_: array[nat, m],
+    dag: bool @ comptime,
+    ctrl: qubit,
+) -> None:
+    for i in range(n):
+        apply_gate = True
+        for j in range(m):
+            if i == ignore_[j]:
+                apply_gate = False
+        if apply_gate:
+            with control(ctrl):
+                if dag:
+                    with dagger:
+                        op(qs[i])
+                else:
+                    op(qs[i])
 
 
 @guppy.unitary
@@ -71,14 +95,14 @@ class transversal1:  # noqa: D101
         ignore_: array[nat, m],
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(n):
-            apply_gate = True
-            for j in range(m):
-                if i == ignore_[j]:
-                    apply_gate = False
-            if apply_gate:
-                with control(ctrls):
-                    op(qs[i])
+        if n_ctrl == 1:
+            _transversal1_internal_control(op, qs, ignore_, False, ctrls[0])
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal1_internal_control(op, qs, ignore_, False, work)
+            cnx(ctrls, work)
+            discard(work)
 
     @guppy
     @no_type_check
@@ -88,14 +112,33 @@ class transversal1:  # noqa: D101
         ignore_: array[nat, m],
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(n):
-            apply_gate = True
-            for j in range(m):
-                if i == ignore_[j]:
-                    apply_gate = False
-            if apply_gate:
-                with control(ctrls), dagger:
+        if n_ctrl == 1:
+            _transversal1_internal_control(op, qs, ignore_, True, ctrls[0])
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal1_internal_control(op, qs, ignore_, True, work)
+            cnx(ctrls, work)
+            discard(work)
+
+
+@guppy
+@no_type_check
+def _transversal1_start_end_internal_control[n: nat](
+    op: Unitary[[qubit], None],
+    qs: array[qubit, n],
+    start: nat,
+    end: nat,
+    dag: bool @ comptime,
+    ctrl: qubit,
+) -> None:
+    for i in range(start, end):
+        with control(ctrl):
+            if dag:
+                with dagger:
                     op(qs[i])
+            else:
+                op(qs[i])
 
 
 @guppy.unitary
@@ -141,9 +184,16 @@ class transversal1_start_end:  # noqa: D101
         end: nat,
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(start, end):
-            with control(ctrls):
-                op(qs[i])
+        if n_ctrl == 1:
+            _transversal1_start_end_internal_control(
+                op, qs, start, end, False, ctrls[0]
+            )
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal1_start_end_internal_control(op, qs, start, end, False, work)
+            cnx(ctrls, work)
+            discard(work)
 
     @guppy
     @no_type_check
@@ -154,9 +204,14 @@ class transversal1_start_end:  # noqa: D101
         end: nat,
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(start, end):
-            with control(ctrls), dagger:
-                op(qs[i])
+        if n_ctrl == 1:
+            _transversal1_start_end_internal_control(op, qs, start, end, True, ctrls[0])
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal1_start_end_internal_control(op, qs, start, end, True, work)
+            cnx(ctrls, work)
+            discard(work)
 
 
 @guppy(unitary=True)
@@ -170,6 +225,30 @@ def transversal1_all[n: nat](op: Unitary[[qubit], None], qs: array[qubit, n]) ->
 
     """
     transversal1(op, qs, array())
+
+
+@guppy
+@no_type_check
+def _transversal2_internal_control[n: nat, m: nat](
+    op: Unitary[[qubit, qubit], None],
+    qs0: array[qubit, n],
+    qs1: array[qubit, n],
+    ignore_: array[nat, m],
+    dag: bool @ comptime,
+    ctrl: qubit,
+) -> None:
+    for i in range(n):
+        apply_gate = True
+        for j in range(m):
+            if i == ignore_[j]:
+                apply_gate = False
+        if apply_gate:
+            with control(ctrl):
+                if dag:
+                    with dagger:
+                        op(qs0[i], qs1[i])
+                else:
+                    op(qs0[i], qs1[i])
 
 
 @guppy.unitary
@@ -225,14 +304,14 @@ class transversal2:  # noqa: D101
         ignore_: array[nat, m],
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(n):
-            apply_gate = True
-            for j in range(m):
-                if i == ignore_[j]:
-                    apply_gate = False
-            if apply_gate:
-                with control(ctrls):
-                    op(qs0[i], qs1[i])
+        if n_ctrl == 1:
+            _transversal2_internal_control(op, qs0, qs1, ignore_, False, ctrls[0])
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal2_internal_control(op, qs0, qs1, ignore_, False, work)
+            cnx(ctrls, work)
+            discard(work)
 
     @guppy
     @no_type_check
@@ -243,14 +322,34 @@ class transversal2:  # noqa: D101
         ignore_: array[nat, m],
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(n):
-            apply_gate = True
-            for j in range(m):
-                if i == ignore_[j]:
-                    apply_gate = False
-            if apply_gate:
-                with control(ctrls), dagger:
+        if n_ctrl == 1:
+            _transversal2_internal_control(op, qs0, qs1, ignore_, True, ctrls[0])
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal2_internal_control(op, qs0, qs1, ignore_, True, work)
+            cnx(ctrls, work)
+            discard(work)
+
+
+@guppy
+@no_type_check
+def _transversal2_start_end_internal_control[n: nat](
+    op: Unitary[[qubit, qubit], None],
+    qs0: array[qubit, n],
+    qs1: array[qubit, n],
+    start: nat,
+    end: nat,
+    dag: bool @ comptime,
+    ctrl: qubit,
+) -> None:
+    for i in range(start, end):
+        with control(ctrl):
+            if dag:
+                with dagger:
                     op(qs0[i], qs1[i])
+            else:
+                op(qs0[i], qs1[i])
 
 
 @guppy.unitary
@@ -300,9 +399,18 @@ class traversal2_start_end:  # noqa: D101
         end: nat,
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(start, end):
-            with control(ctrls):
-                op(qs0[i], qs1[i])
+        if n_ctrl == 1:
+            _transversal2_start_end_internal_control(
+                op, qs0, qs1, start, end, False, ctrls[0]
+            )
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal2_start_end_internal_control(
+                op, qs0, qs1, start, end, False, work
+            )
+            cnx(ctrls, work)
+            discard(work)
 
     @guppy
     @no_type_check
@@ -314,9 +422,18 @@ class traversal2_start_end:  # noqa: D101
         end: nat,
         ctrls: array[qubit, n_ctrl],
     ) -> None:
-        for i in range(start, end):
-            with control(ctrls), dagger:
-                op(qs0[i], qs1[i])
+        if n_ctrl == 1:
+            _transversal2_start_end_internal_control(
+                op, qs0, qs1, start, end, True, ctrls[0]
+            )
+        else:
+            work = qubit()
+            cnx(ctrls, work)
+            _transversal2_start_end_internal_control(
+                op, qs0, qs1, start, end, True, work
+            )
+            cnx(ctrls, work)
+            discard(work)
 
 
 @guppy(unitary=True)
@@ -375,14 +492,6 @@ def qarray(n: nat @ comptime) -> "array[qubit, n]":
 def apply_phase(q: qubit, theta: angle) -> None:
     """Apply a phase rotation to a qubit."""
     rz(q, theta)
-
-
-@guppy(unitary=True)
-@no_type_check
-def t_state(qubit: qubit) -> None:
-    """Directly generate a T state on a qubit."""
-    h(qubit)
-    t(qubit)
 
 
 @guppy

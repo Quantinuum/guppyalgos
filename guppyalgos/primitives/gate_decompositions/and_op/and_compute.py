@@ -3,7 +3,7 @@
 from guppylang import guppy
 from guppylang.std.quantum import qubit, t, tdg, cx, h, s
 
-from guppyalgos.utils import t_state
+from guppyalgos.utils.guppy.t_state import t_state
 
 
 from typing import no_type_check

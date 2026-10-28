@@ -1,23 +1,31 @@
 """Tests for circ utils."""
 
-import pytest
-import numpy as np
 from typing import no_type_check
+
+import numpy as np
+import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, output
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array, control, dagger, output
+from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
+    cx,
     discard,
+    discard_array,
+    h,
     measure,
     measure_array,
     qubit,
+    rz,
+    t,
     x,
 )
 from pytket.circuit import Circuit
-from guppyalgos.utils import ccswap, cphase, qarray
-from guppylang.std.angles import angle
+from selene_sim import Quest
 
-from guppyalgos.testing import get_unitary, Endianness, assert_allclose_ignorephase
+from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
+from guppyalgos.utils import ccswap, cphase, qarray, transversal
 
 
 def test_ccswap_qubits() -> None:
@@ -105,3 +113,85 @@ def test_cphase(theta: float) -> None:
 
     assert_allclose_ignorephase(circ1.get_unitary(), guppy_u)
     assert_allclose_ignorephase(circ2.get_unitary(), guppy_u)
+
+
+@pytest.mark.parametrize("n_ctrl", [1, 2, 3])
+def test_transversal_modifiers(n_ctrl: int) -> None:
+    """Test controlled and daggered transversal ops match per qubit ops."""
+    n = 3
+
+    @guppy
+    @no_type_check
+    def prepare(
+        cs: array[qubit, n_ctrl], a: array[qubit, n], b: array[qubit, n]
+    ) -> None:
+        transversal(h, cs)
+        transversal(h, a)
+        transversal(h, b)
+        for i in range(n):
+            rz(a[i], angle(0.3 * (i + 1)))
+            rz(b[i], angle(0.7 * (i + 1)))
+
+    @guppy
+    @no_type_check
+    def unprepare(
+        cs: array[qubit, n_ctrl], a: array[qubit, n], b: array[qubit, n]
+    ) -> None:
+        for i in range(n):
+            rz(a[i], angle(-0.3 * (i + 1)))
+            rz(b[i], angle(-0.7 * (i + 1)))
+        transversal(h, cs)
+        transversal(h, a)
+        transversal(h, b)
+
+    @guppy
+    @no_type_check
+    def matches_pairwise() -> None:
+        cs = qarray(n_ctrl)
+        a = qarray(n)
+        b = qarray(n)
+        prepare(cs, a, b)
+        with control(cs):
+            transversal(cx, a, b, array(1))
+            transversal(t, a, 0, 2)
+            transversal(cx, a, b, 1, 3)
+        # undo per qubit: the identity only if the two implementations agree
+        for i in range(1, n):
+            with control(cs), dagger:
+                cx(a[i], b[i])
+        with control(cs), dagger:
+            t(a[1])
+            t(a[0])
+        with control(cs), dagger:
+            cx(a[0], b[0])
+            cx(a[2], b[2])
+        unprepare(cs, a, b)
+        state_output("out", a)
+        discard_array(cs)
+        discard_array(a)
+        discard_array(b)
+
+    @guppy
+    @no_type_check
+    def roundtrip() -> None:
+        cs = qarray(n_ctrl)
+        a = qarray(n)
+        b = qarray(n)
+        prepare(cs, a, b)
+        with control(cs):
+            transversal(cx, a, b, array(1))
+            transversal(cx, a, b, 1, 3)
+        with control(cs), dagger:
+            transversal(cx, a, b, 1, 3)
+            transversal(cx, a, b, array(1))
+        unprepare(cs, a, b)
+        state_output("out", a)
+        discard_array(cs)
+        discard_array(a)
+        discard_array(b)
+
+    for prog in (matches_pairwise, roundtrip):
+        res = prog.emulator(2 * n_ctrl - 1 + 2 * n).run()
+        state = Quest.extract_states_dict(res.results[0].entries)["out"].state
+        # assert back in all 0 state
+        assert abs(state[0]) == pytest.approx(1)
