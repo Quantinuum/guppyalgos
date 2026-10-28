@@ -1,21 +1,23 @@
 """Calculate the hamming weight of a qubit register."""
 
+from __future__ import annotations
+
 from math import ceil, log2
 from typing import no_type_check
 
 import numpy as np
 from guppylang import guppy
-from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, comptime, frozenarray, owned, nat, dagger
+from guppylang.std.builtins import array, comptime, dagger, frozenarray, nat, owned
 from guppylang.std.mem import mem_swap
 from guppylang.std.option import nothing, some
-from guppylang.std.quantum import qubit, discard_array
+from guppylang.std.quantum import discard_array, qubit
 
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
     half_adder,
 )
 from guppyalgos.utils import qarray
+from guppyalgos.utils.guppy.gates import swap
 
 
 def _adder_indices(n: int) -> tuple[list[list[int]], list[int]]:
@@ -133,11 +135,13 @@ def num_hamming_weight_bits(n: int) -> int:
     return nhambits
 
 
-def hamming_weight_func[n_q: nat, logn_q: nat, nmlogn_q: nat](
-    n: int,
-) -> GuppyFunctionDefinition[
-    [array[qubit, n_q]],
-    tuple[array[qubit, logn_q], array[qubit, nmlogn_q]],
+@guppy
+@no_type_check
+def hamming_weight[n: nat](
+    main_reg: array[qubit, n],
+) -> tuple[
+    array[qubit, comptime(num_hamming_weight_bits(n))],
+    array[qubit, comptime(2 * n - num_hamming_weight_bits(n))],
 ]:
     """Produce a guppy function for computing the hamming weight of a register.
 
@@ -152,68 +156,68 @@ def hamming_weight_func[n_q: nat, logn_q: nat, nmlogn_q: nat](
         Leave main_reg argument in an invalid state, must be uncomputed using
         hamming_weight_func_inv.
     """
-    nhambits = num_hamming_weight_bits(n)
-    ops, idxs = _adder_indices(n)
+    nhambits = comptime(num_hamming_weight_bits(n))
+    ops, idxs = comptime(_adder_indices(n))
+    ancilla = qarray(n)
+    ancilla_index = 0
+    for op in ops:
+        if op[2] == -1:
+            _half_adder_with_swaps(main_reg, ancilla, op, ancilla_index)
+        else:
+            _full_adder_with_swaps(main_reg, ancilla, op, ancilla_index)
+        ancilla_index += 1
 
-    @guppy
-    @no_type_check
-    def hamm(
-        main_reg: array[qubit, n],
-    ) -> tuple[array[qubit, nhambits], array[qubit, comptime(2 * n - nhambits)]]:
-        ancilla = qarray(n)
-        ancilla_index = 0
-        for op in ops:
-            if op[2] == -1:
-                _half_adder_with_swaps(main_reg, ancilla, op, ancilla_index)
-            else:
-                _full_adder_with_swaps(main_reg, ancilla, op, ancilla_index)
-            ancilla_index += 1
+    # now the hamming weight bits will be at idxs, so we need to do some more swaps
+    # swap first into ancilla to prevent any conflicts
+    for k in range(len(idxs)):
+        mem_swap(main_reg[idxs[k]], ancilla[k])
+    # then swap into the first nhambits of the main reg
+    for i in range(nhambits):
+        mem_swap(main_reg[i], ancilla[i])
 
-        # now the hamming weight bits will be at idxs, so we need to do some more swaps
-        # swap first into ancilla to prevent any conflicts
-        for k in range(len(idxs)):
-            mem_swap(main_reg[idxs[k]], ancilla[k])
-        # then swap into the first nhambits of the main reg
-        for i in range(nhambits):
-            mem_swap(main_reg[i], ancilla[i])
+    # split the arrays to the correct sizes (cursed)
+    tempham = array(
+        nothing[qubit]() for _ in range(comptime(num_hamming_weight_bits(n)))
+    )
+    tempjunk = array(
+        nothing[qubit]() for _ in range(comptime(2 * n - num_hamming_weight_bits(n)))
+    )
 
-        # split the arrays to the correct sizes (cursed)
-        tempham = array(nothing[qubit]() for _ in range(nhambits))
-        tempjunk = array(nothing[qubit]() for _ in range(comptime(2 * n - nhambits)))
+    mainopt = array(nothing[qubit]() for _ in range(n))
+    for i in range(len(main_reg)):
+        mainopt[i].swap(some(main_reg.take(i))).unwrap_nothing()
 
-        mainopt = array(nothing[qubit]() for _ in range(n))
-        for i in range(len(main_reg)):
-            mainopt[i].swap(some(main_reg.take(i))).unwrap_nothing()
+    for i in range(n):
+        if i < nhambits:
+            mem_swap(tempham[i], mainopt[i])
+        else:
+            mem_swap(tempjunk[i - comptime(num_hamming_weight_bits(n))], mainopt[i])
 
-        for i in range(n):
-            if i < nhambits:
-                mem_swap(tempham[i], mainopt[i])
-            else:
-                mem_swap(tempjunk[i - nhambits], mainopt[i])
+    ancillaopt = array(some(ancilla_q) for ancilla_q in ancilla)
+    for i in range(n):
+        mem_swap(
+            tempjunk[i + comptime(n - num_hamming_weight_bits(n))],
+            ancillaopt[i],
+        )
 
-        ancillaopt = array(some(ancilla_q) for ancilla_q in ancilla)
-        for i in range(n):
-            mem_swap(tempjunk[i + comptime(n - nhambits)], ancillaopt[i])
+    for opt in mainopt:
+        opt.unwrap_nothing()
+    for opt in ancillaopt:
+        opt.unwrap_nothing()
 
-        for opt in mainopt:
-            opt.unwrap_nothing()
-        for opt in ancillaopt:
-            opt.unwrap_nothing()
-
-        ham_reg = array(t.unwrap() for t in tempham)
-        junk_reg = array(t.unwrap() for t in tempjunk)
-        return ham_reg, junk_reg
-
-    return hamm
+    ham_reg = array(t.unwrap() for t in tempham)
+    junk_reg = array(t.unwrap() for t in tempjunk)
+    return ham_reg, junk_reg
 
 
-def hamming_weight_func_inv[n_q: nat, logn_q: nat, nmlogn_q: nat](
-    n: int,
-) -> GuppyFunctionDefinition[
-    [array[qubit, n_q], array[qubit, logn_q], array[qubit, nmlogn_q]],
-    None,
-]:
-    """Produce a guppy function for uncomputing the hamming weight of a register.
+@guppy
+@no_type_check
+def hamming_weight_uncompute[n: nat](
+    main_reg: array[qubit, n],
+    ham_reg: array[qubit, comptime(num_hamming_weight_bits(n))] @ owned,
+    junk_reg: array[qubit, comptime(2 * n - num_hamming_weight_bits(n))] @ owned,
+) -> None:
+    """Uncompute the hamming weight of a register.
 
     The circuit takes in nhambits qubits in `ham_reg` and 2*n-nhambits junk qubits
     in `junk_reg`, as produced by `hamming_weight_func` and uncomputes the the circuit
@@ -223,58 +227,50 @@ def hamming_weight_func_inv[n_q: nat, logn_q: nat, nmlogn_q: nat](
         Must take in main_reg as the first argument, which is an empty array of size n
         where all qubits have been removed using `.take`
     """
-    nhambits = num_hamming_weight_bits(n)
-    ops, idxs = _adder_indices(n)
+    ops, idxs = comptime(_adder_indices(n))
+    ops_rev = ops.mutable_copy()
+    ops_rev.reverse_in_place()
+    # join the arrays to the correct sizes
+    temporig = array(nothing[qubit]() for _ in range(n))
+    tempancilla = array(nothing[qubit]() for _ in range(n))
+    hamopt = array(some(ham_q) for ham_q in ham_reg)
+    junkopt = array(some(junk_q) for junk_q in junk_reg)
 
-    @guppy
-    @no_type_check
-    def hamm_uncompute(
-        main_reg: array[qubit, n],
-        ham_reg: array[qubit, nhambits] @ owned,
-        junk_reg: array[qubit, comptime(2 * n - nhambits)] @ owned,
-    ) -> None:
-        # join the arrays to the correct sizes
-        temporig = array(nothing[qubit]() for _ in range(n))
-        tempancilla = array(nothing[qubit]() for _ in range(n))
-        hamopt = array(some(ham_q) for ham_q in ham_reg)
-        junkopt = array(some(junk_q) for junk_q in junk_reg)
+    for i in range(n):
+        if i < comptime(num_hamming_weight_bits(n)):
+            mem_swap(temporig[i], hamopt[i])
+        else:
+            mem_swap(temporig[i], junkopt[i - comptime(num_hamming_weight_bits(n))])
 
-        for i in range(n):
-            if i < nhambits:
-                mem_swap(temporig[i], hamopt[i])
-            else:
-                mem_swap(temporig[i], junkopt[i - nhambits])
+    for i in range(n):
+        mem_swap(tempancilla[i], junkopt[i + (comptime(n - num_hamming_weight_bits(n)))])
 
-        for i in range(n):
-            mem_swap(tempancilla[i], junkopt[i + (comptime(n - nhambits))])
+    for opt in hamopt:
+        opt.unwrap_nothing()
+    for opt in junkopt:
+        opt.unwrap_nothing()
 
-        for opt in hamopt:
-            opt.unwrap_nothing()
-        for opt in junkopt:
-            opt.unwrap_nothing()
+    main_temp = array(t.unwrap() for t in temporig)
+    for i in range(n):
+        main_reg.put(main_temp.take(i), i)
+    main_temp.discard_all_taken()
+    ancilla_reg = array(t.unwrap() for t in tempancilla)
 
-        main_temp = array(t.unwrap() for t in temporig)
-        for i in range(n):
-            main_reg.put(main_temp.take(i), i)
-        main_temp.discard_all_taken()
-        ancilla_reg = array(t.unwrap() for t in tempancilla)
+    # move hamming bits back to the indices from the end of the comp step
+    for i in range(comptime(num_hamming_weight_bits(n))):
+        mem_swap(main_reg[i], ancilla_reg[i])
 
-        # move hamming bits back to the indices from the end of the comp step
-        for i in range(nhambits):
-            mem_swap(main_reg[i], ancilla_reg[i])
-
-        for k in range(len(idxs)):
-            mem_swap(main_reg[idxs[k]], ancilla_reg[k])
+    for k in range(len(idxs)):
+        mem_swap(main_reg[idxs[k]], ancilla_reg[k])
 
         # undo adders
-        ancilla_index = len(ops) - 1
-        for op in comptime(ops[::-1]):
+        ancilla_index = len(ops_rev) - 1
+        for op in ops_rev:
             if op[2] == -1:
                 _half_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
             else:
                 _full_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
             ancilla_index -= 1
 
-        discard_array(ancilla_reg)
+    discard_array(ancilla_reg)
 
-    return hamm_uncompute

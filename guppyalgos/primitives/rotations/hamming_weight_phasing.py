@@ -10,7 +10,7 @@ from guppylang.std.angles import angle
 from guppylang.std.quantum import rz
 
 from guppyalgos.primitives.arithmetic.hamming_weight import (
-    hamming_weight_func,
+    hamming_weight,
     hamming_weight_func_inv,
 )
 
@@ -28,13 +28,12 @@ def hamming_weight_phase[n_q: nat](
     log2(n) rotations are applied on the hamming weight register, and then the
     hamming weight is uncomputed.
     """
-    ham_compute = hamming_weight_func(n)
     ham_uncompute = hamming_weight_func_inv(n)
 
     @guppy
     @no_type_check
     def hwp(qs: array[qubit, n], angle: angle) -> None:
-        ham_reg, junk = ham_compute(qs)
+        ham_reg, junk = hamming_weight(qs)
         for i in range(len(ham_reg)):
             rz_method(ham_reg[i], 2**i * angle)
         ham_uncompute(qs, ham_reg, junk)
