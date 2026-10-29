@@ -62,7 +62,7 @@ def test_cntrl_reflection_box_statevector(
         for i in range(comptime(n_controls)):
             h(qreg[i])
 
-        cntrl_reflection_box(control_qubit, qreg, cnxmethod[comptime(n_qubits)])
+        cntrl_reflection_box(control_qubit, qreg, cnxmethod)
         h(control_qubit)
 
         state_result("external_control", control_qubit)
@@ -132,7 +132,7 @@ def test_conjugated_cntrl_reflection_box_statevector(
 
         h(control_qubit)
         transversal(h, qreg)
-        cntrl_reflection_box(control_qubit, qreg, cnxmethod[comptime(n_qubits)])
+        cntrl_reflection_box(control_qubit, qreg, cnxmethod)
         idx = comptime(n_controls)
         h(qreg[idx])
 

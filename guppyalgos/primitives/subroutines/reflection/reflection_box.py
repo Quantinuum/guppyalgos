@@ -40,7 +40,7 @@ def reflect_zero[n_controls: nat](
 @no_type_check
 def reflection_box[n_qubits: nat](
     qreg: array[qubit, n_qubits],
-    cnx_box: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None],
+    cnx_box: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None],  # ty: ignore[unsupported-operator]
 ) -> None:
     r"""Apply a Householder reflection about the all-zero state.
 
@@ -88,7 +88,7 @@ class Reflection[n_qubits: nat]:
     and is used in the qubitization walk operator :math:`W = R L`.
     """
 
-    cnx_method: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None]
+    cnx_method: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None]  # ty: ignore[unsupported-operator]
 
     @guppy
     @no_type_check
