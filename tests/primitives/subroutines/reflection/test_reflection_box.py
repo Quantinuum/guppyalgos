@@ -1,24 +1,69 @@
 """Tests for the Reflection box implementation."""
 
-import numpy as np
-import pytest
-
 from typing import no_type_check
 
+import numpy as np
+import pytest
 from guppylang.decorator import guppy
 from guppylang.std.builtins import comptime
-from guppylang.std.quantum import discard_array, h
-from guppylang.std.debug import state_result
+from guppylang.std.debug import state_output, state_result
+from guppylang.std.quantum import discard, discard_array, h, qubit
 from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.subroutines.reflection import reflect_zero
 from guppyalgos.primitives.subroutines.reflection.reflection_box import reflection_box
-from guppyalgos.utils import transversal, qarray, int_to_bits
 from guppyalgos.testing import (
-    project_state_onto_bitstring,
+    assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
+    project_state_onto_bitstring,
 )
+from guppyalgos.utils import int_to_bits, qarray, transversal
 from tests.primitives.gate_decompositions.cnx.test_cnx import CnxMethod
+
+
+def test_reflect_zero_without_controls_statevector() -> None:
+    """Test that ``reflect_zero`` applies ``-Z`` with no controls."""
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(0)
+        target = qubit()
+        h(target)
+
+        reflect_zero(controls, target, cnx[comptime(0)])
+
+        state_output("target", target)
+        discard_array(controls)
+        discard(target)
+
+    result = main.emulator(1).run()
+    states = Quest.extract_states_dict(result.results[0].entries)
+    assert_allclose_ignorephase(
+        states["target"].state, np.array([1, -1], dtype=complex) / np.sqrt(2)
+    )
+
+
+def test_reflection_box_one_qubit_statevector() -> None:
+    """Test that one-qubit ``reflection_box`` delegates to ``-Z``."""
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        qreg = qarray(1)
+        h(qreg[0])
+
+        reflection_box(qreg, cnx[comptime(0)])
+
+        state_output("qreg", qreg)
+        discard_array(qreg)
+
+    result = main.emulator(1).run()
+    states = Quest.extract_states_dict(result.results[0].entries)
+    assert_allclose_ignorephase(
+        states["qreg"].state, np.array([1, -1], dtype=complex) / np.sqrt(2)
+    )
 
 
 @pytest.mark.parametrize("n_qubits", [2, 3, 4, 5, 6])

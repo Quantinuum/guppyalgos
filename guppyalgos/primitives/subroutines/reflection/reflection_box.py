@@ -4,7 +4,7 @@ from typing import no_type_check
 
 from guppylang.decorator import guppy
 from guppylang.std.builtins import Function, array, comptime, nat
-from guppylang.std.quantum import x, qubit
+from guppylang.std.quantum import qubit, x
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnz import cnz
 from guppyalgos.utils import transversal
@@ -23,6 +23,26 @@ def _assert_n_qubits_is_one_more_than_cntrls(
             f"""reflection_box requires n_qubits == n_controls + 1,
             got {n_qubits} n_qubits and {n_controls} n_controls"""
         )
+
+
+@guppy
+@no_type_check
+def reflect_zero[n_controls: nat](
+    controls: array[qubit, n_controls],
+    target: qubit,
+    cnx_box: Function[[array[qubit, n_controls], qubit], None],
+) -> None:
+    """Apply I - 2|0...0><0...0| to separate controls and target.
+
+    Flip the sign only when all controls and the target are zero. With no
+    controls, this applies XZX = -Z to the target. The supplied controlled-X
+    implementation determines the decomposition and any ancilla requirements.
+    """
+    transversal(x, controls)
+    x(target)
+    cnz(controls, target, cnx_box)
+    x(target)
+    transversal(x, controls)
 
 
 @guppy
@@ -54,11 +74,7 @@ def reflection_box[n_qubits: nat, n_controls: nat](
     controls = array(borrowed_qreg.take(i) for i in range(n_controls))
     target = borrowed_qreg.take(n_controls)
 
-    transversal(x, controls)
-    x(target)
-    cnz(controls, target, cnx_box)
-    x(target)
-    transversal(x, controls)
+    reflect_zero(controls, target, cnx_box)
 
     i = 0
     for q in controls:
