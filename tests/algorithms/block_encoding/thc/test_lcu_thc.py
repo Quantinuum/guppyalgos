@@ -8,7 +8,6 @@ from guppylang.std.builtins import array, comptime
 from guppylang.std.quantum import discard, discard_array, qubit
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
-from guppyalgos.algorithms.block_encoding.lcu import LCUCntrl
 from guppyalgos.primitives.rotations import GivensCascadePhaseGradient
 from guppyalgos.algorithms.state_preparation.alias_sampling import (
     AliasSamplingRegs,
@@ -156,14 +155,11 @@ def test_built_thc_cntrl_lcu_compiles() -> None:
         )
         phase_gradient = qarray(n_phase_qubits)
         prepare_phase_gradient(phase_gradient)
-        cntrl_lcu = LCUCntrl(
-            prepare,
-            cntrl_select,
-            unprepare,
-        )
         prep_regs = THCPrepareRegs(alias_regs, select_regs, phase_gradient)
 
-        cntrl_lcu.compose(control, prep_regs, target_regs)
+        prepare(prep_regs)
+        cntrl_select(control, prep_regs, target_regs)
+        unprepare(prep_regs)
 
         discard(control)
         index = discard_alias_sampling_garbage(
