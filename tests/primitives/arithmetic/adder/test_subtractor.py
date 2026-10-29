@@ -31,7 +31,9 @@ from guppyalgos.primitives.arithmetic import (
     cntrl_subtractor_ripple_gidney_carry_out,
     cntrl_subtractor_ripple_gidney_mod,
 )
-from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import project_state_onto_bitstring
 
 

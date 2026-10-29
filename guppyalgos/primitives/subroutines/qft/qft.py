@@ -7,7 +7,7 @@ from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import qubit, h
 from guppylang.std.mem import mem_swap
 from guppylang.std.angles import pi
-from guppyalgos.utils import cphase
+from guppyalgos.primitives.utilities.gates import cphase
 
 
 @guppy

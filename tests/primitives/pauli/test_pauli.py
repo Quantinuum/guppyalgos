@@ -11,7 +11,8 @@ from guppylang.std.debug import state_output
 from guppylang.std.quantum import cx, cy, cz, discard, discard_array, h, qubit, x, y, z
 from selene_sim import Quest
 
-from guppyalgos.utils import apply_phase, qarray
+from guppyalgos.primitives.utilities.gates import apply_phase
+from guppyalgos.utils import qarray
 from guppyalgos.primitives.pauli import pauli_to_cntrl_gate, pauli_to_gate
 from guppyalgos.testing import (
     assert_allclose_ignorephase,

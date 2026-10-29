@@ -14,7 +14,8 @@ from guppylang.std.quantum import (
     x,
 )
 
-from guppyalgos.utils import qarray, _unsafe_array_borrow, _unsafe_array_unborrow
+from guppyalgos.utils import qarray
+from guppyalgos.utils import _unsafe_array_borrow, _unsafe_array_unborrow
 
 
 def test_unsafe_array_borrow_order() -> None:

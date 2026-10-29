@@ -16,7 +16,7 @@ References:
 from typing import no_type_check
 
 from guppylang import guppy
-from guppyalgos.utils import apply_bitstring, transversal
+from guppyalgos.primitives.utilities.gates import apply_bitstring, transversal
 from guppylang.std.quantum import qubit, cx, x, toffoli, discard
 from guppylang.std.builtins import array, frozenarray, nat
 from guppyalgos.utils import qarray

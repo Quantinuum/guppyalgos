@@ -26,7 +26,8 @@ from guppyalgos.primitives.gate_decompositions.cnx.cnx_teleportation import (
     cnx_teleportation,
     _get_num_ancillas_cnx_teleportation,
 )
-from guppyalgos.utils import int_to_bits, qarray
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,

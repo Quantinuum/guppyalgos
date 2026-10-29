@@ -9,7 +9,7 @@ from guppylang.std.builtins import Function, array, comptime, nat
 from guppylang.std.quantum import qubit, x
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnz import cnz
-from guppyalgos.utils import transversal
+from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,

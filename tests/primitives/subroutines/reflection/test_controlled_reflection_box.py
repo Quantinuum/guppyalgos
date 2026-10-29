@@ -12,7 +12,9 @@ from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.subroutines.reflection import cntrl_reflection_box
-from guppyalgos.utils import int_to_bits, qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from tests.primitives.gate_decompositions.cnx.test_cnx import CnxMethod
 from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,

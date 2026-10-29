@@ -24,7 +24,6 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
-from guppyalgos.utils.guppy.t_state import t_state  # noqa: F401
 
 
 @guppy
@@ -478,13 +477,6 @@ def transversal() -> None:
     transversal2(cx, controls, targets, array(comptime(n_qubits - 1)))
     """
     ...
-
-
-@guppy
-@no_type_check
-def qarray(n: nat @ comptime) -> "array[qubit, n]":
-    """Allocate a qubit array of length n."""
-    return array(qubit() for _ in range(n))
 
 
 @guppy

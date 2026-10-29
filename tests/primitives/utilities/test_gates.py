@@ -24,8 +24,9 @@ from guppylang.std.quantum import (
 from pytket.circuit import Circuit
 from selene_sim import Quest
 
+from guppyalgos.primitives.utilities.gates import ccswap, cphase, transversal
 from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
-from guppyalgos.utils import ccswap, cphase, qarray, transversal
+from guppyalgos.utils import qarray
 
 
 def test_ccswap_qubits() -> None:
@@ -116,8 +117,8 @@ def test_cphase(theta: float) -> None:
 
 
 @pytest.mark.parametrize("n_ctrl", [1, 2, 3])
-def test_transversal_modifiers(n_ctrl: int) -> None:
-    """Test controlled and daggered transversal ops match per qubit ops."""
+def test_controlled_transversal_shared_work_qubit(n_ctrl: int) -> None:
+    """Controlled transversal ops match per-qubit controlled ops and invert."""
     n = 3
 
     @guppy
@@ -191,7 +192,7 @@ def test_transversal_modifiers(n_ctrl: int) -> None:
         discard_array(b)
 
     for prog in (matches_pairwise, roundtrip):
-        res = prog.emulator(2 * n_ctrl - 1 + 2 * n).run()
+        res = prog.emulator(n_ctrl + 2 * n + 2).run()
         state = Quest.extract_states_dict(res.results[0].entries)["out"].state
-        # assert back in all 0 state
+        # |0..0> also shows the shared work qubit was uncomputed
         assert abs(state[0]) == pytest.approx(1)

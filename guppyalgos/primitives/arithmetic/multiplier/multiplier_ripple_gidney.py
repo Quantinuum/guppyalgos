@@ -30,7 +30,9 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
     cntrl_adder_ripple_gidney_mod,
 )
-from guppyalgos.utils import apply_bitstring, cswap, int_to_bits, qarray
+from guppyalgos.primitives.utilities.gates import apply_bitstring, cswap
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
