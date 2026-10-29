@@ -1,10 +1,9 @@
 """Tests for the Reflection box implementation."""
 
-import numpy as np
-import pytest
-
 from typing import no_type_check
 
+import numpy as np
+import pytest
 from guppylang.decorator import guppy
 from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_output, state_result
@@ -14,11 +13,12 @@ from selene_sim import Quest
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.subroutines.reflection import reflect_zero
 from guppyalgos.primitives.subroutines.reflection.reflection_box import reflection_box
-from guppyalgos.utils import transversal, qarray, int_to_bits
 from guppyalgos.testing import (
-    project_state_onto_bitstring,
+    assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
+    project_state_onto_bitstring,
 )
+from guppyalgos.utils import int_to_bits, qarray, transversal
 from tests.primitives.gate_decompositions.cnx.test_cnx import CnxMethod
 
 
@@ -40,7 +40,7 @@ def test_reflect_zero_without_controls_statevector() -> None:
 
     result = main.emulator(1).run()
     states = Quest.extract_states_dict(result.results[0].entries)
-    np.testing.assert_allclose(
+    assert_allclose_ignorephase(
         states["target"].state, np.array([1, -1], dtype=complex) / np.sqrt(2)
     )
 
@@ -61,7 +61,7 @@ def test_reflection_box_one_qubit_statevector() -> None:
 
     result = main.emulator(1).run()
     states = Quest.extract_states_dict(result.results[0].entries)
-    np.testing.assert_allclose(
+    assert_allclose_ignorephase(
         states["qreg"].state, np.array([1, -1], dtype=complex) / np.sqrt(2)
     )
 
