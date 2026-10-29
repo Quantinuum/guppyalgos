@@ -3,9 +3,11 @@
 from __future__ import annotations
 from guppylang import guppy
 
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, control, dagger, nat
 from guppylang.std.angles import angle
-from guppylang.std.quantum import qubit, rz
+from guppylang.std.debug import state_output
+from guppylang.std.quantum import discard_array, h, qubit, rz
+import numpy as np
 import pytest
 
 from guppyalgos.primitives.subroutines.ladders import CXLadderLinear, Ladder
@@ -17,9 +19,10 @@ from guppylang.defs import GuppyFunctionDefinition
 
 from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
 
-from guppyalgos.testing import get_unitary
+from guppyalgos.testing import get_statevector, get_unitary
 from tests.primitives.pauli.pauli_exp.pauli_exp_helpers import pauli_exp_matrix
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import qarray
 from typing import no_type_check
 
 REPRESENTATIVE_2Q_STRINGS = [
@@ -79,6 +82,19 @@ def pauli_exp_test_fn(
     u_mat = pauli_exp_matrix(pauli_string, n_state_qubits, theta, little_endian=True)
 
     assert_allclose_ignorephase(u_mat, guppy_u)
+
+    try:
+
+        @guppy
+        @no_type_check
+        def main_dagger(state_qreg: array[qubit, n_state_qubits]) -> None:
+            with dagger:
+                pauli_g(state_qreg, angle(theta))
+
+        dagger_u = get_unitary(main_dagger, n_state_qubits)
+    except Exception as e:
+        pytest.skip(f"dagger not supported for this rz_method: {e}")
+    assert_allclose_ignorephase(u_mat.conj().T, dagger_u)
 
 
 @pytest.mark.parametrize(
@@ -144,16 +160,178 @@ def test_pauli_exp_4q(
     pauli_exp_test_fn(pauli_string, n_state_qubits, cx_ladder, rz_method)
 
 
-def test_pauli_exp_invalid_pauli() -> None:
-    """Test that pauli exponential raises error for invalid pauli strings.
-
-    The pauli exponential requires at least 1 non-identity Pauli operator. This
-    test checks that a ValueError is raised for the all-identity case.
-    """
+def test_pauli_exp_identity_is_noop() -> None:
+    """An uncontrolled identity exponential is a no-op up to global phase."""
     pauli_string = zqp.String.from_str("I0 I1 I2", 3)
+    pauli_g = pauli_exp(pauli_string, 3, CXLadderLinear, rz)
 
-    with pytest.raises(
-        ValueError,
-        match="Pauli exponential requires at least 1 non-identity Pauli operators",
-    ):
-        pauli_exp(pauli_string, 3, CXLadderLinear, rz)
+    @guppy
+    @no_type_check
+    def main(state_qreg: array[qubit, 3]) -> None:
+        pauli_g(state_qreg, angle(0.7))
+
+    assert_allclose_ignorephase(get_unitary(main, 3), np.eye(8))
+
+
+@pytest.mark.parametrize(
+    "p_str",
+    ["Z0", "I0"],
+    ids=["pauli", "identity"],
+)
+def test_pauli_exp_controlled_and_ctrl_daggered(p_str: str) -> None:
+    """Controlled Pauli exponentials preserve the expected relative phase."""
+    theta = 0.7
+    pauli_string = zqp.String.from_str(p_str, 1)
+    pauli_g = pauli_exp(pauli_string, 1, CXLadderLinear, rz)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    @guppy
+    @no_type_check
+    def main_ctrl_daggered() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            with dagger:
+                pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    phase = np.exp(-1j * 0.5 * np.pi * theta)
+    expected_state = np.array([1.0, phase, 0.0, 0.0], dtype=np.complex128) / np.sqrt(2)
+    assert_allclose_ignorephase(get_statevector(main, 2), expected_state)
+    assert_allclose_ignorephase(
+        get_statevector(main_ctrl_daggered, 2), expected_state.conj()
+    )
+
+
+def test_pauli_exp_identity_multi_controlled_and_ctrl_daggered() -> None:
+    """Multi-control identity exponentials apply a phase and clean their ancilla."""
+    theta = 0.7
+    pauli_string = zqp.String.from_str("I0", 1)
+    pauli_g = pauli_exp(pauli_string, 1, CXLadderLinear, rz)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(2)
+        qreg = qarray(1)
+        h(controls[0])
+        h(controls[1])
+        with control(controls):
+            pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], controls[1], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    @guppy
+    @no_type_check
+    def main_ctrl_daggered() -> None:
+        controls = qarray(2)
+        qreg = qarray(1)
+        h(controls[0])
+        h(controls[1])
+        with control(controls):
+            with dagger:
+                pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], controls[1], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    phase = np.exp(-1j * 0.5 * np.pi * theta)
+    expected_state = (
+        np.array([1.0, 1.0, 1.0, phase] + [0.0] * 12, dtype=np.complex128) / 2
+    )
+    assert_allclose_ignorephase(get_statevector(main, 4), expected_state)
+    assert_allclose_ignorephase(
+        get_statevector(main_ctrl_daggered, 4), expected_state.conj()
+    )
+
+
+def test_pauli_exp_identity_uses_custom_unitary_rz_when_controlled() -> None:
+    """The identity gadget's control modifiers must use the supplied unitary RZ."""
+    theta = 0.7
+
+    @guppy.unitary
+    class custom_rz:
+        @guppy
+        @no_type_check
+        def __call__(q: qubit, theta: angle) -> None:
+            rz(q, theta)
+            rz(q, theta)
+
+        @guppy
+        @no_type_check
+        def controlled[n_controls: nat](
+            q: qubit, theta: angle, controls: array[qubit, n_controls]
+        ) -> None:
+            with control(controls):
+                rz(q, theta)
+                rz(q, theta)
+
+        @guppy
+        @no_type_check
+        def daggered(q: qubit, theta: angle) -> None:
+            rz(q, -theta)
+            rz(q, -theta)
+
+        @guppy
+        @no_type_check
+        def ctrl_daggered[n_controls: nat](
+            q: qubit, theta: angle, controls: array[qubit, n_controls]
+        ) -> None:
+            with control(controls):
+                rz(q, -theta)
+                rz(q, -theta)
+
+    pauli_string = zqp.String.from_str("I0", 1)
+    pauli_g = pauli_exp(pauli_string, 1, CXLadderLinear, custom_rz)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    @guppy
+    @no_type_check
+    def main_ctrl_daggered() -> None:
+        controls = qarray(1)
+        qreg = qarray(1)
+        h(controls[0])
+        with control(controls):
+            with dagger:
+                pauli_g(qreg, angle(theta))
+        state_output("result_state", controls[0], qreg[0])
+        discard_array(controls)
+        discard_array(qreg)
+
+    expected_phase = np.exp(-1j * np.pi * theta)
+    expected_state = np.array([1.0, expected_phase, 0.0, 0.0]) / np.sqrt(2)
+    result_state = get_statevector(main, 2)
+    daggered_state = get_statevector(main_ctrl_daggered, 2)
+
+    assert_allclose_ignorephase(result_state, expected_state)
+    np.testing.assert_allclose(result_state[1] / result_state[0], expected_phase)
+    assert_allclose_ignorephase(daggered_state, expected_state.conj())
+    np.testing.assert_allclose(
+        daggered_state[1] / daggered_state[0], expected_phase.conjugate()
+    )

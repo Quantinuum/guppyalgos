@@ -670,7 +670,7 @@ numba = [
 [package.metadata]
 requires-dist = [
     { name = "furo", marker = "extra == 'dev-dependencies'", specifier = ">=2024.8.6" },
-    { name = "guppylang", specifier = ">=1.1" },
+    { name = "guppylang", specifier = ">=1.1.3" },
     { name = "ipykernel", marker = "extra == 'dev-dependencies'", specifier = ">=7.3.0" },
     { name = "jupyter", marker = "extra == 'dev-dependencies'", specifier = ">=1.1.0" },
     { name = "matplotlib", marker = "extra == 'dev-dependencies'", specifier = ">=3.11.1" },
