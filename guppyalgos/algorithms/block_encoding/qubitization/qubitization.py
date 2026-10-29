@@ -45,7 +45,6 @@ class Qubitization[n_prep_q: nat, TargetRegs]:
 
     Type Parameters:
         n_prep_q: Number of qubits in the PREPARE register.
-        n_ctrl_q: Number of controls used by the reflection implementation.
         TargetRegs: Type of the target registers accepted by the block encoding.
 
     Attributes:
