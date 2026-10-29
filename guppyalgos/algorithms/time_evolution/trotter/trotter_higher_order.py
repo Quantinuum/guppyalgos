@@ -96,7 +96,6 @@ def trotter_higher_order[n_state_q: nat](
     ham_terms: list[zqp.RealTerm] = list(  # ty: ignore[invalid-assignment]
         hamiltonian.to_terms()
     )
-    ham_terms = [term for term in ham_terms if not term.string.is_identity()]
     sequence = suzuki_sequence(len(ham_terms), order)
     return trotter_from_sequence(
         ham_terms, sequence, n_state_qubits, cx_ladder, rz_method
