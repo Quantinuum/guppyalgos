@@ -3,7 +3,7 @@
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.std.builtins import array, comptime, nat, control
 from guppylang.std.quantum import cz, h, measure_array, qubit, z
 
 from guppyalgos.utils import qarray, transversal
@@ -26,9 +26,9 @@ def parity_laqcc_total_qubits(n_input_qubits: int) -> int:
     return n_input_qubits + 1 + 2 * max(n_input_qubits - 3, 0)
 
 
-@guppy
+@guppy(controllable=True)
 @no_type_check
-def parity_sequential[n_qs_qubits: nat](
+def _parity_sequential_kernel[n_qs_qubits: nat](
     q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]
 ) -> None:
     """XOR the parity of the input register into a target qubit.
@@ -52,6 +52,48 @@ def parity_sequential[n_qs_qubits: nat](
     for i in range(n_qs_qubits):
         cz(q_target, qs_inputs[i])
     h(q_target)
+
+
+@guppy.unitary
+class parity_sequential[n_qs_qubits: nat]:  # noqa: D101 - Guppy unitary classes reject docstrings
+    # Apply the circuit with dagger and external-control support.
+
+    @guppy(controllable=True)
+    @no_type_check
+    def __call__(q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]) -> None:
+        """XOR the parity of the input register into a target qubit.
+
+        This operation implements
+        ``|x_0, ..., x_n-1>|t> -> |x_0, ..., x_n-1>|t XOR x_0 XOR ... XOR x_n-1>``
+        using a sequence of controlled operations and no ancilla qubits.
+
+        Args:
+            q_target: Qubit into which the input parity is XORed.
+            qs_inputs: Input register. Its length determines the circuit size at
+                compile time.
+
+        Examples:
+            For inputs ``|1, 0, 1, 1>`` and target ``|0>``, the target becomes
+            ``|1>`` because ``0 XOR 1 XOR 0 XOR 1 XOR 1 = 1``. The four input
+            qubits are unchanged.
+
+        """
+        _parity_sequential_kernel(q_target, qs_inputs)
+
+    @guppy
+    @no_type_check
+    def daggered(q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]) -> None:
+        """Apply the selected circuit mode."""
+        _parity_sequential_kernel(q_target, qs_inputs)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[k: nat](
+        q_target: qubit, qs_inputs: array[qubit, n_qs_qubits], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        with control(controls):
+            _parity_sequential_kernel(q_target, qs_inputs)
 
 
 @guppy
