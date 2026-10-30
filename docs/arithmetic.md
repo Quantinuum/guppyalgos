@@ -188,3 +188,19 @@ multiplication is invertible modulo $2^n$. See the
 The {doc}`arithmetic demo <examples/arithmetic/arithmetic_demo>` shows the
 initialization, simulator qubit budgets, measurements, and numerical checks
 for each of these operations.
+
+## Half-adder modifiers
+
+`half_adder` in `guppyalgos.primitives.arithmetic.adder.bit_adders` supports
+`with dagger`, `with control(c)`, and `with control(controls), dagger`.
+Import `control` and `dagger` from `guppylang.std.builtins`.
+Replace `half_adder_inverse(a, b, carry)` with:
+
+```python
+with dagger:
+    half_adder(a, b, carry)
+```
+
+The forward operation preserves `a`, writes `a xor b` into `b`, and flips
+`carry` by `a and b`. This is reversible for either initial carry value;
+a zero carry yields the usual half-adder result.
