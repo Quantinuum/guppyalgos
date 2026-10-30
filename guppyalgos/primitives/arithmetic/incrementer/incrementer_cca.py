@@ -31,7 +31,7 @@ from guppyalgos.utils.guppy.unsafe_borrow import (
 from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def cat_cca(q0: qubit, q1: qubit, target: qubit) -> None:
     """Catalyze a conditionally clean ancilla.

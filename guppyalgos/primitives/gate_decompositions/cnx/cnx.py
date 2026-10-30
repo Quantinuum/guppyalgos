@@ -3,7 +3,7 @@
 from typing import no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, nat, control, dagger
 from guppylang.std.quantum import cx, discard, h, qubit, t, tdg, toffoli, x
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
@@ -45,7 +45,8 @@ def cnx[n_controls: nat](control: array[qubit, n_controls], target: qubit) -> No
         ancilla = qubit()
         _rtof4(control[0], control[1], control[2], ancilla)
         _cnx_aux(control, target, ancilla, num_ancillas, 3, 0, is_odd)
-        _irtof4(control[0], control[1], control[2], ancilla)
+        with dagger:
+            _rtof4(control[0], control[1], control[2], ancilla)
         discard(ancilla)
 
 
@@ -112,9 +113,9 @@ def cnx_toffoli_ladder[n_controls: nat](
         discard(ancilla)
 
 
-@guppy
+@guppy(controllable=True)
 @no_type_check
-def _rtof4(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
+def _rtof4_kernel(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
     """Apply the relative tof4 block."""
     h(d)
     t(d)
@@ -136,9 +137,9 @@ def _rtof4(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
     h(d)
 
 
-@guppy
+@guppy(controllable=True)
 @no_type_check
-def _irtof4(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
+def _rtof4_inverse_kernel(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
     """Apply the inverse of relative tof4 block."""
     h(d)
     t(d)
@@ -160,6 +161,32 @@ def _irtof4(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
     h(d)
 
 
+@guppy.unitary
+class _rtof4:
+    # Relative Toffoli block with its optimized adjoint.
+
+    @guppy(controllable=True)
+    @no_type_check
+    def __call__(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
+        """Apply the relative tof4 block."""
+        _rtof4_kernel(a, b, c, d)
+
+    @guppy
+    @no_type_check
+    def daggered(a: qubit, b: qubit, c: qubit, d: qubit) -> None:
+        """Apply the selected circuit mode."""
+        _rtof4_inverse_kernel(a, b, c, d)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[k: nat](
+        a: qubit, b: qubit, c: qubit, d: qubit, controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        with control(controls):
+            _rtof4_inverse_kernel(a, b, c, d)
+
+
 @guppy
 @no_type_check
 def _tof4(
@@ -175,7 +202,7 @@ def _tof4(
     temp_and_uncompute(control0, control1, ancilla)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def _tof5(
     control0: qubit,
@@ -188,7 +215,8 @@ def _tof5(
     """Apply tof5 block."""
     _rtof4(control0, control1, control2, ancilla)
     toffoli(ancilla, control3, target)
-    _irtof4(control0, control1, control2, ancilla)
+    with dagger:
+        _rtof4(control0, control1, control2, ancilla)
 
 
 @guppy.comptime
@@ -245,9 +273,13 @@ def _cnx_aux[n_controls: nat](
             ancilla_counter + 1,
             is_odd,
         )
-        _irtof4(
-            ancilla, control[control_counter], control[control_counter + 1], new_ancilla
-        )
+        with dagger:
+            _rtof4(
+                ancilla,
+                control[control_counter],
+                control[control_counter + 1],
+                new_ancilla,
+            )
     discard(new_ancilla)
 
 
