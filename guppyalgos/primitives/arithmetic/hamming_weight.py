@@ -1,21 +1,21 @@
 """Calculate the hamming weight of a qubit register."""
 
+from guppyalgos.utils.guppy.gates import swap
+
 from math import ceil, log2
 from typing import no_type_check
 
 import numpy as np
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, comptime, frozenarray, owned, nat
+from guppylang.std.builtins import array, comptime, dagger, frozenarray, nat, owned
 from guppylang.std.mem import mem_swap
 from guppylang.std.option import nothing, some
 from guppylang.std.quantum import qubit, discard_array
 
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
-    full_adder_inverse,
     half_adder,
-    half_adder_inverse,
 )
 from guppyalgos.utils import qarray
 
@@ -69,7 +69,7 @@ def _adder_indices(n: int) -> tuple[list[list[int]], list[int]]:
     return ops, indices_by_level
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def _full_adder_with_swaps[n_q: nat](
     q: array[qubit, n_q],
@@ -79,11 +79,11 @@ def _full_adder_with_swaps[n_q: nat](
 ) -> None:
     """Bring in an ancilla, full-add and then swap out a junk qubit."""
     full_adder(q[inds[0]], q[inds[1]], q[inds[2]], ancilla[ancilla_index])
-    mem_swap(q[inds[2]], q[inds[1]])
-    mem_swap(q[inds[2]], ancilla[ancilla_index])
+    swap(q[inds[2]], q[inds[1]])
+    swap(q[inds[2]], ancilla[ancilla_index])
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def _half_adder_with_swaps[n_q: nat](
     q: array[qubit, n_q],
@@ -93,36 +93,8 @@ def _half_adder_with_swaps[n_q: nat](
 ) -> None:
     """Bring in an ancilla, half-add and then swap out a junk qubit."""
     half_adder(q[inds[0]], q[inds[1]], ancilla[ancilla_index])
-    mem_swap(q[inds[1]], q[inds[0]])
-    mem_swap(q[inds[1]], ancilla[ancilla_index])
-
-
-@guppy
-@no_type_check
-def _full_adder_with_swaps_inv[n_q: nat](
-    q: array[qubit, n_q],
-    ancilla: array[qubit, n_q],
-    inds: frozenarray[int, 3],
-    ancilla_index: int,
-) -> None:
-    """Inverse of full adder with swaps."""
-    mem_swap(q[inds[2]], ancilla[ancilla_index])
-    mem_swap(q[inds[2]], q[inds[1]])
-    full_adder_inverse(q[inds[0]], q[inds[1]], q[inds[2]], ancilla[ancilla_index])
-
-
-@guppy
-@no_type_check
-def _half_adder_with_swaps_inv[n_q: nat](
-    q: array[qubit, n_q],
-    ancilla: array[qubit, n_q],
-    inds: frozenarray[int, 3],
-    ancilla_index: int,
-) -> None:
-    """Inverse of half adder with swaps."""
-    mem_swap(q[inds[1]], ancilla[ancilla_index])
-    mem_swap(q[inds[1]], q[inds[0]])
-    half_adder_inverse(q[inds[0]], q[inds[1]], ancilla[ancilla_index])
+    swap(q[inds[1]], q[inds[0]])
+    swap(q[inds[1]], ancilla[ancilla_index])
 
 
 def num_hamming_weight_bits(n: int) -> int:
@@ -270,9 +242,11 @@ def hamming_weight_func_inv[n_q: nat, logn_q: nat, nmlogn_q: nat](
         ancilla_index = len(ops) - 1
         for op in comptime(ops[::-1]):
             if op[2] == -1:
-                _half_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
+                with dagger:
+                    _half_adder_with_swaps(main_reg, ancilla_reg, op, ancilla_index)
             else:
-                _full_adder_with_swaps_inv(main_reg, ancilla_reg, op, ancilla_index)
+                with dagger:
+                    _full_adder_with_swaps(main_reg, ancilla_reg, op, ancilla_index)
             ancilla_index -= 1
 
         discard_array(ancilla_reg)

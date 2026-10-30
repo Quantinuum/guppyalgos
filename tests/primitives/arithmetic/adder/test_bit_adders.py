@@ -6,12 +6,11 @@ import numpy as np
 from guppylang.decorator import guppy
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, qubit, x
+from guppylang.std.builtins import dagger
 from selene_sim import Quest
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
-    full_adder_inverse,
     half_adder,
-    half_adder_inverse,
 )
 from guppyalgos.testing import assert_allclose_ignorephase
 
@@ -130,7 +129,8 @@ def test_half_adder_inverse() -> None:
             x(b)
 
         half_adder(a, b, c_out)
-        half_adder_inverse(a, b, c_out)
+        with dagger:
+            half_adder(a, b, c_out)
         if a_bit:
             x(a)
         if b_bit:
@@ -172,7 +172,8 @@ def test_full_adder_inverse() -> None:
             x(b)
 
         full_adder(cin, a, b, c_out)
-        full_adder_inverse(cin, a, b, c_out)
+        with dagger:
+            full_adder(cin, a, b, c_out)
 
         if cin_bit:
             x(cin)
