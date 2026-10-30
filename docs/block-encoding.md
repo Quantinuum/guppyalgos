@@ -257,7 +257,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute, temp_and_uncompute,
 )
 from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
-fail
+
 terms = [
     zqp.String.from_str(label, 2)
     for label in (
