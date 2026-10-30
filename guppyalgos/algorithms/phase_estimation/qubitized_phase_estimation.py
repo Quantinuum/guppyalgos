@@ -28,6 +28,11 @@ def qubitized_power_oracle[n_prep_q: nat, n_target_q: nat](
         [qubit, array[qubit, n_prep_q], array[qubit, n_target_q]], None
     ],
 ) -> None:
-    """Apply a controlled qubitization walk repeatedly as requested by QPE."""
+    """Apply a controlled qubitization walk repeatedly as requested by QPE.
+
+    Modifier migration is deferred: Guppy 1.1.1 cannot infer a ``Unitary``
+    callback protocol depending on generic register sizes. Concrete walk and
+    public struct integration remain deferred; no modifiers are advertised.
+    """
     for _ in range(power):
         cntrl_walk(control, regs.prep, regs.target)

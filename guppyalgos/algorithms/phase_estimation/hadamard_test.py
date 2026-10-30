@@ -22,6 +22,11 @@ def hadamard_test[UnitaryRegs](
     ``|+>`` and returned through a final Hadamard so the usual Hadamard-test
     readout can be measured by the caller.
 
+    Modifier migration is deferred: Guppy 1.1.1 cannot infer a ``Unitary``
+    callback protocol when its signature depends on generic ``UnitaryRegs``.
+    Keep this forward-only rather than erase the callback's capabilities or
+    advertise uncompiled modifier paths.
+
     Args:
         ancilla: Control qubit used for the Hadamard test.
         unitary_regs: The target unitary register, which may be an array or
