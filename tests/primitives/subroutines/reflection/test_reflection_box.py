@@ -1,5 +1,7 @@
 """Tests for the Reflection box implementation."""
 
+from guppylang_internals.error import GuppyError
+
 from typing import no_type_check
 
 import numpy as np
@@ -32,7 +34,7 @@ def test_reflect_zero_without_controls_statevector() -> None:
         target = qubit()
         h(target)
 
-        reflect_zero(controls, target, cnx[comptime(0)])
+        reflect_zero(controls, target, cnx)
 
         state_output("target", target)
         discard_array(controls)
@@ -54,7 +56,7 @@ def test_reflection_box_one_qubit_statevector() -> None:
         qreg = qarray(1)
         h(qreg[0])
 
-        reflection_box(qreg, cnx[comptime(0)])
+        reflection_box(qreg, cnx)
 
         state_output("qreg", qreg)
         discard_array(qreg)
@@ -96,7 +98,7 @@ def test_reflection_box_statevector(n_qubits: int, cnx_method: CnxMethod) -> Non
         for i in range(comptime(n_controls)):
             h(qreg[i])
 
-        reflection_box(qreg, cnxmethod[comptime(n_controls)])
+        reflection_box(qreg, cnxmethod)
 
         state_result("qreg", qreg)
         discard_array(qreg)
@@ -152,7 +154,7 @@ def test_conjugated_reflection_box_statevector(
 
         transversal(h, qreg)
 
-        reflection_box(qreg, cnxmethod[comptime(n_controls)])
+        reflection_box(qreg, cnxmethod)
 
         idx = comptime(n_controls)
         h(qreg[idx])
@@ -203,7 +205,7 @@ def test_conjugated_reflection_box_statevector(
 def test_reflection_box_invalid_n_qubits(
     n_qubits: int, n_controls: int, cnx_method: CnxMethod
 ) -> None:
-    """Test that ``reflection_box`` raises ``ValueError`` for invalid ``n_qubits``."""
+    """Test that ``reflection_box`` fails to compile with invalid size cnx."""
     cnxmethod = cnx_method.cnx_func
 
     @guppy
@@ -213,7 +215,5 @@ def test_reflection_box_invalid_n_qubits(
         reflection_box(qreg, cnxmethod[comptime(n_controls)])
         discard_array(qreg)
 
-    with pytest.raises(
-        ValueError, match="reflection_box requires n_qubits == n_controls \\+ 1"
-    ):
+    with pytest.raises(GuppyError, match="Expected argument of type"):
         main.emulator(n_qubits).run()

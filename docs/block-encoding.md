@@ -138,7 +138,7 @@ zero; the filled control selects Y at address one.
 \end{tikzcd}
 ```
 
-`multiplexor_prep` supplies the preparation above; `Reflection[1, 0]`
+`multiplexor_prep` supplies the preparation above; `Reflection[1]`
 supplies the one-qubit reflection. `Qubitization` puts them together:
 
 ```{code-cell} ipython3
@@ -150,7 +150,7 @@ from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 @guppy
 def walk(prep_qreg: array[qubit, 1], qreg: array[qubit, 1]) -> None:
     Qubitization(
-        LCU(prepare, select, unprepare), Reflection[1, 0](cnx)
+        LCU(prepare, select, unprepare), Reflection[1](cnx)
     ).compose(prep_qreg, qreg)
 ```
 
@@ -192,7 +192,7 @@ $\langle0^a|W^2|0^a\rangle=2(H/\lambda)^2-I$:
 @guppy
 def walk_squared(prep_qreg: array[qubit, 1], qreg: array[qubit, 1]) -> None:
     Qubitization(
-        LCU(prepare, select, unprepare), Reflection[1, 0](cnx)
+        LCU(prepare, select, unprepare), Reflection[1](cnx)
     ).power(prep_qreg, qreg, 2)
 ```
 
