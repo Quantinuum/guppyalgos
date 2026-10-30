@@ -6,12 +6,14 @@ from collections.abc import Callable
 import numpy as np
 import pytest
 
+from guppylang.std.builtins import control, dagger
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, output, nat
-from guppylang.std.debug import state_result, state_output
+from guppylang.std.builtins import array, comptime, output, nat
+from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
+    cx,
     discard,
     discard_array,
     h,
@@ -22,16 +24,16 @@ from guppylang.std.quantum import (
 from selene_sim import Quest
 
 from guppyalgos.primitives.arithmetic import (
-    cntrl_adder_ripple_gidney_mod,
-    cntrl_adder_ripple_gidney_carry_out,
-    cntrl_adder_ripple_gidney_mod_dagger,
-    cntrl_adder_ripple_gidney_carry_out_dagger,
-    cntrl_adder_ripple_cuccaro_mod,
-    cntrl_adder_ripple_cuccaro_carry_out,
-    cntrl_adder_ripple_cuccaro_mod_dagger,
-    cntrl_adder_ripple_cuccaro_carry_out_dagger,
+    adder_ripple_gidney_mod,
+    adder_ripple_gidney_carry_out,
+    adder_ripple_cuccaro_mod,
+    adder_ripple_cuccaro_carry_out,
 )
 from guppyalgos.utils import qarray, int_to_bits, apply_bitstring
+from guppyalgos.primitives.arithmetic.adder._controls import (
+    _acquire_control,
+    _release_control,
+)
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
@@ -48,20 +50,60 @@ ADDITION_CASES = (
 )
 
 
+@pytest.mark.parametrize("n_controls", [1, 2, 3, 4])
+def test_temporary_control_and[n_controls: nat](n_controls: int) -> None:
+    """Check conjunction phases and zeroed work qubits after release."""
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(n_controls)
+        for index in range(n_controls):
+            h(controls[index])
+        work = qarray(comptime(max(0, n_controls - 1)))
+        target = qubit()
+        combined = _acquire_control(controls, work)
+        cx(combined, target)
+        _release_control(controls, work, combined)
+        if n_controls > 1:
+            state_output("work", work)
+        state_output("controls", controls)
+        state_output("target", target)
+        discard_array(work)
+        discard_array(controls)
+        discard(target)
+
+    expected = np.zeros(1 << (n_controls + 1), dtype=np.complex128)
+    for control_value in range(1 << n_controls):
+        target_bit = int(control_value == (1 << n_controls) - 1)
+        expected[control_value | (target_bit << n_controls)] = 2 ** (-n_controls / 2)
+    emulator = main.emulator(n_qubits=2 * n_controls)
+    for _ in range(3):
+        result = emulator.run()
+        states = Quest.extract_states_dict(result.results[0].entries)
+        if n_controls > 1:
+            clean = project_state_onto_bitstring(
+                states["work"], [False] * (n_controls - 1)
+            )
+            assert clean.probability == pytest.approx(1.0)
+        actual, _ = get_total_state_on_only_specified_registers(
+            states, ["controls", "target"]
+        )
+        assert_allclose_ignorephase(actual.state, expected)
+
+
 @pytest.mark.parametrize(("n", "cases"), ADDITION_CASES)
 @pytest.mark.parametrize(
     ("controlled_adder", "num_ancilla_fn"),
     [
-        (cntrl_adder_ripple_gidney_mod, lambda n: n),
-        (cntrl_adder_ripple_cuccaro_mod, lambda n: 1),
+        (adder_ripple_gidney_mod, lambda n: n),
+        (adder_ripple_cuccaro_mod, lambda n: 1),
     ],
 )
 def test_cntrl_adder_mod[n: nat](
     n: int,
     cases: list[tuple[int, int]],
-    controlled_adder: GuppyFunctionDefinition[
-        [qubit, array[qubit, n], array[qubit, n]], None
-    ],
+    controlled_adder: GuppyFunctionDefinition[[array[qubit, n], array[qubit, n]], None],
     num_ancilla_fn: Callable[[int], int],
 ) -> None:
     """Check basis-state controlled addition by measuring the target register."""
@@ -84,7 +126,8 @@ def test_cntrl_adder_mod[n: nat](
         if ctrl_active:
             x(ctrl)
 
-        controlled_adder(ctrl, a_reg, b_reg)
+        with control(ctrl):
+            controlled_adder(a_reg, b_reg)
 
         discard(ctrl)
 
@@ -112,15 +155,13 @@ def test_cntrl_adder_mod[n: nat](
 @pytest.mark.parametrize(
     ("controlled_adder", "num_ancilla_fn"),
     [
-        (cntrl_adder_ripple_gidney_mod, lambda n: n),
-        (cntrl_adder_ripple_cuccaro_mod, lambda n: 1),
+        (adder_ripple_gidney_mod, lambda n: n),
+        (adder_ripple_cuccaro_mod, lambda n: 1),
     ],
 )
 def test_cntrl_adder_mod_statevector_superposition[n: nat](
     n: int,
-    controlled_adder: GuppyFunctionDefinition[
-        [qubit, array[qubit, n], array[qubit, n]], None
-    ],
+    controlled_adder: GuppyFunctionDefinition[[array[qubit, n], array[qubit, n]], None],
     num_ancilla_fn: Callable[[int], int],
 ) -> None:
     """Check controlled addition on a superposition, including relative phases.
@@ -166,11 +207,12 @@ def test_cntrl_adder_mod_statevector_superposition[n: nat](
         b_reg = qarray(n)
         x(b_reg[0])
 
-        controlled_adder(ctrl, a_reg, b_reg)
+        with control(ctrl):
+            controlled_adder(a_reg, b_reg)
 
-        state_result("ctrl", ctrl)
-        state_result("a", a_reg)
-        state_result("b", b_reg)
+        state_output("ctrl", ctrl)
+        state_output("a", a_reg)
+        state_output("b", b_reg)
 
         discard(ctrl)
         discard_array(a_reg)
@@ -216,15 +258,15 @@ def test_cntrl_adder_mod_statevector_superposition[n: nat](
 @pytest.mark.parametrize(
     ("controlled_adder", "num_ancilla_fn"),
     [
-        (cntrl_adder_ripple_cuccaro_carry_out, lambda n: 1),
-        (cntrl_adder_ripple_gidney_carry_out, lambda n: n),
+        (adder_ripple_cuccaro_carry_out, lambda n: 1),
+        (adder_ripple_gidney_carry_out, lambda n: n),
     ],
 )
 def test_cntrl_adder_carry_out[n: nat](
     n: int,
     cases: list[tuple[int, int]],
     controlled_adder: GuppyFunctionDefinition[
-        [qubit, array[qubit, n], array[qubit, n], qubit], None
+        [array[qubit, n], array[qubit, n], qubit], None
     ],
     num_ancilla_fn: Callable[[int], int],
 ) -> None:
@@ -247,7 +289,8 @@ def test_cntrl_adder_carry_out[n: nat](
         if ctrl_active:
             x(ctrl)
 
-        controlled_adder(ctrl, a_reg, b_reg, carry_out)
+        with control(ctrl):
+            controlled_adder(a_reg, b_reg, carry_out)
 
         state_output("b_reg", b_reg)
         state_output("carry_out", carry_out)
@@ -284,29 +327,26 @@ def test_cntrl_adder_carry_out[n: nat](
 
 
 @pytest.mark.parametrize(
-    ("n", "cases", "controlled_adder", "controlled_adder_dagger", "num_ancilla_fn"),
+    ("n", "cases", "controlled_adder", "num_ancilla_fn"),
     [
         pytest.param(
             n,
             cases,
             adder,
-            dagger,
             ancillas,
             marks=addition_case.marks,
             id=f"{addition_case.id}-{adder_name}",
         )
-        for adder_name, adder, dagger, ancillas, widths in [
+        for adder_name, adder, ancillas, widths in [
             (
                 "cuccaro",
-                cntrl_adder_ripple_cuccaro_carry_out,
-                cntrl_adder_ripple_cuccaro_carry_out_dagger,
+                adder_ripple_cuccaro_carry_out,
                 lambda n: 1,
                 [1, 2, 3, 4, 5, 6],
             ),
             (
                 "gidney",
-                cntrl_adder_ripple_gidney_carry_out,
-                cntrl_adder_ripple_gidney_carry_out_dagger,
+                adder_ripple_gidney_carry_out,
                 lambda n: n,
                 [1, 2, 3, 4, 5],
             ),
@@ -320,11 +360,7 @@ def test_cntrl_addition_carry_out_dagger[n: nat](
     n: int,
     cases: list[tuple[int, int]],
     controlled_adder: GuppyFunctionDefinition[
-        [qubit, array[qubit, n], array[qubit, n], qubit],
-        None,
-    ],
-    controlled_adder_dagger: GuppyFunctionDefinition[
-        [qubit, array[qubit, n], array[qubit, n], qubit],
+        [array[qubit, n], array[qubit, n], qubit],
         None,
     ],
     num_ancilla_fn: Callable[[int], int],
@@ -347,8 +383,10 @@ def test_cntrl_addition_carry_out_dagger[n: nat](
         if ctrl_active:
             x(ctrl)
 
-        controlled_adder(ctrl, a_reg, b_reg, carry_out)
-        controlled_adder_dagger(ctrl, a_reg, b_reg, carry_out)
+        with control(ctrl):
+            controlled_adder(a_reg, b_reg, carry_out)
+        with control(ctrl), dagger:
+            controlled_adder(a_reg, b_reg, carry_out)
 
         if ctrl_active:
             x(ctrl)
@@ -360,8 +398,7 @@ def test_cntrl_addition_carry_out_dagger[n: nat](
         state_output("a_reg", a_reg)
         state_output("b_reg", b_reg)
 
-        # carry_out was measurement-uncomputed, so its post-measurement
-        # value is irrelevant
+        state_output("carry_out", carry_out)
         discard(carry_out)
 
         discard(ctrl)
@@ -385,29 +422,26 @@ def test_cntrl_addition_carry_out_dagger[n: nat](
 
 
 @pytest.mark.parametrize(
-    ("n", "cases", "controlled_adder", "controlled_adder_dagger", "num_ancilla_fn"),
+    ("n", "cases", "controlled_adder", "num_ancilla_fn"),
     [
         pytest.param(
             n,
             cases,
             adder,
-            dagger,
             ancillas,
             marks=addition_case.marks,
             id=f"{addition_case.id}-{adder_name}",
         )
-        for adder_name, adder, dagger, ancillas, widths in [
+        for adder_name, adder, ancillas, widths in [
             (
                 "cuccaro",
-                cntrl_adder_ripple_cuccaro_mod,
-                cntrl_adder_ripple_cuccaro_mod_dagger,
+                adder_ripple_cuccaro_mod,
                 lambda n: 1,
                 [1, 2, 3, 4, 5, 6],
             ),
             (
                 "gidney",
-                cntrl_adder_ripple_gidney_mod,
-                cntrl_adder_ripple_gidney_mod_dagger,
+                adder_ripple_gidney_mod,
                 lambda n: n,
                 [1, 2, 3, 4, 5],
             ),
@@ -421,11 +455,7 @@ def test_cntrl_addition_mod_dagger[n: nat](
     n: int,
     cases: list[tuple[int, int]],
     controlled_adder: GuppyFunctionDefinition[
-        [qubit, array[qubit, n], array[qubit, n]],
-        None,
-    ],
-    controlled_adder_dagger: GuppyFunctionDefinition[
-        [qubit, array[qubit, n], array[qubit, n]],
+        [array[qubit, n], array[qubit, n]],
         None,
     ],
     num_ancilla_fn: Callable[[int], int],
@@ -449,8 +479,10 @@ def test_cntrl_addition_mod_dagger[n: nat](
         if ctrl_active:
             x(ctrl)
 
-        controlled_adder(ctrl, a_reg, b_reg)
-        controlled_adder_dagger(ctrl, a_reg, b_reg)
+        with control(ctrl):
+            controlled_adder(a_reg, b_reg)
+        with control(ctrl), dagger:
+            controlled_adder(a_reg, b_reg)
 
         apply_bitstring(a_reg, _a_bit_array)
         apply_bitstring(b_reg, _b_bit_array)

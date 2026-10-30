@@ -23,26 +23,7 @@ from guppyalgos.primitives.arithmetic import (
     multiplier_ripple_gidney_mod_in_place,
     multiplier_ripple_gidney_mod,
 )
-from guppyalgos.primitives.arithmetic.multiplier.multiplier_ripple_gidney import (
-    _shifted_controlled_adder,
-)
 from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
-
-
-@pytest.mark.parametrize("n", [0, -1])
-def test_shifted_controlled_adder_rejects_nonpositive_register_size(n: int) -> None:
-    """Reject register sizes less than one."""
-    with pytest.raises(ValueError, match="n must be positive"):
-        _shifted_controlled_adder(n, 0)
-
-
-@pytest.mark.parametrize(("n", "shift"), [(1, -1), (1, 1), (3, -1), (3, 3)])
-def test_shifted_controlled_adder_rejects_out_of_range_shift(
-    n: int, shift: int
-) -> None:
-    """Reject shifts outside the register bounds."""
-    with pytest.raises(ValueError, match="0 <= shift < n"):
-        _shifted_controlled_adder(n, shift)
 
 
 @pytest.mark.parametrize(("n", "a", "b"), [(2, 1, 1), (2, 2, 3), (3, 3, 2), (4, 5, 7)])

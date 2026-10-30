@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from typing import no_type_check
 
+from guppylang.std.builtins import control
 from guppylang import guppy
 from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import qubit, x
 
 from guppyalgos.primitives.arithmetic import (
-    cntrl_adder_ripple_gidney_mod,
+    adder_ripple_gidney_mod,
     cntrl_subtractor_ripple_gidney_mod,
+)
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow,
+    _unsafe_array_unborrow,
 )
 
 from .rotation_helper import RotationAxis
@@ -63,7 +68,7 @@ class RotationPhaseGradient[
     little-endian phase-gradient state, for example with
     :func:`guppyalgos.primitives.state_preparation.phase_gradient.phase_gradient` using
     ``Convention.Standard``. Its qubit ordering then matches the arithmetic
-    convention of ``cntrl_adder_ripple_gidney_mod``. The kickback circuit
+    convention of the controlled modular Gidney adder. The kickback circuit
     preserves this resource eigenstate, allowing the same rotator to be applied to
     multiple target qubits. The caller remains responsible for discarding it after
     its final use.
@@ -97,11 +102,10 @@ class RotationPhaseGradient[
         """
         self.axis.prepare_basis(rotation_target)
         x(rotation_target)
-        cntrl_adder_ripple_gidney_mod(
-            rotation_target,
-            data_qreg,
-            self.phase_gradient,
-        )
+        phase_register = _unsafe_array_borrow(self.phase_gradient)
+        with control(rotation_target):
+            adder_ripple_gidney_mod(data_qreg, phase_register)
+        _unsafe_array_unborrow(self.phase_gradient, phase_register)
         x(rotation_target)
         self.axis.restore_basis(rotation_target)
 

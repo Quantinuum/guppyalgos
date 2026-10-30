@@ -3,17 +3,108 @@
 from typing import no_type_check
 
 import numpy as np
+import pytest
 from guppylang.decorator import guppy
+from guppylang.std.builtins import array, control, dagger
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, qubit, x
 from selene_sim import Quest
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
-    full_adder_inverse,
     half_adder,
-    half_adder_inverse,
 )
-from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+)
+
+
+@pytest.mark.parametrize("extra_control", [False, True])
+def test_half_adder_modifiers(extra_control: bool) -> None:
+    """Check every half-adder modifier against its complete truth table."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def circuit(register: array[qubit, 3]) -> None:
+        half_adder(register[0], register[1], register[2])
+
+    expected = np.zeros((8, 8), dtype=np.complex128)
+    for index in range(8):
+        addend = index & 1
+        target = (index >> 1) & 1
+        carry = (index >> 2) & 1
+        output_index = (
+            addend | ((target ^ addend) << 1) | ((carry ^ (addend & target)) << 2)
+        )
+        expected[output_index, index] = 1
+
+    width = 3
+    if extra_control:
+
+        @guppy(unitary=True)
+        @no_type_check
+        def circuit(register: array[qubit, 4]) -> None:
+            with control(register[0]):
+                half_adder(register[1], register[2], register[3])
+
+        expected = np.kron(np.eye(8), np.diag([1, 0])) + np.kron(
+            expected, np.diag([0, 1])
+        )
+        width = 4
+    assert_unitary_modifiers(
+        circuit,
+        width,
+        expected_unitary=expected,
+        endianness=Endianness.LITTLE,
+        n_extra_qubits=3,
+    )
+
+
+@pytest.mark.parametrize("extra_control", [False, True])
+def test_full_adder_modifiers(extra_control: bool) -> None:
+    """Check every full-adder modifier against its complete truth table."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def circuit(register: array[qubit, 4]) -> None:
+        full_adder(register[0], register[1], register[2], register[3])
+
+    expected = np.zeros((16, 16), dtype=np.complex128)
+    for index in range(16):
+        carry_in = index & 1
+        addend = (index >> 1) & 1
+        target = (index >> 2) & 1
+        carry_out = (index >> 3) & 1
+        total = carry_in + addend + target
+        output_index = (
+            carry_in
+            | (addend << 1)
+            | ((total & 1) << 2)
+            | ((carry_out ^ (total >> 1)) << 3)
+        )
+        expected[output_index, index] = 1
+
+    width = 4
+    if extra_control:
+
+        @guppy(unitary=True)
+        @no_type_check
+        def circuit(register: array[qubit, 5]) -> None:
+            with control(register[0]):
+                full_adder(register[1], register[2], register[3], register[4])
+
+        expected = np.kron(np.eye(16), np.diag([1, 0])) + np.kron(
+            expected, np.diag([0, 1])
+        )
+        width = 5
+    assert_unitary_modifiers(
+        circuit,
+        width,
+        expected_unitary=expected,
+        endianness=Endianness.LITTLE,
+        n_extra_qubits=3,
+    )
 
 
 def test_half_adder_truth_table() -> None:
@@ -114,8 +205,8 @@ def test_full_adder_truth_table() -> None:
             assert_allclose_ignorephase(states["carry"].get_single_state(), zero_state)
 
 
-def test_half_adder_inverse() -> None:
-    """Verify half_adder_inverse acts as the inverse."""
+def test_half_adder_dagger() -> None:
+    """Verify the dagger modifier inverts the half adder."""
 
     @guppy
     @no_type_check
@@ -130,7 +221,8 @@ def test_half_adder_inverse() -> None:
             x(b)
 
         half_adder(a, b, c_out)
-        half_adder_inverse(a, b, c_out)
+        with dagger:
+            half_adder(a, b, c_out)
         if a_bit:
             x(a)
         if b_bit:
@@ -153,8 +245,8 @@ def test_half_adder_inverse() -> None:
             assert_allclose_ignorephase(state.get_single_state(), zero_state)
 
 
-def test_full_adder_inverse() -> None:
-    """Verify full_adder_inverse does act as the inverse."""
+def test_full_adder_dagger() -> None:
+    """Verify the dagger modifier inverts the full adder."""
 
     @guppy
     @no_type_check
@@ -172,7 +264,8 @@ def test_full_adder_inverse() -> None:
             x(b)
 
         full_adder(cin, a, b, c_out)
-        full_adder_inverse(cin, a, b, c_out)
+        with dagger:
+            full_adder(cin, a, b, c_out)
 
         if cin_bit:
             x(cin)

@@ -36,12 +36,12 @@ circuit.
 
 ```{code-cell} ipython3
 from guppylang import guppy
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, control, dagger
 from guppylang.std.quantum import qubit
 from guppyalgos.primitives.arithmetic import (
     adder_ripple_gidney_carry_out,
     subtractor_ripple_gidney_carry_out,
-    cntrl_adder_ripple_gidney_mod,
+    adder_ripple_gidney_mod,
     multiplier_ripple_gidney_mod,
     exponentiator_ripple_gidney_mod,
 )
@@ -90,9 +90,10 @@ $$
 ```{code-cell} ipython3
 @guppy
 def controlled_add(
-    control: qubit, a_qreg: array[qubit, 3], b_qreg: array[qubit, 3],
+  ctrl: qubit, a_qreg: array[qubit, 3], b_qreg: array[qubit, 3],
 ) -> None:
-    cntrl_adder_ripple_gidney_mod(control, a_qreg, b_qreg)
+  with control(ctrl):
+    adder_ripple_gidney_mod(a_qreg, b_qreg)
 ```
 
 Controlled subtractors perform the corresponding update $b\mapsto b-ca$.

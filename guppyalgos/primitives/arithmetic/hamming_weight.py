@@ -6,16 +6,14 @@ from typing import no_type_check
 import numpy as np
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, comptime, frozenarray, owned, nat
+from guppylang.std.builtins import array, comptime, dagger, frozenarray, owned, nat
 from guppylang.std.mem import mem_swap
 from guppylang.std.option import nothing, some
 from guppylang.std.quantum import qubit, discard_array
 
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
-    full_adder_inverse,
     half_adder,
-    half_adder_inverse,
 )
 from guppyalgos.utils import qarray
 
@@ -108,7 +106,8 @@ def _full_adder_with_swaps_inv[n_q: nat](
     """Inverse of full adder with swaps."""
     mem_swap(q[inds[2]], ancilla[ancilla_index])
     mem_swap(q[inds[2]], q[inds[1]])
-    full_adder_inverse(q[inds[0]], q[inds[1]], q[inds[2]], ancilla[ancilla_index])
+    with dagger:
+        full_adder(q[inds[0]], q[inds[1]], q[inds[2]], ancilla[ancilla_index])
 
 
 @guppy
@@ -122,7 +121,8 @@ def _half_adder_with_swaps_inv[n_q: nat](
     """Inverse of half adder with swaps."""
     mem_swap(q[inds[1]], ancilla[ancilla_index])
     mem_swap(q[inds[1]], q[inds[0]])
-    half_adder_inverse(q[inds[0]], q[inds[1]], ancilla[ancilla_index])
+    with dagger:
+        half_adder(q[inds[0]], q[inds[1]], ancilla[ancilla_index])
 
 
 def num_hamming_weight_bits(n: int) -> int:
