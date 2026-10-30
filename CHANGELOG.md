@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/Quantinuum/guppyalgos/compare/v0.2.0...v0.3.0) (2026-10-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* reflection type level arithmetic ([#152](https://github.com/Quantinuum/guppyalgos/issues/152))
+
+### Features
+
+* add parameterized multi-controlled function composition ([#110](https://github.com/Quantinuum/guppyalgos/issues/110)) ([ad11380](https://github.com/Quantinuum/guppyalgos/commit/ad11380c865e8fa86cf4f53f664497d6d2cf32e9))
+
+
+### Code Refactoring
+
+* reflection type level arithmetic ([#152](https://github.com/Quantinuum/guppyalgos/issues/152)) ([6d0ef48](https://github.com/Quantinuum/guppyalgos/commit/6d0ef4888b39fa0b3d2c34431680f60fde1cd43d))
+
 ## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
