@@ -7,7 +7,7 @@ from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import qubit
 
-from guppyalgos.utils.guppy.gates import cswap_qubit, cswap_register
+from guppyalgos.utils.guppy.gates import _cswap
 
 
 def _swapup_linear_schedule(
@@ -61,7 +61,7 @@ def _swapup_linear_qubit[n_index_qubits: nat, n_state_qubits: nat](
     for bit_pos, lower, upper in comptime(
         _swapup_linear_schedule(n_index_qubits, n_state_qubits)
     ):
-        cswap_qubit(index_qreg[bit_pos], state_qreg[lower], state_qreg[upper])
+        _cswap(index_qreg[bit_pos], state_qreg[lower], state_qreg[upper])
 
 
 @guppy(daggerable=True)
@@ -93,7 +93,7 @@ def _swapup_linear_register[n_index_qubits: nat, width: nat, n_state_registers: 
     for bit_pos, lower, upper in comptime(
         _swapup_linear_schedule(n_index_qubits, n_state_registers)
     ):
-        cswap_register(index_qreg[bit_pos], state_qregs[lower], state_qregs[upper])
+        _cswap(index_qreg[bit_pos], state_qregs[lower], state_qregs[upper])
 
 
 @guppy(daggerable=True)

@@ -5,6 +5,7 @@ from typing import no_type_check
 from guppylang import guppy
 from guppylang.std.angles import angle
 from guppylang.std.builtins import (
+    Function,
     Unitary,
     array,
     comptime,
@@ -13,6 +14,7 @@ from guppylang.std.builtins import (
     frozenarray,
     nat,
 )
+from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import (
     crz,
     cx,
@@ -24,6 +26,8 @@ from guppylang.std.quantum import (
     toffoli,
     x,
 )
+
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 
 
 @guppy.unitary
@@ -414,95 +418,135 @@ def apply_bitstring() -> None:
     ...
 
 
+@guppy
+@no_type_check
+def _swap_qubit_controlled[n_ctrl: nat](
+    a: qubit,
+    b: qubit,
+    ctrls: array[qubit, n_ctrl],
+    cnx_kernel: Function[[array[qubit, n_ctrl], qubit], None],
+) -> None:
+    cx(a, b)
+    if n_ctrl == 1:
+        toffoli(ctrls[0], b, a)
+    else:
+        work = qubit()
+        cnx_kernel(ctrls, work)
+        toffoli(work, b, a)
+        cnx_kernel(ctrls, work)
+        discard(work)
+    cx(a, b)
+
+
+@guppy.unitary
+class swap_qubit:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(a: qubit, b: qubit) -> None:
+        """Swap two qubits.
+
+        The unmodified version just exchanges labels of the qubits at the computational
+        level, but when controlled this performs a cswap gate.
+
+        Note that even the non-modified version may have a non-trivial cost depending
+        on the QEC code compiled to.
+        """
+        mem_swap(a, b)
+
+    @guppy
+    @no_type_check
+    def daggered(a: qubit, b: qubit) -> None:  # noqa: D102
+        swap_qubit(a, b)
+
+    @guppy
+    @no_type_check
+    def controlled[n_ctrl: nat](  # noqa: D102
+        a: qubit, b: qubit, ctrls: array[qubit, n_ctrl]
+    ) -> None:
+        _swap_qubit_controlled(a, b, ctrls, cnx[n_ctrl])
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n_ctrl: nat](  # noqa: D102
+        a: qubit, b: qubit, ctrls: array[qubit, n_ctrl]
+    ) -> None:
+        _swap_qubit_controlled(a, b, ctrls, cnx[n_ctrl])
+
+
+@guppy(unitary=True)
+@no_type_check
+def swap_reg[n: nat](a: array[qubit, n], b: array[qubit, n]) -> None:
+    """Swap two registers.
+
+    The unmodified version just exchanges labels of the qubits at the computational
+    level, but when controlled this performs cswap gates.
+
+    Note that even the non-modified version may have a non-trivial cost depending
+    on the QEC code compiled to.
+    """
+    transversal(swap_qubit, a, b)
+
+
+@guppy.overload(swap_qubit, swap_reg)
+def swap() -> None:
+    """Swap qubits or registers.
+
+    The unmodified version just exchanges labels of the qubits at the computational
+    level, but when controlled this performs cswap gates.
+
+    Note that even the non-modified version may have a non-trivial cost depending
+    on the QEC code compiled to.
+    """
+    ...
+
+
+# Explicit gates for cswaps to avoid modifier lowering bugs
+# and struct-field borrowing bugs: https://github.com/Quantinuum/guppylang/issues/2466.
+# Plain calls also avoid unsupported modifiers inside comptime functions:
+# https://github.com/Quantinuum/guppylang/issues/2461.
 @guppy(daggerable=True)
 @no_type_check
-def cswap_qubit(
-    c: qubit,
-    t1: qubit,
-    t2: qubit,
-) -> None:
-    """Control swap two qubits."""
-    cx(t1, t2)
-    toffoli(c, t2, t1)
-    cx(t1, t2)
+def _cswap_qubit(c: qubit, a: qubit, b: qubit) -> None:
+    """Apply a controlled swap without modifiers."""
+    cx(a, b)
+    toffoli(c, b, a)
+    cx(a, b)
 
 
 @guppy.comptime(daggerable=True)
 @no_type_check
-def _cswap_register[n: nat](
-    c: qubit, t1_reg: array[qubit, n], t2_reg: array[qubit, n]
+def _cswap_register_impl[n: nat](
+    c: qubit, a: array[qubit, n], b: array[qubit, n]
 ) -> None:
+    """Apply controlled swaps register-wise without modifiers."""
     for i in range(n):
-        cx(t1_reg[i], t2_reg[i])
-        toffoli(c, t2_reg[i], t1_reg[i])
-        cx(t1_reg[i], t2_reg[i])
+        _cswap_qubit(c, a[i], b[i])
 
 
 @guppy(daggerable=True)
 @no_type_check
-def cswap_register[n: nat](
-    c: qubit, t1_reg: array[qubit, n], t2_reg: array[qubit, n]
-) -> None:
-    """Control swap two registers."""
-    _cswap_register(c, t1_reg, t2_reg)
+def _cswap_register[n: nat](c: qubit, a: array[qubit, n], b: array[qubit, n]) -> None:
+    """Apply daggerable controlled register swap."""
+    _cswap_register_impl(c, a, b)
 
 
-@guppy.overload(cswap_qubit, cswap_register)
-@no_type_check
-def cswap() -> None:
-    """Apply a control swap between qubits or equal size registers.
-
-    Either:
-        cswap(control_bit, qubit_a, qubit_b)
-    Or:
-        cswap(control_bit, a_reg, b_reg)
-    """
+@guppy.overload(_cswap_qubit, _cswap_register)
+def _cswap() -> None:
+    """Apply controlled-swap workaround to qubits or registers."""
     ...
 
 
 @guppy
 @no_type_check
-def ccswap_qubit(
-    c0: qubit,
-    c1: qubit,
-    t1: qubit,
-    t2: qubit,
+def _ccswap[n: nat](
+    c0: qubit, c1: qubit, a: array[qubit, n], b: array[qubit, n]
 ) -> None:
-    """Double-control swap two qubits using an internal work qubit."""
+    """Swap registers conditioned on both controls using a work qubit."""
     work = qubit()
     toffoli(c0, c1, work)
-    cswap(work, t1, t2)
+    _cswap(work, a, b)
     toffoli(c0, c1, work)
     discard(work)
-
-
-@guppy
-@no_type_check
-def ccswap_register[n: nat](
-    c0: qubit,
-    c1: qubit,
-    t1_reg: array[qubit, n],
-    t2_reg: array[qubit, n],
-) -> None:
-    """Double-control swap two equal-size registers using an internal work qubit."""
-    work = qubit()
-    toffoli(c0, c1, work)
-    cswap(work, t1_reg, t2_reg)
-    toffoli(c0, c1, work)
-    discard(work)
-
-
-@guppy.overload(ccswap_qubit, ccswap_register)
-@no_type_check
-def ccswap() -> None:
-    """Apply a double-control swap between qubits or equal size registers.
-
-    Either:
-        ccswap(control_bit_0, control_bit_1, qubit_a, qubit_b)
-    Or:
-        ccswap(control_bit_0, control_bit_1, a_reg, b_reg)
-    """
-    ...
 
 
 @guppy
