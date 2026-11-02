@@ -56,7 +56,7 @@ def _build_qubitization[n_prep_q: nat, n_state_q: nat, n_control_q: nat](
         select_qreg: array[qubit, n_state_qubits],
     ) -> None:
         lcu_struct = LCU(prepare, select, unprepare)
-        reflection_struct = Reflection[n_prep_qubits, n_control_qubits](cnx)
+        reflection_struct = Reflection[n_prep_qubits](cnx)
         qubitize = Qubitization(lcu_struct, reflection_struct)
         qubitize.power(prep_qreg, select_qreg, power)
 

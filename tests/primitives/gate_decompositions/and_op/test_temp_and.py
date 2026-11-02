@@ -77,10 +77,9 @@ def test_uncompute_temp_and(
 ) -> None:
     """Test temp_and_uncompute with different implementations.
 
-    Temporary AND which acts on an incoming |1> target state loops
-    over the incoming input bits possibilities and applies the AND operation.
-
-    Because it acts on |1>, the output is flipped and is expected to be False
+    Temporary AND uncomputation acts on a target that holds the AND of the input
+    bits. The test loops over the input bits possibilities and checks that the
+    target is returned to |0>.
 
     Args:
         i (int): Integer index to determine input bits.
@@ -98,11 +97,13 @@ def test_uncompute_temp_and(
         index_qreg = qarray(2)
         target = qubit()
 
-        x(target)
-
         for bit in range(2):
             if idx[bit]:
                 x(index_qreg[bit])
+
+        # the target holds the AND of the input bits, as the uncomputation requires
+        if idx[0] and idx[1]:
+            x(target)
 
         comp_and_op(index_qreg[0], index_qreg[1], target)
 
@@ -111,5 +112,4 @@ def test_uncompute_temp_and(
 
     total_qubits = 3
     my_shots = main.emulator(n_qubits=total_qubits).with_seed(42).with_shots(1).run()
-    bool_and = binary_index[0] and binary_index[1]
-    assert my_shots.collated_shots()[0]["state"][0] is not bool_and
+    assert my_shots.collated_shots()[0]["state"][0] == 0

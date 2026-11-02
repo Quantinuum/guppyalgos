@@ -318,6 +318,15 @@ def select_unary_iteration[
     """
     index_bools, msb_diff_depths = _get_bools_and_diffs(n_index_qubits, n_index_el)
 
+    if n_index_qubits == 1:
+        for iteration_index in range(n_index_el):
+            if not index_bools[iteration_index][0]:
+                x(index_qreg[0])
+            controlled_ops[iteration_index](index_qreg[0], state_qreg)
+            if not index_bools[iteration_index][0]:
+                x(index_qreg[0])
+        return
+
     max_cascade_depth = len(index_qreg) - 1
     work_qreg = qarray(comptime(n_index_qubits - 1))
     n_iterations = n_index_el
