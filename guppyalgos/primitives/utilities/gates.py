@@ -24,6 +24,9 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.gate_decompositions.cnx.cnu import (
+    MultiCntrlFunctionParams,
+)
 
 
 @guppy
@@ -481,9 +484,57 @@ def transversal() -> None:
 
 @guppy
 @no_type_check
-def apply_phase(q: qubit, theta: angle) -> None:
-    """Apply a phase rotation to a qubit."""
-    rz(q, theta)
+def _cphase(control: qubit, target: qubit, theta: angle) -> None:
+    """Apply a controlled phase rotation (CU1)."""
+    rz(control, theta / 2)
+    crz(control, target, theta)
+
+
+@guppy.unitary
+class apply_phase:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(q: qubit, theta: angle) -> None:
+        r"""Apply a phase gate.
+
+        Up to a global phase:
+        .. math::
+
+            \\begin{pmatrix}
+            1 & 0 \\\\
+            0 & e^{i\\theta}
+            \\end{pmatrix}
+        """
+        rz(q, theta)
+
+    @guppy
+    @no_type_check
+    def daggered(q: qubit, theta: angle) -> None:
+        """Phase gate dagger."""
+        with dagger:
+            rz(q, theta)
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat](q: qubit, theta: angle, ctrls: array[qubit, n]) -> None:
+        """Apply controlled phase gate.
+
+        Not just equal to controlled Rz as global phase in __call__ gets converted to
+        a relative phase.
+        """
+        control_cphase = MultiCntrlFunctionParams(_cphase, cnx[n])
+        control_cphase.compose(ctrls, q, theta)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat](q: qubit, theta: angle, ctrls: array[qubit, n]) -> None:
+        """Apply control-daggered phase gate.
+
+        Not just equal to controlled Rz as global phase gets converted to
+        a relative phase.
+        """
+        control_cphase = MultiCntrlFunctionParams(_cphase, cnx[n])
+        control_cphase.compose(ctrls, q, -theta)
 
 
 @guppy

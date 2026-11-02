@@ -24,7 +24,7 @@ from guppylang.std.quantum import (
 from pytket.circuit import Circuit
 from selene_sim import Quest
 
-from guppyalgos.primitives.utilities.gates import ccswap, cphase, transversal
+from guppyalgos.primitives.utilities.gates import ccswap, transversal, apply_phase
 from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
 from guppyalgos.utils import qarray
 
@@ -103,7 +103,8 @@ def test_cphase(theta: float) -> None:
     def main(state_qreg: array[qubit, 2]) -> None:
         """Guppy program to implement a controlled phase rotation."""
         gtheta = angle(theta)
-        cphase(state_qreg[1], state_qreg[0], gtheta)
+        with control(state_qreg[1]):
+            apply_phase(state_qreg[0], gtheta)
 
     guppy_u = get_unitary(main, 2, endianness=Endianness.BIG)
 
