@@ -37,11 +37,12 @@ class QSVT[
 
     """
 
-    lcu: LCU[array[qubit, n_prep], TargetRegs]  # ty: ignore[not-subscriptable]
-    lcu_dagger: LCU[array[qubit, n_prep], TargetRegs]  # ty: ignore[not-subscriptable]
+    lcu: LCU[array[qubit, n_prep], TargetRegs]
+    lcu_dagger: LCU[array[qubit, n_prep], TargetRegs]
     phases: frozenarray[float, n_phases]
 
     @guppy
+    @no_type_check
     def compose(
         self, signal: qubit, prep_qreg: array[qubit, n_prep], select_qreg: TargetRegs
     ) -> None:
