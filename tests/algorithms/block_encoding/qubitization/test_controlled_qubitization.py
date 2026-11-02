@@ -26,7 +26,6 @@ from guppyalgos.testing import (
     chebyshev_power_matrix,
 )
 
-dagger = object()
 
 
 def _build_cntrl_qubitization[n_prep_q: nat, n_state_q: nat](

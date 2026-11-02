@@ -23,8 +23,6 @@ from guppyalgos.algorithms.block_encoding.lcu import (
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
 from guppyalgos.testing import Endianness, assert_cntrl_unitary
 
-dagger = object()
-
 
 def _assert_cntrl_lcu_encodes_hamiltonian[n_prep_q: nat, n_state_q: nat](
     ham_op: zqp.RealTermSum | zqp.ComplexTermSum,

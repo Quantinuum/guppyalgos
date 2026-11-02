@@ -29,7 +29,6 @@ from guppyalgos.algorithms.block_encoding.lcu import (
 )
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
 
-dagger = object()
 
 
 def _assert_lcu_encodes_hamiltonian[n_prep_q: nat, n_state_q: nat](

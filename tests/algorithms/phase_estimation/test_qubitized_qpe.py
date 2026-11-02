@@ -46,8 +46,6 @@ from guppyalgos.utils import (
     phase_to_energy_qubitized_qpe,
 )
 
-dagger = object()
-
 
 def _phase_distribution(
     result: EmulatorResult, n_phase_qubits: int

@@ -28,9 +28,6 @@ from guppyalgos.testing import (
     get_unitary_projected,
 )
 
-dagger = object()
-
-
 def _build_qubitization[n_prep_q: nat, n_state_q: nat, n_control_q: nat](
     data: LCUData,
     prepare: GuppyFunctionDefinition[[array[qubit, n_prep_q]], None],
