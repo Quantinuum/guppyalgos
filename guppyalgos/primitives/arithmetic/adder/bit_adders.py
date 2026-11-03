@@ -24,7 +24,8 @@ def half_adder(a: qubit, b: qubit, c_out: qubit) -> None:
     Use ``with dagger`` for the inverse and ``with control`` for external controls.
 
     Explicit Clifford+T gates avoid an upstream controlled-Toffoli output permutation.
-    The final CX of the Toffoli decomposition cancels with the sum-bit CX.
+    The final CX of the Toffoli decomposition cancels with the sum-bit CX. See
+    https://github.com/Quantinuum/guppyalgos/issues/156.
     """
     h(c_out)
     cx(b, c_out)
