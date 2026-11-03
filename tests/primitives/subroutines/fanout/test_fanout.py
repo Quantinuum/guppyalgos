@@ -12,9 +12,9 @@ their required target-register input state.
 """
 
 from collections.abc import Callable
+from itertools import product
 from typing import no_type_check
 
-import numpy as np
 import pytest
 from guppylang import guppy
 from guppylang.std.builtins import array, control, dagger, comptime, output
@@ -38,11 +38,7 @@ from guppyalgos.primitives.subroutines.fanout import (
 )
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils import qarray
-from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
-from guppyalgos.utils.guppy.unsafe_borrow import (
-    _unsafe_array_borrow_slice,
-    _unsafe_array_unborrow_slice,
-)
+
 
 _ZERO_BITS = [False, False, False, False, False, False]
 _ONE_BITS = [True, True, True, True, True, True]
@@ -52,39 +48,50 @@ _XOR_BITS = [True, False, False, True, False, True]
 
 @pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
 def test_fanout_basic_modifiers(mode: str) -> None:
-    """Check the self-adjoint operation and its controlled matrix action."""
+    """Check each modifier's measured outputs for every basis input."""
 
     @guppy
     @no_type_check
-    def circuit(qs: array[qubit, 4]) -> None:
-        prefix, data, suffix = _unsafe_array_borrow_slice(qs, 2, 2, 0)
+    def main(external_bit: bool, target_bit: bool, bits: array[bool, 2]) -> None:
+        external = qubit()
+        target = qubit()
+        data = qarray(2)
+        if external_bit:
+            x(external)
+        if target_bit:
+            x(target)
+        for i in range(2):
+            if bits[i]:
+                x(data[i])
+
         if comptime(mode == "forward"):
-            fanout_basic(prefix[1], data)
+            fanout_basic(target, data)
         elif comptime(mode == "dagger"):
             with dagger:
-                fanout_basic(prefix[1], data)
+                fanout_basic(target, data)
         elif comptime(mode == "control"):
-            with control(prefix[0]):
-                fanout_basic(prefix[1], data)
+            with control(external):
+                fanout_basic(target, data)
         else:
-            with control(prefix[0]), dagger:
-                fanout_basic(prefix[1], data)
-        _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
+            with control(external), dagger:
+                fanout_basic(target, data)
 
-    # Little-endian bit positions: external control, fanout control, data0, data1.
-    expected = np.zeros((16, 16), dtype=np.complex128)
-    for input_basis in range(16):
-        external_control = bool(input_basis & 0b0001)
-        fanout_control = bool(input_basis & 0b0010)
-        enabled = mode in ("forward", "dagger") or external_control
-        # Fanout flips both data bits, preserving both controls.
-        output_basis = (
-            input_basis ^ 0b1100 if enabled and fanout_control else input_basis
-        )
-        expected[output_basis, input_basis] = 1
-    assert_allclose_ignorephase(
-        get_unitary(circuit, 4, endianness=Endianness.LITTLE), expected
-    )
+        output("external", measure(external).read())
+        output("target", measure(target).read())
+        output("data", collect_measurements(measure_array(data)))
+
+    emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
+    for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
+        bits = [data0, data1]
+        enabled = mode in ("forward", "dagger") or external_bit
+        expected_data = [bit ^ (enabled and target_bit) for bit in bits]
+        expected_target = target_bit
+        result = emulator.run(
+            external_bit=external_bit, target_bit=target_bit, bits=bits
+        ).collated_shots()[0]
+        assert result["external"][0] == external_bit
+        assert result["target"][0] == expected_target
+        assert result["data"][0] == expected_data
 
 
 def _basic_total_qubits(n_target_qubits: int) -> int:

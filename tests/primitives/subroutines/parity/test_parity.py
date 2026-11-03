@@ -1,8 +1,8 @@
 """Tests for sequential and LAQCC parity circuits."""
 
+from itertools import product
 from typing import no_type_check
 
-import numpy as np
 import pytest
 from guppylang import guppy
 from guppylang.std.builtins import array, control, dagger, comptime, output
@@ -14,11 +14,6 @@ from guppyalgos.primitives.subroutines.parity import (
     parity_sequential,
 )
 from guppyalgos.utils import qarray
-from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
-from guppyalgos.utils.guppy.unsafe_borrow import (
-    _unsafe_array_borrow_slice,
-    _unsafe_array_unborrow_slice,
-)
 
 
 N_INPUT_QUBITS = 5
@@ -26,35 +21,50 @@ N_INPUT_QUBITS = 5
 
 @pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
 def test_parity_sequential_modifiers(mode: str) -> None:
-    """Check the self-adjoint operation and its controlled matrix action."""
+    """Check each modifier's measured outputs for every basis input."""
 
     @guppy
     @no_type_check
-    def circuit(qs: array[qubit, 4]) -> None:
-        prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 2, 2, 0)
+    def main(external_bit: bool, target_bit: bool, bits: array[bool, 2]) -> None:
+        external = qubit()
+        target = qubit()
+        data = qarray(2)
+        if external_bit:
+            x(external)
+        if target_bit:
+            x(target)
+        for i in range(2):
+            if bits[i]:
+                x(data[i])
+
         if comptime(mode == "forward"):
-            parity_sequential(prefix[1], inputs)
+            parity_sequential(target, data)
         elif comptime(mode == "dagger"):
             with dagger:
-                parity_sequential(prefix[1], inputs)
+                parity_sequential(target, data)
         elif comptime(mode == "control"):
-            with control(prefix[0]):
-                parity_sequential(prefix[1], inputs)
+            with control(external):
+                parity_sequential(target, data)
         else:
-            with control(prefix[0]), dagger:
-                parity_sequential(prefix[1], inputs)
-        _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
+            with control(external), dagger:
+                parity_sequential(target, data)
 
-    # Little endian: target is bit 0 of the parity action; odd inputs flip it.
-    action = np.eye(8, dtype=np.complex128)[:, [0, 1, 3, 2, 5, 4, 6, 7]]
-    expected = np.eye(16, dtype=np.complex128)
-    # The external control is bit 0 of the full circuit (odd basis indices).
-    expected[1::2, 1::2] = action
-    if mode in ("forward", "dagger"):
-        expected[::2, ::2] = action
-    assert_allclose_ignorephase(
-        get_unitary(circuit, 4, endianness=Endianness.LITTLE), expected
-    )
+        output("external", measure(external).read())
+        output("target", measure(target).read())
+        output("data", collect_measurements(measure_array(data)))
+
+    emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
+    for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
+        bits = [data0, data1]
+        enabled = mode in ("forward", "dagger") or external_bit
+        expected_data = bits
+        expected_target = target_bit ^ (enabled and (data0 ^ data1))
+        result = emulator.run(
+            external_bit=external_bit, target_bit=target_bit, bits=bits
+        ).collated_shots()[0]
+        assert result["external"][0] == external_bit
+        assert result["target"][0] == expected_target
+        assert result["data"][0] == expected_data
 
 
 @pytest.mark.parametrize(
