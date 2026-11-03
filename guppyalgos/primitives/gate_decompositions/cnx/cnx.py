@@ -172,7 +172,9 @@ class CnxPartialToffoliLadder:  # noqa: D101
         work: array[qubit, comptime(max(n - 2, 0))],  # ty: ignore[unsupported-operator]
         target: qubit,
     ) -> None:
-        if n == 1:
+        if n == 0:
+            x(target)
+        elif n == 1:
             cx(controls[0], target)
         elif n == 2:
             toffoli(controls[0], controls[1], target)
