@@ -6,14 +6,7 @@ from typing import no_type_check
 import pytest
 from guppylang import guppy
 from guppylang.std.builtins import array, control, dagger, comptime, output
-from guppylang.std.quantum import (
-    collect_measurements,
-    measure,
-    measure_array,
-    qubit,
-    x,
-    h,
-)
+from guppylang.std.quantum import collect_measurements, measure, measure_array, qubit, x
 
 from guppyalgos.primitives.subroutines.parity import (
     parity_laqcc,
@@ -26,50 +19,9 @@ from guppyalgos.utils import qarray
 N_INPUT_QUBITS = 5
 
 
-@pytest.mark.parametrize("superposition", [False, True])
-def test_parity_sequential_dagger_round_trip(superposition: bool) -> None:
-    """Restore basis and superposition inputs by applying forward then dagger."""
-
-    @guppy
-    @no_type_check
-    def main(target_bit: bool, bits: array[bool, 2]) -> None:
-        target = qubit()
-        data = qarray(2)
-        if target_bit:
-            x(target)
-        for i in range(2):
-            if bits[i]:
-                x(data[i])
-        if comptime(superposition):
-            h(target)
-            for i in range(2):
-                h(data[i])
-
-        parity_sequential(target, data)
-        with dagger:
-            parity_sequential(target, data)
-
-        if comptime(superposition):
-            h(target)
-            for i in range(2):
-                h(data[i])
-        output("target", measure(target).read())
-        output("data", collect_measurements(measure_array(data)))
-
-    emulator = main.emulator(n_qubits=3).with_seed(42).with_shots(1)
-    for target_bit, data0, data1 in product([False, True], repeat=3):
-        bits = [data0, data1]
-        result = emulator.run(target_bit=target_bit, bits=bits).collated_shots()[0]
-        assert result["target"][0] == target_bit
-        assert result["data"][0] == bits
-
-
-@pytest.mark.parametrize(
-    "daggered", [False, True], ids=["control", "controlled-dagger"]
-)
-@pytest.mark.parametrize("superposition", [False, True], ids=["basis", "all-plus"])
-def test_parity_sequential_controlled(daggered: bool, superposition: bool) -> None:
-    """Share expected outputs for controlled self-adjoint operations."""
+@pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
+def test_parity_sequential_modifiers(mode: str) -> None:
+    """Check each modifier's measured outputs for every basis input."""
 
     @guppy
     @no_type_check
@@ -84,38 +36,29 @@ def test_parity_sequential_controlled(daggered: bool, superposition: bool) -> No
         for i in range(2):
             if bits[i]:
                 x(data[i])
-        if comptime(superposition):
-            h(external)
-            h(target)
-            for i in range(2):
-                h(data[i])
 
-        with control(external):
-            if comptime(daggered):
-                with dagger:
-                    parity_sequential(target, data)
-            else:
+        if comptime(mode == "forward"):
+            parity_sequential(target, data)
+        elif comptime(mode == "dagger"):
+            with dagger:
+                parity_sequential(target, data)
+        elif comptime(mode == "control"):
+            with control(external):
+                parity_sequential(target, data)
+        else:
+            with control(external), dagger:
                 parity_sequential(target, data)
 
-        if comptime(superposition):
-            h(external)
-            h(target)
-            for i in range(2):
-                h(data[i])
         output("external", measure(external).read())
         output("target", measure(target).read())
         output("data", collect_measurements(measure_array(data)))
 
     emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
-    cases = (
-        [(False, False, False, False)]
-        if superposition
-        else product([False, True], repeat=4)
-    )
-    for external_bit, target_bit, data0, data1 in cases:
+    for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
         bits = [data0, data1]
+        enabled = mode in ("forward", "dagger") or external_bit
         expected_data = bits
-        expected_target = target_bit ^ (external_bit and (data0 ^ data1))
+        expected_target = target_bit ^ (enabled and (data0 ^ data1))
         result = emulator.run(
             external_bit=external_bit, target_bit=target_bit, bits=bits
         ).collated_shots()[0]
