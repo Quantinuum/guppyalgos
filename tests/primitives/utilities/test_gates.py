@@ -24,8 +24,14 @@ from guppylang.std.quantum import (
 from pytket.circuit import Circuit
 from selene_sim import Quest
 
+from guppyalgos.primitives.utilities import t_state
 from guppyalgos.primitives.utilities.gates import ccswap, cphase, transversal
-from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+    get_unitary,
+)
 from guppyalgos.utils import qarray
 
 
@@ -196,3 +202,16 @@ def test_controlled_transversal_shared_work_qubit(n_ctrl: int) -> None:
         state = Quest.extract_states_dict(res.results[0].entries)["out"].state
         # |0..0> also shows the shared work qubit was uncomputed
         assert abs(state[0]) == pytest.approx(1)
+
+
+def test_t_state_modifiers() -> None:
+    """Check H followed by T and its modifiers on arbitrary inputs."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def operation(qs: array[qubit, 1]) -> None:
+        t_state(qs[0])
+
+    hadamard = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    expected = np.diag([1, np.exp(0.25j * np.pi)]) @ hadamard
+    assert_unitary_modifiers(operation, 1, expected_unitary=expected)
