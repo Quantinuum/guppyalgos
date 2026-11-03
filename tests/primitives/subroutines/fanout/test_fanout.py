@@ -38,7 +38,7 @@ from guppyalgos.primitives.subroutines.fanout import (
 )
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils import qarray
-from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
@@ -71,13 +71,20 @@ def test_fanout_basic_modifiers(mode: str) -> None:
                 fanout_basic(prefix[1], data)
         _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
 
-    # |control, data0, data1>: control=1 flips both data bits.
-    action = np.eye(8, dtype=np.complex128)[:, [0, 1, 2, 3, 7, 6, 5, 4]]
-    expected = np.eye(16, dtype=np.complex128)
-    expected[8:, 8:] = action
-    if mode in ("forward", "dagger"):
-        expected[:8, :8] = action
-    assert_allclose_ignorephase(get_unitary(circuit, 4), expected)
+    # Little-endian bit positions: external control, fanout control, data0, data1.
+    expected = np.zeros((16, 16), dtype=np.complex128)
+    for input_basis in range(16):
+        external_control = bool(input_basis & 0b0001)
+        fanout_control = bool(input_basis & 0b0010)
+        enabled = mode in ("forward", "dagger") or external_control
+        # Fanout flips both data bits, preserving both controls.
+        output_basis = (
+            input_basis ^ 0b1100 if enabled and fanout_control else input_basis
+        )
+        expected[output_basis, input_basis] = 1
+    assert_allclose_ignorephase(
+        get_unitary(circuit, 4, endianness=Endianness.LITTLE), expected
+    )
 
 
 def _basic_total_qubits(n_target_qubits: int) -> int:
