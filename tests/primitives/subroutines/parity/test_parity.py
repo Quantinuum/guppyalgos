@@ -5,7 +5,7 @@ from typing import no_type_check
 import numpy as np
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, control, dagger, nat, output
+from guppylang.std.builtins import array, control, dagger, comptime, output
 from guppylang.std.quantum import collect_measurements, measure, measure_array, qubit, x
 
 from guppyalgos.primitives.subroutines.parity import (
@@ -14,7 +14,7 @@ from guppyalgos.primitives.subroutines.parity import (
     parity_sequential,
 )
 from guppyalgos.utils import qarray
-from guppyalgos.testing import assert_unitary_modifiers
+from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
@@ -24,49 +24,34 @@ from guppyalgos.utils.guppy.unsafe_borrow import (
 N_INPUT_QUBITS = 5
 
 
-def test_parity_sequential_modifiers() -> None:
-    """Check sequential parity and its modifiers against the exact permutation."""
+@pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
+def test_parity_sequential_modifiers(mode: str) -> None:
+    """Check the self-adjoint operation and its controlled matrix action."""
 
-    @guppy.unitary
-    class circuit:
-        @guppy
-        @no_type_check
-        def __call__(qs: array[qubit, 3]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
-            parity_sequential(prefix[0], inputs)
-            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
-
-        @guppy
-        @no_type_check
-        def daggered(qs: array[qubit, 3]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, 4]) -> None:
+        prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 2, 2, 0)
+        if comptime(mode == "forward"):
+            parity_sequential(prefix[1], inputs)
+        elif comptime(mode == "dagger"):
             with dagger:
-                parity_sequential(prefix[0], inputs)
-            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
+                parity_sequential(prefix[1], inputs)
+        elif comptime(mode == "control"):
+            with control(prefix[0]):
+                parity_sequential(prefix[1], inputs)
+        else:
+            with control(prefix[0]), dagger:
+                parity_sequential(prefix[1], inputs)
+        _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
 
-        @guppy
-        @no_type_check
-        def controlled[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
-            with control(cs):
-                parity_sequential(prefix[0], inputs)
-            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
-
-        @guppy
-        @no_type_check
-        def ctrl_daggered[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
-            with control(cs), dagger:
-                parity_sequential(prefix[0], inputs)
-            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
-
-    # In |target, input0, input1> order, odd input parity flips the target.
-    expected = np.eye(8, dtype=np.complex128)[:, [0, 5, 6, 3, 4, 1, 2, 7]]
-    assert_unitary_modifiers(circuit, 3, expected_unitary=expected)
+    # |target, input0, input1>: odd input parity flips the target.
+    action = np.eye(8, dtype=np.complex128)[:, [0, 5, 6, 3, 4, 1, 2, 7]]
+    expected = np.eye(16, dtype=np.complex128)
+    expected[8:, 8:] = action
+    if mode in ("forward", "dagger"):
+        expected[:8, :8] = action
+    assert_allclose_ignorephase(get_unitary(circuit, 4), expected)
 
 
 @pytest.mark.parametrize(
