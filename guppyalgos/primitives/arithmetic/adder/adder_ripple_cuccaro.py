@@ -1055,7 +1055,10 @@ def _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
     if n == 1:
         toffoli(ctrl, a_reg[0], b_reg[0])
         temp_and_compute(a_reg[0], b_reg[0], ancilla)
-        temp_and_compute(ctrl, ancilla, carry_out)
+        if uncompute_carry_out:
+            temp_and_uncompute(ctrl, ancilla, carry_out)
+        else:
+            temp_and_compute(ctrl, ancilla, carry_out)
         temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
         discard(ancilla)
         return
