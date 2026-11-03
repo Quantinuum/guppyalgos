@@ -117,13 +117,18 @@ def cnx_toffoli_ladder[n_controls: nat](
 
 
 @guppy.struct
-class CnxPartialToffoliLadder:
+class CnxPartialToffoliLadder:  # noqa: D101
     @guppy
     @no_type_check
     @staticmethod
     def compute[n: nat](
         controls: array[qubit, n], target: qubit
     ) -> array[qubit, comptime(max(n - 2, 0))]:  # ty:ignore[unsupported-operator]
+        """Compute AND of controls onto target using temp AND ladder.
+
+        returns ancilla workspace to be uncomputed by `uncompute_workspace` or 
+        `uncompute`.
+        """
         work = qarray(comptime(max(n - 2, 0)))
         if n > 2:
             temp_and_compute(controls[0], controls[1], work[0])
@@ -140,12 +145,10 @@ class CnxPartialToffoliLadder:
         controls: array[qubit, n],
         work: array[qubit, comptime(max(n - 2, 0))] @ owned,  # ty: ignore[not-subscriptable, unsupported-operator]
     ) -> None:
-
+        """Uncompute ancilla workspace, keeping result of AND in target."""
         if n > 2:
             for index in range(n - 3):
-                temp_and_uncompute(
-                    work[index], controls[index + 2], work[index + 1]
-                )
+                temp_and_uncompute(work[index], controls[index + 2], work[index + 1])
             temp_and_uncompute(controls[0], controls[1], work[0])
         discard_array(work)
 
@@ -157,6 +160,7 @@ class CnxPartialToffoliLadder:
         work: array[qubit, comptime(max(n - 2, 0))] @ owned,  # ty: ignore[not-subscriptable, unsupported-operator]
         target: qubit,
     ) -> None:
+        """Uncompute target and ancilla workspace."""
         CnxPartialToffoliLadder._final_gate(controls, work, target)
         CnxPartialToffoliLadder.uncompute_workspace(controls, work)
 
@@ -395,4 +399,3 @@ def _cnx_borrowed_target[n_controls: nat](
             for _ in range((n_controls - 4) // 2):
                 toffoli(control[idx], control[idx + 1], control[idx + 2])
                 idx += 2
-
