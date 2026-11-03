@@ -70,7 +70,7 @@ def build_qubitized_power_oracle() -> GuppyFunctionDefinition[
         qubit,
         QubitizationRegs[
             1,
-            array[qubit, 1],  # ty: ignore[not-subscriptable]
+            array[qubit, 1],
         ],
         int,
     ],

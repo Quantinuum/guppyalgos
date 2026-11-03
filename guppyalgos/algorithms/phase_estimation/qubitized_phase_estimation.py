@@ -21,7 +21,7 @@ def qubitized_power_oracle[n_prep_q: nat, n_target_q: nat](
     control: qubit,
     regs: QubitizationRegs[
         n_prep_q,
-        array[qubit, n_target_q],  # ty: ignore[not-subscriptable]
+        array[qubit, n_target_q],
     ],
     power: int,
     cntrl_walk: Function[
