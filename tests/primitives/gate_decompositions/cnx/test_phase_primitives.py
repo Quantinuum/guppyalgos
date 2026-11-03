@@ -3,30 +3,16 @@
 from typing import no_type_check
 
 import numpy as np
-import pytest
 from guppylang import guppy
 from guppylang.std.builtins import array
-from guppylang.std.quantum import angle, qubit
+from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.gate_decompositions.cnx.ccu_rel_phase import (
     ccu_phase_correction,
     ccz_rel_phase,
 )
 from guppyalgos.testing import assert_unitary_modifiers
-from guppyalgos.utils.guppy.gates import apply_phase, t_state
-
-
-@pytest.mark.parametrize("theta", [-0.75, 0.0, 0.33])
-def test_apply_phase_modifiers(theta: float) -> None:
-    """Check Rz and its modifiers against the intended phase convention."""
-
-    @guppy(unitary=True)
-    @no_type_check
-    def operation(qs: array[qubit, 1]) -> None:
-        apply_phase(qs[0], angle(theta))
-
-    expected = np.diag(np.exp(np.pi * 1j * theta * np.array([-0.5, 0.5])))
-    assert_unitary_modifiers(operation, 1, expected_unitary=expected)
+from guppyalgos.utils.guppy.gates import t_state
 
 
 def test_t_state_modifiers() -> None:

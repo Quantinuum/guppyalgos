@@ -167,13 +167,10 @@ def qarray(n: nat @ comptime) -> "array[qubit, n]":
     return array(qubit() for _ in range(n))
 
 
-@guppy(unitary=True)
+@guppy
 @no_type_check
 def apply_phase(q: qubit, theta: angle) -> None:
-    """Apply Rz(theta), including its global phase convention.
-
-    Supports ``with dagger`` and ``with control`` (including their combination).
-    """
+    """Apply a phase rotation to a qubit."""
     rz(q, theta)
 
 
