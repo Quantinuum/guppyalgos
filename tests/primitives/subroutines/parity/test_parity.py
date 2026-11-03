@@ -14,7 +14,7 @@ from guppyalgos.primitives.subroutines.parity import (
     parity_sequential,
 )
 from guppyalgos.utils import qarray
-from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
@@ -45,13 +45,16 @@ def test_parity_sequential_modifiers(mode: str) -> None:
                 parity_sequential(prefix[1], inputs)
         _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
 
-    # |target, input0, input1>: odd input parity flips the target.
-    action = np.eye(8, dtype=np.complex128)[:, [0, 5, 6, 3, 4, 1, 2, 7]]
+    # Little endian: target is bit 0 of the parity action; odd inputs flip it.
+    action = np.eye(8, dtype=np.complex128)[:, [0, 1, 3, 2, 5, 4, 6, 7]]
     expected = np.eye(16, dtype=np.complex128)
-    expected[8:, 8:] = action
+    # The external control is bit 0 of the full circuit (odd basis indices).
+    expected[1::2, 1::2] = action
     if mode in ("forward", "dagger"):
-        expected[:8, :8] = action
-    assert_allclose_ignorephase(get_unitary(circuit, 4), expected)
+        expected[::2, ::2] = action
+    assert_allclose_ignorephase(
+        get_unitary(circuit, 4, endianness=Endianness.LITTLE), expected
+    )
 
 
 @pytest.mark.parametrize(
