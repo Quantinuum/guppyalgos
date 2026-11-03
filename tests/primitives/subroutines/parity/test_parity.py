@@ -2,9 +2,10 @@
 
 from typing import no_type_check
 
+import numpy as np
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, output
+from guppylang.std.builtins import array, control, dagger, nat, output
 from guppylang.std.quantum import collect_measurements, measure, measure_array, qubit, x
 
 from guppyalgos.primitives.subroutines.parity import (
@@ -13,9 +14,59 @@ from guppyalgos.primitives.subroutines.parity import (
     parity_sequential,
 )
 from guppyalgos.utils import qarray
+from guppyalgos.testing import assert_unitary_modifiers
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow_slice,
+    _unsafe_array_unborrow_slice,
+)
 
 
 N_INPUT_QUBITS = 5
+
+
+def test_parity_sequential_modifiers() -> None:
+    """Check sequential parity and its modifiers against the exact permutation."""
+
+    @guppy.unitary
+    class circuit:
+        @guppy
+        @no_type_check
+        def __call__(qs: array[qubit, 3]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            parity_sequential(prefix[0], inputs)
+            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
+
+        @guppy
+        @no_type_check
+        def daggered(qs: array[qubit, 3]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            with dagger:
+                parity_sequential(prefix[0], inputs)
+            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
+
+        @guppy
+        @no_type_check
+        def controlled[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            with control(cs):
+                parity_sequential(prefix[0], inputs)
+            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
+
+        @guppy
+        @no_type_check
+        def ctrl_daggered[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, inputs, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            with control(cs), dagger:
+                parity_sequential(prefix[0], inputs)
+            _unsafe_array_unborrow_slice(qs, prefix, inputs, suffix)
+
+    # In |target, input0, input1> order, odd input parity flips the target.
+    expected = np.eye(8, dtype=np.complex128)[:, [0, 5, 6, 3, 4, 1, 2, 7]]
+    assert_unitary_modifiers(circuit, 3, expected_unitary=expected)
 
 
 @pytest.mark.parametrize(
