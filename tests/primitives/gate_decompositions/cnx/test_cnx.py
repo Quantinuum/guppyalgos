@@ -8,17 +8,20 @@ import numpy as np
 import pytest
 from guppylang.decorator import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, nat, control, dagger
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, h, qubit
 from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import (
+    _rtof4,
+    _tof5,
     cnx,
     cnx_toffoli_ladder,
     cnx_single_ancilla,
 )
 from guppyalgos.primitives.gate_decompositions.cnx.cnx_cca import (
+    cat_cca,
     cnx_cca_logdepth,
     cnx_cca_logdepth_dirty,
 )
@@ -28,6 +31,7 @@ from guppyalgos.primitives.gate_decompositions.cnx.cnx_teleportation import (
 )
 from guppyalgos.utils import int_to_bits, qarray
 from guppyalgos.testing import (
+    assert_unitary_modifiers,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )
@@ -117,3 +121,47 @@ def test_cnx(
             np.testing.assert_allclose([0, 1], target_sv)
         else:
             np.testing.assert_allclose([1, 0], target_sv)
+
+
+def test_relative_toffoli_modifiers() -> None:
+    """Check the optimized inverse and controls against the exact unitary."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def circuit(qs: array[qubit, 4]) -> None:
+        _rtof4(qs[0], qs[1], qs[2], qs[3])
+
+    # In big-endian |abcd> order, the first 12 basis states are unchanged.
+    # |1100> and |1101> acquire +i and -i; |1110> -> -|1111>, |1111> -> |1110>.
+    expected = np.eye(16, dtype=np.complex128)
+    expected[12:, 12:] = [
+        [1j, 0, 0, 0],
+        [0, -1j, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, -1, 0],
+    ]
+    assert_unitary_modifiers(circuit, 4, expected_unitary=expected)
+
+
+def test_tof5_modifier_compilation() -> None:
+    """Compile added controls and adjoints for the five-qubit Toffoli helper."""
+
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, 6], cs: array[qubit, 2]) -> None:
+        with control(cs), dagger:
+            _tof5(qs[0], qs[1], qs[2], qs[3], qs[4], qs[5])
+
+    circuit.compile_function()
+
+
+def test_cat_cca_modifier_compilation() -> None:
+    """Compile added controls and adjoints for the CNX CCA catalyst."""
+
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, 3], cs: array[qubit, 2]) -> None:
+        with control(cs), dagger:
+            cat_cca(qs[0], qs[1], qs[2])
+
+    circuit.compile_function()
