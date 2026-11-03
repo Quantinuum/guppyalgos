@@ -15,9 +15,15 @@ from guppylang.std.quantum import (
 )
 from pytket.circuit import Circuit
 from guppyalgos.utils import ccswap, cphase, qarray
+from guppyalgos.utils.guppy.gates import t_state
 from guppylang.std.angles import angle
 
-from guppyalgos.testing import get_unitary, Endianness, assert_allclose_ignorephase
+from guppyalgos.testing import (
+    get_unitary,
+    Endianness,
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+)
 
 
 def test_ccswap_qubits() -> None:
@@ -105,3 +111,16 @@ def test_cphase(theta: float) -> None:
 
     assert_allclose_ignorephase(circ1.get_unitary(), guppy_u)
     assert_allclose_ignorephase(circ2.get_unitary(), guppy_u)
+
+
+def test_t_state_modifiers() -> None:
+    """Check H followed by T and its modifiers on arbitrary inputs."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def operation(qs: array[qubit, 1]) -> None:
+        t_state(qs[0])
+
+    hadamard = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    expected = np.diag([1, np.exp(0.25j * np.pi)]) @ hadamard
+    assert_unitary_modifiers(operation, 1, expected_unitary=expected)
