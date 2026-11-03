@@ -102,9 +102,8 @@ class transversal1:  # noqa: D101
         else:
             temp_control = qubit()
             cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
-            _transversal1_internal_control(op, qs, ignore_, False, work)
+            _transversal1_internal_control(op, qs, ignore_, False, temp_control)
             CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
-            cnx(ctrls, temp_control)
             discard(temp_control)
 
     @guppy
@@ -120,9 +119,8 @@ class transversal1:  # noqa: D101
         else:
             temp_control = qubit()
             cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
-            _transversal1_internal_control(op, qs, ignore_, True, work)
+            _transversal1_internal_control(op, qs, ignore_, True, temp_control)
             CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
-            cnx(ctrls, temp_control)
             discard(temp_control)
 
 
@@ -195,9 +193,10 @@ class transversal1_start_end:  # noqa: D101
         else:
             temp_control = qubit()
             cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
-            _transversal1_start_end_internal_control(op, qs, start, end, False, work)
+            _transversal1_start_end_internal_control(
+                op, qs, start, end, False, temp_control
+            )
             CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
-            cnx(ctrls, temp_control)
             discard(temp_control)
 
     @guppy
@@ -214,9 +213,10 @@ class transversal1_start_end:  # noqa: D101
         else:
             temp_control = qubit()
             cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
-            _transversal1_start_end_internal_control(op, qs, start, end, True, work)
+            _transversal1_start_end_internal_control(
+                op, qs, start, end, True, temp_control
+            )
             CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
-            cnx(ctrls, temp_control)
             discard(temp_control)
 
 
@@ -313,11 +313,12 @@ class transversal2:  # noqa: D101
         if n_ctrl == 1:
             _transversal2_internal_control(op, qs0, qs1, ignore_, False, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal2_internal_control(op, qs0, qs1, ignore_, False, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
+            _transversal2_internal_control(op, qs0, qs1, ignore_, False, temp_control)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
+
 
     @guppy
     @no_type_check
@@ -331,11 +332,11 @@ class transversal2:  # noqa: D101
         if n_ctrl == 1:
             _transversal2_internal_control(op, qs0, qs1, ignore_, True, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal2_internal_control(op, qs0, qs1, ignore_, True, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
+            _transversal2_internal_control(op, qs0, qs1, ignore_, True, temp_control)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
 
 @guppy
@@ -416,7 +417,6 @@ class traversal2_start_end:  # noqa: D101
                 op, qs0, qs1, start, end, False, temp_control
             )
             CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
-            cnx(ctrls, temp_control)
             discard(temp_control)
 
     @guppy
@@ -440,7 +440,6 @@ class traversal2_start_end:  # noqa: D101
                 op, qs0, qs1, start, end, True, temp_control
             )
             CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
-            cnx(ctrls, temp_control)
             discard(temp_control)
 
 
