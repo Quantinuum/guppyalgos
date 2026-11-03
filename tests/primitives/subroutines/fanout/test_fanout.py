@@ -17,7 +17,7 @@ from typing import no_type_check
 
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, control, dagger, comptime, output
+from guppylang.std.builtins import output
 from guppylang.std.quantum import (
     collect_measurements,
     h,
@@ -36,6 +36,8 @@ from guppyalgos.primitives.subroutines.fanout import (
     fanout_measurement_parity_total_qubits,
     fanout_measurement_uncompute,
 )
+from tests.primitives.subroutines.modifier_circuits import make_modifier_circuit
+
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils import qarray
 
@@ -49,37 +51,7 @@ _XOR_BITS = [True, False, False, True, False, True]
 @pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
 def test_fanout_basic_modifiers(mode: str) -> None:
     """Check each modifier's measured outputs for every basis input."""
-
-    @guppy
-    @no_type_check
-    def main(external_bit: bool, target_bit: bool, bits: array[bool, 2]) -> None:
-        external = qubit()
-        target = qubit()
-        data = qarray(2)
-        if external_bit:
-            x(external)
-        if target_bit:
-            x(target)
-        for i in range(2):
-            if bits[i]:
-                x(data[i])
-
-        if comptime(mode == "forward"):
-            fanout_basic(target, data)
-        elif comptime(mode == "dagger"):
-            with dagger:
-                fanout_basic(target, data)
-        elif comptime(mode == "control"):
-            with control(external):
-                fanout_basic(target, data)
-        else:
-            with control(external), dagger:
-                fanout_basic(target, data)
-
-        output("external", measure(external).read())
-        output("target", measure(target).read())
-        output("data", collect_measurements(measure_array(data)))
-
+    main = make_modifier_circuit(fanout_basic, mode)
     emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
     for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
         bits = [data0, data1]
