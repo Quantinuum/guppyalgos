@@ -4,10 +4,9 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import array, control, dagger
-from guppylang.std.quantum import qubit
-from guppyalgos.testing import assert_unitary_modifiers
+from guppylang.std.quantum import cx, h, qubit, t, tdg
+from guppyalgos.testing import assert_unitary_modifiers, get_unitary
 
-from pytket.circuit import Circuit
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import _rtof4, _tof5
 from guppyalgos.primitives.gate_decompositions.cnx.cnx_cca import cat_cca
 from guppyalgos.primitives.arithmetic.incrementer.incrementer_cca import (
@@ -17,18 +16,39 @@ from guppyalgos.primitives.arithmetic.incrementer.incrementer_cca import (
 
 def test_relative_toffoli_modifiers() -> None:
     """Check the optimized inverse and controls against a circuit reference."""
-    reference = Circuit(4)
-    reference.H(3).T(3).CX(2, 3).Tdg(3).H(3)
-    reference.CX(0, 3).T(3).CX(1, 3).Tdg(3)
-    reference.CX(0, 3).T(3).CX(1, 3).Tdg(3)
-    reference.H(3).T(3).CX(2, 3).Tdg(3).H(3)
+
+    @guppy
+    @no_type_check
+    def reference(qs: array[qubit, 4]) -> None:
+        h(qs[3])
+        t(qs[3])
+        cx(qs[2], qs[3])
+        tdg(qs[3])
+        h(qs[3])
+        cx(qs[0], qs[3])
+        t(qs[3])
+        cx(qs[1], qs[3])
+        tdg(qs[3])
+        cx(qs[0], qs[3])
+        t(qs[3])
+        cx(qs[1], qs[3])
+        tdg(qs[3])
+        h(qs[3])
+        t(qs[3])
+        cx(qs[2], qs[3])
+        tdg(qs[3])
+        h(qs[3])
 
     @guppy(unitary=True)
     @no_type_check
     def circuit(qs: array[qubit, 4]) -> None:
         _rtof4(qs[0], qs[1], qs[2], qs[3])
 
-    assert_unitary_modifiers(circuit, 4, expected_unitary=reference.get_unitary())
+    expected = get_unitary(reference, 4)
+    # The reference fixes |0000> with phase +1. Remove the simulator's overall
+    # phase so controlled expectations preserve the phase between branches.
+    expected /= expected[0, 0]
+    assert_unitary_modifiers(circuit, 4, expected_unitary=expected)
 
 
 def test_small_cnx_modifier_compilation() -> None:
