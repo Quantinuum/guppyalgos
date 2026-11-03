@@ -14,9 +14,10 @@ their required target-register input state.
 from collections.abc import Callable
 from typing import no_type_check
 
+import numpy as np
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import output
+from guppylang.std.builtins import array, control, dagger, nat, output
 from guppylang.std.quantum import (
     collect_measurements,
     h,
@@ -37,11 +38,61 @@ from guppyalgos.primitives.subroutines.fanout import (
 )
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils import qarray
+from guppyalgos.testing import assert_unitary_modifiers
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow_slice,
+    _unsafe_array_unborrow_slice,
+)
 
 _ZERO_BITS = [False, False, False, False, False, False]
 _ONE_BITS = [True, True, True, True, True, True]
 _ARBITRARY_BITS = [False, True, True, False, True, False]
 _XOR_BITS = [True, False, False, True, False, True]
+
+
+def test_fanout_basic_modifiers() -> None:
+    """Check basic fanout and its modifiers against the exact permutation."""
+
+    @guppy.unitary
+    class circuit:
+        @guppy
+        @no_type_check
+        def __call__(qs: array[qubit, 3]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            fanout_basic(prefix[0], data)
+            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
+
+        @guppy
+        @no_type_check
+        def daggered(qs: array[qubit, 3]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            with dagger:
+                fanout_basic(prefix[0], data)
+            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
+
+        @guppy
+        @no_type_check
+        def controlled[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            with control(cs):
+                fanout_basic(prefix[0], data)
+            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
+
+        @guppy
+        @no_type_check
+        def ctrl_daggered[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
+            """Borrow the data register and apply the selected modifier."""
+            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+            with control(cs), dagger:
+                fanout_basic(prefix[0], data)
+            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
+
+    # In |control, data0, data1> order, control=1 flips both data bits.
+    expected = np.eye(8, dtype=np.complex128)[:, [0, 1, 2, 3, 7, 6, 5, 4]]
+    assert_unitary_modifiers(circuit, 3, expected_unitary=expected)
 
 
 def _basic_total_qubits(n_target_qubits: int) -> int:
