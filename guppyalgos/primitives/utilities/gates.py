@@ -23,7 +23,10 @@ from guppylang.std.quantum import (
     x,
 )
 
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import (
+    cnx,
+    CnxPartialToffoliLadder,
+)
 
 
 @guppy
@@ -97,11 +100,12 @@ class transversal1:  # noqa: D101
         if n_ctrl == 1:
             _transversal1_internal_control(op, qs, ignore_, False, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
             _transversal1_internal_control(op, qs, ignore_, False, work)
-            cnx(ctrls, work)
-            discard(work)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            cnx(ctrls, temp_control)
+            discard(temp_control)
 
     @guppy
     @no_type_check
@@ -114,11 +118,12 @@ class transversal1:  # noqa: D101
         if n_ctrl == 1:
             _transversal1_internal_control(op, qs, ignore_, True, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
             _transversal1_internal_control(op, qs, ignore_, True, work)
-            cnx(ctrls, work)
-            discard(work)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            cnx(ctrls, temp_control)
+            discard(temp_control)
 
 
 @guppy
@@ -188,11 +193,12 @@ class transversal1_start_end:  # noqa: D101
                 op, qs, start, end, False, ctrls[0]
             )
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
             _transversal1_start_end_internal_control(op, qs, start, end, False, work)
-            cnx(ctrls, work)
-            discard(work)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            cnx(ctrls, temp_control)
+            discard(temp_control)
 
     @guppy
     @no_type_check
@@ -206,11 +212,12 @@ class transversal1_start_end:  # noqa: D101
         if n_ctrl == 1:
             _transversal1_start_end_internal_control(op, qs, start, end, True, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
             _transversal1_start_end_internal_control(op, qs, start, end, True, work)
-            cnx(ctrls, work)
-            discard(work)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            cnx(ctrls, temp_control)
+            discard(temp_control)
 
 
 @guppy(unitary=True)
@@ -403,13 +410,14 @@ class traversal2_start_end:  # noqa: D101
                 op, qs0, qs1, start, end, False, ctrls[0]
             )
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
             _transversal2_start_end_internal_control(
-                op, qs0, qs1, start, end, False, work
+                op, qs0, qs1, start, end, False, temp_control
             )
-            cnx(ctrls, work)
-            discard(work)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            cnx(ctrls, temp_control)
+            discard(temp_control)
 
     @guppy
     @no_type_check
@@ -426,13 +434,14 @@ class traversal2_start_end:  # noqa: D101
                 op, qs0, qs1, start, end, True, ctrls[0]
             )
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CnxPartialToffoliLadder.compute(ctrls, temp_control)
             _transversal2_start_end_internal_control(
-                op, qs0, qs1, start, end, True, work
+                op, qs0, qs1, start, end, True, temp_control
             )
-            cnx(ctrls, work)
-            discard(work)
+            CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            cnx(ctrls, temp_control)
+            discard(temp_control)
 
 
 @guppy(unitary=True)
