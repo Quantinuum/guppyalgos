@@ -18,7 +18,8 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_comp_index,
     temp_and_uncomp_index,
 )
-from guppyalgos.utils import int_to_bits, qarray
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 
 
 @guppy

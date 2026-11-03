@@ -18,7 +18,9 @@ from guppyalgos.primitives.arithmetic.comparator import (
     comparator_vandaele,
     partial_comparator_ripple_cuccaro,
 )
-from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 
 
 @pytest.mark.parametrize(

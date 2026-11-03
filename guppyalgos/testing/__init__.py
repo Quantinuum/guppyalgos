@@ -22,7 +22,9 @@ from selene_core.simulator import Simulator
 from selene_quest_plugin.state import SeleneQuestState, TracedState
 from selene_sim import Quest, build
 
-from guppyalgos.utils import apply_bitstring, qarray, int_to_bits
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.utils.guppy.array import join_arrays, split_array
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,

@@ -6,7 +6,8 @@ from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import cz, h, measure_array, qubit, z
 
-from guppyalgos.utils import qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 
 
 def parity_laqcc_total_qubits(n_input_qubits: int) -> int:

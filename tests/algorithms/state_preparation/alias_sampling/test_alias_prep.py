@@ -20,7 +20,8 @@ from guppyalgos.algorithms.state_preparation.alias_sampling import alias_samp_pr
 from guppyalgos.algorithms.state_preparation.alias_sampling.alias_table import (
     discretize_distribution,
 )
-from guppyalgos.utils import qarray, int_to_bits
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 
 
 from typing import no_type_check

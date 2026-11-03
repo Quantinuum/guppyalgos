@@ -43,10 +43,10 @@ from guppyalgos.primitives.arithmetic.comparator import (
 from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
 from guppyalgos.primitives.state_preparation import uniform_state
 from guppyalgos.algorithms.state_preparation.alias_sampling.alias_table import Aliaser
+from guppyalgos.primitives.utilities.gates import cswap
 from guppyalgos.utils import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
-    cswap,
     float_to_fixed_point,
     int_to_bits,
 )

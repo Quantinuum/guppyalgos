@@ -8,7 +8,7 @@ from guppylang.std.angles import angle
 from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import cx, cy, cz, qubit, x, y, z, h, sdg, s
 
-from guppyalgos.utils.guppy.gates import apply_phase
+from guppyalgos.primitives.utilities.gates import apply_phase
 
 
 def pauli_to_gate[n_q: nat](

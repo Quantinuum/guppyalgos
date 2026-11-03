@@ -26,7 +26,9 @@ from guppyalgos.primitives.arithmetic import (
 from guppyalgos.primitives.arithmetic.multiplier.multiplier_ripple_gidney import (
     _shifted_controlled_adder,
 )
-from guppyalgos.utils import apply_bitstring, int_to_bits, qarray
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 
 
 @pytest.mark.parametrize("n", [0, -1])

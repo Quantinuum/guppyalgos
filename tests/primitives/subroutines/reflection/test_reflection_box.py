@@ -1,7 +1,5 @@
 """Tests for the Reflection box implementation."""
 
-from guppylang_internals.error import GuppyError
-
 from typing import no_type_check
 
 import numpy as np
@@ -10,17 +8,19 @@ from guppylang.decorator import guppy
 from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_output, state_result
 from guppylang.std.quantum import discard, discard_array, h, qubit
+from guppylang_internals.error import GuppyError
 from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.subroutines.reflection import reflect_zero
 from guppyalgos.primitives.subroutines.reflection.reflection_box import reflection_box
+from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )
-from guppyalgos.utils import int_to_bits, qarray, transversal
+from guppyalgos.utils import int_to_bits, qarray
 from tests.primitives.gate_decompositions.cnx.test_cnx import CnxMethod
 
 

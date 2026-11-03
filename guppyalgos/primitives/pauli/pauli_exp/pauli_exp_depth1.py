@@ -19,7 +19,7 @@ from guppylang.std.quantum import (
     rz,
     z,
 )
-from guppyalgos.utils.guppy.gates import transversal, transversal2
+from guppyalgos.primitives.utilities.gates import transversal, transversal2
 
 import zixy.qubit.pauli as zqp
 
