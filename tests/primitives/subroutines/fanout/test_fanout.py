@@ -17,7 +17,7 @@ from typing import no_type_check
 import numpy as np
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, control, dagger, nat, output
+from guppylang.std.builtins import array, control, dagger, comptime, output
 from guppylang.std.quantum import (
     collect_measurements,
     h,
@@ -38,7 +38,7 @@ from guppyalgos.primitives.subroutines.fanout import (
 )
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils import qarray
-from guppyalgos.testing import assert_unitary_modifiers
+from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
@@ -50,49 +50,34 @@ _ARBITRARY_BITS = [False, True, True, False, True, False]
 _XOR_BITS = [True, False, False, True, False, True]
 
 
-def test_fanout_basic_modifiers() -> None:
-    """Check basic fanout and its modifiers against the exact permutation."""
+@pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
+def test_fanout_basic_modifiers(mode: str) -> None:
+    """Check the self-adjoint operation and its controlled matrix action."""
 
-    @guppy.unitary
-    class circuit:
-        @guppy
-        @no_type_check
-        def __call__(qs: array[qubit, 3]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
-            fanout_basic(prefix[0], data)
-            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
-
-        @guppy
-        @no_type_check
-        def daggered(qs: array[qubit, 3]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, 4]) -> None:
+        prefix, data, suffix = _unsafe_array_borrow_slice(qs, 2, 2, 0)
+        if comptime(mode == "forward"):
+            fanout_basic(prefix[1], data)
+        elif comptime(mode == "dagger"):
             with dagger:
-                fanout_basic(prefix[0], data)
-            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
+                fanout_basic(prefix[1], data)
+        elif comptime(mode == "control"):
+            with control(prefix[0]):
+                fanout_basic(prefix[1], data)
+        else:
+            with control(prefix[0]), dagger:
+                fanout_basic(prefix[1], data)
+        _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
 
-        @guppy
-        @no_type_check
-        def controlled[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
-            with control(cs):
-                fanout_basic(prefix[0], data)
-            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
-
-        @guppy
-        @no_type_check
-        def ctrl_daggered[k: nat](qs: array[qubit, 3], cs: array[qubit, k]) -> None:
-            """Borrow the data register and apply the selected modifier."""
-            prefix, data, suffix = _unsafe_array_borrow_slice(qs, 1, 2, 0)
-            with control(cs), dagger:
-                fanout_basic(prefix[0], data)
-            _unsafe_array_unborrow_slice(qs, prefix, data, suffix)
-
-    # In |control, data0, data1> order, control=1 flips both data bits.
-    expected = np.eye(8, dtype=np.complex128)[:, [0, 1, 2, 3, 7, 6, 5, 4]]
-    assert_unitary_modifiers(circuit, 3, expected_unitary=expected)
+    # |control, data0, data1>: control=1 flips both data bits.
+    action = np.eye(8, dtype=np.complex128)[:, [0, 1, 2, 3, 7, 6, 5, 4]]
+    expected = np.eye(16, dtype=np.complex128)
+    expected[8:, 8:] = action
+    if mode in ("forward", "dagger"):
+        expected[:8, :8] = action
+    assert_allclose_ignorephase(get_unitary(circuit, 4), expected)
 
 
 def _basic_total_qubits(n_target_qubits: int) -> int:
