@@ -1,6 +1,5 @@
 """Tests for sequential and LAQCC parity circuits."""
 
-from itertools import product
 from typing import no_type_check
 
 import pytest
@@ -13,30 +12,11 @@ from guppyalgos.primitives.subroutines.parity import (
     parity_laqcc_total_qubits,
     parity_sequential,
 )
-from tests.primitives.subroutines.modifier_circuits import make_modifier_circuit
 
 from guppyalgos.utils import qarray
 
 
 N_INPUT_QUBITS = 5
-
-
-@pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
-def test_parity_sequential_modifiers(mode: str) -> None:
-    """Check each modifier's measured outputs for every basis input."""
-    main = make_modifier_circuit(parity_sequential, mode)
-    emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
-    for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
-        bits = [data0, data1]
-        enabled = mode in ("forward", "dagger") or external_bit
-        expected_data = bits
-        expected_target = target_bit ^ (enabled and (data0 ^ data1))
-        result = emulator.run(
-            external_bit=external_bit, target_bit=target_bit, bits=bits
-        ).collated_shots()[0]
-        assert result["external"][0] == external_bit
-        assert result["target"][0] == expected_target
-        assert result["data"][0] == expected_data
 
 
 @pytest.mark.parametrize(

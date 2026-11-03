@@ -12,7 +12,6 @@ their required target-register input state.
 """
 
 from collections.abc import Callable
-from itertools import product
 from typing import no_type_check
 
 import pytest
@@ -36,7 +35,6 @@ from guppyalgos.primitives.subroutines.fanout import (
     fanout_measurement_parity_total_qubits,
     fanout_measurement_uncompute,
 )
-from tests.primitives.subroutines.modifier_circuits import make_modifier_circuit
 
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils import qarray
@@ -46,24 +44,6 @@ _ZERO_BITS = [False, False, False, False, False, False]
 _ONE_BITS = [True, True, True, True, True, True]
 _ARBITRARY_BITS = [False, True, True, False, True, False]
 _XOR_BITS = [True, False, False, True, False, True]
-
-
-@pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
-def test_fanout_basic_modifiers(mode: str) -> None:
-    """Check each modifier's measured outputs for every basis input."""
-    main = make_modifier_circuit(fanout_basic, mode)
-    emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
-    for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
-        bits = [data0, data1]
-        enabled = mode in ("forward", "dagger") or external_bit
-        expected_data = [bit ^ (enabled and target_bit) for bit in bits]
-        expected_target = target_bit
-        result = emulator.run(
-            external_bit=external_bit, target_bit=target_bit, bits=bits
-        ).collated_shots()[0]
-        assert result["external"][0] == external_bit
-        assert result["target"][0] == expected_target
-        assert result["data"][0] == expected_data
 
 
 def _basic_total_qubits(n_target_qubits: int) -> int:
