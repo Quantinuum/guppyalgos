@@ -167,17 +167,23 @@ def qarray(n: nat @ comptime) -> "array[qubit, n]":
     return array(qubit() for _ in range(n))
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def apply_phase(q: qubit, theta: angle) -> None:
-    """Apply a phase rotation to a qubit."""
+    """Apply Rz(theta), including its global phase convention.
+
+    Supports ``with dagger`` and ``with control`` (including their combination).
+    """
     rz(q, theta)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def t_state(qubit: qubit) -> None:
-    """Directly generate a T state on a qubit."""
+    """Apply H followed by T; prepares a T state from a zero qubit.
+
+    This circuit is unitary on arbitrary inputs and supports dagger and control.
+    """
     h(qubit)
     t(qubit)
 
