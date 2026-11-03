@@ -112,18 +112,6 @@ def cnx_toffoli_ladder[n_controls: nat](
         target (qubit): target qubit.
 
     """
-    # if n_controls == 0:
-    #     x(target)
-    # elif n_controls == 1:
-    #     cx(control[0], target)
-    # elif n_controls == 2:
-    #     toffoli(control[0], control[1], target)
-    # else:
-    #     ancilla = qubit()
-    #     temp_and_compute(control[0], control[1], ancilla)
-    #     _cnx_n_less_2_ancilla_aux(control, target, ancilla, 2)
-    #     temp_and_uncompute(control[0], control[1], ancilla)
-    #     discard(ancilla)
     work = CnxPartialToffoliLadder.compute(control, target)
     CnxPartialToffoliLadder.uncompute_workspace(control, work)
 
@@ -408,21 +396,3 @@ def _cnx_borrowed_target[n_controls: nat](
                 toffoli(control[idx], control[idx + 1], control[idx + 2])
                 idx += 2
 
-
-@guppy
-@no_type_check
-def _cnx_n_less_2_ancilla_aux[n_controls: nat](
-    control: array[qubit, n_controls],
-    target: qubit,
-    ancilla: qubit,
-    control_idx: int,
-) -> None:
-    """Recursively apply the temporary-AND ladder for cnx_n_less_2_ancilla."""
-    if control_idx == n_controls - 1:
-        toffoli(ancilla, control[control_idx], target)
-    else:
-        new_ancilla = qubit()
-        temp_and_compute(ancilla, control[control_idx], new_ancilla)
-        _cnx_n_less_2_ancilla_aux(control, target, new_ancilla, control_idx + 1)
-        temp_and_uncompute(ancilla, control[control_idx], new_ancilla)
-        discard(new_ancilla)
