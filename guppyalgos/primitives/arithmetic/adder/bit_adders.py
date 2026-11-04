@@ -21,7 +21,6 @@ def half_adder(a: qubit, b: qubit, c_out: qubit) -> None:
     """Bitwise half-adder, sum bit computed onto b.
 
     Maps (a, b, c_out) to (a, a xor b, c_out xor (a and b)) on all inputs.
-    Use ``with dagger`` for the inverse and ``with control`` for external controls.
     """
     toffoli(a, b, c_out)
     cx(a, b)
