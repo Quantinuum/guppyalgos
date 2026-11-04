@@ -35,7 +35,8 @@ from guppyalgos.primitives.subroutines.fanout import (
     fanout_measurement_parity_total_qubits,
     fanout_measurement_uncompute,
 )
-from guppyalgos.utils import qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 
 _ZERO_BITS = [False, False, False, False, False, False]
 _ONE_BITS = [True, True, True, True, True, True]

@@ -14,7 +14,9 @@ from selene_quest_plugin import SeleneQuestState
 from selene_sim import Quest
 
 from guppyalgos.algorithms.select.pauli_select import pauli_select_unary_iteration
-from guppyalgos.utils import int_to_bits, qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.primitives.pauli import pauli_to_gate
 from guppyalgos.testing import (
     assert_allclose_ignorephase,

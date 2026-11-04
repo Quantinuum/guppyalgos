@@ -26,12 +26,12 @@ from guppyalgos.primitives.state_preparation.phase_gradient import (
     Convention,
     phase_gradient,
 )
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
 from guppyalgos.utils import (
-    apply_bitstring,
     bits_to_int,
     discard_nested_arrays,
     int_to_bits,
-    qarray,
 )
 from guppyalgos.testing import (
     assert_allclose_ignorephase,

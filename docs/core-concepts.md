@@ -56,7 +56,7 @@ $$
 from guppylang.std.builtins import array, bool, nat, owned
 from guppylang.std.quantum import collect_measurements, cx, h, measure_array, qubit, rz
 
-from guppyalgos.utils import transversal
+from guppyalgos.primitives.utilities.gates import transversal
 
 
 @guppy

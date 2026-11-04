@@ -12,7 +12,8 @@ from guppylang.std.quantum import discard, discard_array, h, qubit, x
 from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx_approx import cnx_approx
-from guppyalgos.utils import int_to_bits, qarray
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,

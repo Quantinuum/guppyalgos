@@ -11,7 +11,9 @@ from guppylang.std.debug import state_result
 from guppylang.std.quantum import discard, discard_array, h, qubit
 from selene_sim import Quest
 
-from guppyalgos.utils import transversal, qarray, int_to_bits
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx_single_ancilla
 from guppyalgos.primitives.gate_decompositions.cnx.cnz import cnz
 from guppyalgos.testing import (

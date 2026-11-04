@@ -8,7 +8,9 @@ from guppylang.std.builtins import array, result
 
 from guppyalgos.primitives.measurement import iqft_and_measure, qft_and_measure
 from guppyalgos.primitives.subroutines.qft import iqft, qft
-from guppyalgos.utils import qarray, apply_bitstring, int_to_bits, bits_to_int
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits, bits_to_int
 from guppylang.std.quantum import discard_array, h, cx, s, qubit
 from guppylang.std.debug import state_output
 from guppyalgos.testing import get_statevector, switch_endianness

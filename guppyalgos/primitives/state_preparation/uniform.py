@@ -7,7 +7,9 @@ from guppylang.std.angles import angle
 from guppylang.defs import GuppyFunctionDefinition
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.measurement.utils import discard_array
-from guppyalgos.utils import int_to_bits, transversal, apply_bitstring, qarray
+from guppyalgos.primitives.utilities.gates import transversal, apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 import numpy as np
 from guppyalgos.primitives.arithmetic.comparator import (
     comparator_ripple_cuccaro,
