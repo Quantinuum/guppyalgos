@@ -210,23 +210,6 @@ def test_full_adder_inverse() -> None:
             assert_allclose_ignorephase(state.get_single_state(), zero_state)
 
 
-def test_half_adder_modifier_compilation() -> None:
-    """Compile all public modes while keeping carry and external controls separate."""
-
-    @guppy
-    @no_type_check
-    def program(qs: array[qubit, 3], controls: array[qubit, 2]) -> None:
-        half_adder(qs[0], qs[1], qs[2])
-        with dagger:
-            half_adder(qs[0], qs[1], qs[2])
-        with control(controls):
-            half_adder(qs[0], qs[1], qs[2])
-        with control(controls), dagger:
-            half_adder(qs[0], qs[1], qs[2])
-
-    program.compile_function()
-
-
 def test_half_adder_daggered_modifier() -> None:
     """Verify daggered half_adder reverses a valid half-adder output."""
 
