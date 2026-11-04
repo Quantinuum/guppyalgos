@@ -3,15 +3,7 @@
 from collections.abc import Callable
 
 from guppylang import guppy
-from guppylang.std.builtins import (
-    array,
-    comptime,
-    nat,
-    frozenarray,
-    control,
-    dagger,
-    Unitary,
-)
+from guppylang.std.builtins import array, comptime, nat, frozenarray, control
 from guppylang.std.quantum import qubit, t, h, x, cx, toffoli, discard
 from guppylang.std.quantum import crz, rz
 from guppylang.std.angles import angle
@@ -19,12 +11,12 @@ from guppylang.std.angles import angle
 from typing import no_type_check
 
 
-@guppy(controllable=True)
+@guppy
 @no_type_check
-def _transversal1_kernel[n: nat, m: nat](
-    op: Unitary[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
+def transversal1[n: nat, m: nat](
+    op: Callable[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
 ) -> None:
-    """Apply a single-qubit operator, skipping indices in ``ignore_``.
+    """Apply a single qubit operator register-wise ignoring the indices in ``ignore_``.
 
     Args:
         op: The operator to apply.
@@ -41,66 +33,10 @@ def _transversal1_kernel[n: nat, m: nat](
             op(qs[i])
 
 
-@guppy(controllable=True)
+@guppy
 @no_type_check
-def _transversal1_inverse_kernel[n: nat, m: nat](
-    op: Unitary[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
-) -> None:
-    """Apply the inverse register circuit."""
-    for i in range(n):
-        apply_gate = True
-        for j in range(m):
-            if i == ignore_[j]:
-                apply_gate = False
-        if apply_gate:
-            with dagger:
-                op(qs[i])
-
-
-@guppy.unitary
-class transversal1[n: nat, m: nat]:  # noqa: D101 - Guppy unitary classes reject docstrings
-    # Apply the circuit with dagger and external-control support.
-
-    @guppy(controllable=True)
-    @no_type_check
-    def __call__(
-        op: Unitary[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
-    ) -> None:
-        """Apply a single-qubit operator, skipping indices in ``ignore_``.
-
-        Args:
-            op: The operator to apply.
-            qs: The qubit array to apply the operator to.
-            ignore_: The indices to ignore.
-
-        """
-        _transversal1_kernel(op, qs, ignore_)
-
-    @guppy
-    @no_type_check
-    def daggered(
-        op: Unitary[[qubit], None], qs: array[qubit, n], ignore_: array[nat, m]
-    ) -> None:
-        """Apply the selected circuit mode."""
-        _transversal1_inverse_kernel(op, qs, ignore_)
-
-    @guppy
-    @no_type_check
-    def ctrl_daggered[k: nat](
-        op: Unitary[[qubit], None],
-        qs: array[qubit, n],
-        ignore_: array[nat, m],
-        controls: array[qubit, k],
-    ) -> None:
-        """Apply the selected circuit mode."""
-        with control(controls):
-            _transversal1_inverse_kernel(op, qs, ignore_)
-
-
-@guppy(controllable=True)
-@no_type_check
-def _transversal1_start_end_kernel[n: nat](
-    op: Unitary[[qubit], None],
+def transversal1_start_end[n: nat](
+    op: Callable[[qubit], None],
     qs: array[qubit, n],
     start: nat,
     end: nat,
@@ -118,62 +54,9 @@ def _transversal1_start_end_kernel[n: nat](
         op(qs[i])
 
 
-@guppy(controllable=True)
+@guppy
 @no_type_check
-def _transversal1_start_end_inverse_kernel[n: nat](
-    op: Unitary[[qubit], None], qs: array[qubit, n], start: nat, end: nat
-) -> None:
-    """Apply the inverse register circuit."""
-    for i in range(start, end):
-        with dagger:
-            op(qs[i])
-
-
-@guppy.unitary
-class transversal1_start_end[n: nat]:  # noqa: D101 - Guppy unitary classes reject docstrings
-    # Apply the circuit with dagger and external-control support.
-
-    @guppy(controllable=True)
-    @no_type_check
-    def __call__(
-        op: Unitary[[qubit], None], qs: array[qubit, n], start: nat, end: nat
-    ) -> None:
-        """Apply a single qubit operator to register from start to end (non-inclusive).
-
-        Args:
-            op: The operator to apply.
-            qs: The qubit array to apply the operator to.
-            start: The start index of the slice.
-            end: The end index of the slice (non-inclusive).
-
-        """
-        _transversal1_start_end_kernel(op, qs, start, end)
-
-    @guppy
-    @no_type_check
-    def daggered(
-        op: Unitary[[qubit], None], qs: array[qubit, n], start: nat, end: nat
-    ) -> None:
-        """Apply the selected circuit mode."""
-        _transversal1_start_end_inverse_kernel(op, qs, start, end)
-
-    @guppy
-    @no_type_check
-    def ctrl_daggered[k: nat](
-        op: Unitary[[qubit], None],
-        qs: array[qubit, n],
-        start: nat,
-        end: nat,
-        controls: array[qubit, k],
-    ) -> None:
-        """Apply the selected circuit mode."""
-        with control(controls):
-            _transversal1_start_end_inverse_kernel(op, qs, start, end)
-
-
-@guppy(unitary=True)
-@no_type_check
-def transversal1_all[n: nat](op: Unitary[[qubit], None], qs: array[qubit, n]) -> None:
+def transversal1_all[n: nat](op: Callable[[qubit], None], qs: array[qubit, n]) -> None:
     """Apply a single qubit operator register-wise.
 
     Args:
