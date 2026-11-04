@@ -24,7 +24,6 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import (
-    cnx,
     CnxPartialToffoliLadder,
 )
 
@@ -318,7 +317,6 @@ class transversal2:  # noqa: D101
             _transversal2_internal_control(op, qs0, qs1, ignore_, False, temp_control)
             CnxPartialToffoliLadder.uncompute(ctrls, cnx_ancilla, temp_control)
             discard(temp_control)
-
 
     @guppy
     @no_type_check
