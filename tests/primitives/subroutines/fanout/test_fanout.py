@@ -15,12 +15,16 @@ from collections.abc import Callable
 from itertools import product
 from typing import no_type_check
 
+import numpy as np
 import pytest
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, control, dagger, output
+from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
+    discard,
+    discard_array,
     h,
     measure,
     measure_array,
@@ -40,7 +44,8 @@ from guppyalgos.primitives.subroutines.fanout import (
 
 from guppyalgos.primitives.subroutines.parity import parity_sequential
 from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.utils import qarray
+from guppyalgos.testing import assert_allclose_ignorephase, get_statevector
+from guppyalgos.utils import bits_to_int, qarray
 
 
 _ZERO_BITS = [False, False, False, False, False, False]
@@ -296,7 +301,7 @@ def test_basic_modifiers(
     expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
     mode: str,
 ) -> None:
-    """Check basis outputs and preserve all-plus phases for each modifier."""
+    """Check basis and all-plus statevectors for each primitive and modifier."""
 
     @guppy
     @no_type_check
@@ -330,13 +335,10 @@ def test_basic_modifiers(
             with control(external), dagger:
                 operation(target, data)
 
-        if all_plus:
-            h(external)
-            h(target)
-            transversal(h, data)
-        output("external", measure(external).read())
-        output("target", measure(target).read())
-        output("data", collect_measurements(measure_array(data)))
+        state_output("result_state", external, target, data[0], data[1])
+        discard(external)
+        discard(target)
+        discard_array(data)
 
     emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
     for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
@@ -345,19 +347,31 @@ def test_basic_modifiers(
         expected_target, expected_data = (
             expected_output(target_bit, bits) if enabled else (target_bit, bits)
         )
-        result = emulator.run(
-            external_bit=external_bit, target_bit=target_bit, bits=bits, all_plus=False
-        ).collated_shots()[0]
-        assert result["external"][0] == external_bit
-        assert result["target"][0] == expected_target
-        assert result["data"][0] == expected_data
+        expected = np.zeros(16, dtype=np.complex128)
+        # Statevector indices follow little-endian qubit order.
+        expected[bits_to_int([external_bit, expected_target, *expected_data])] = 1
+        result = get_statevector(
+            emulator,
+            4,
+            main_args_dict={
+                "external_bit": external_bit,
+                "target_bit": target_bit,
+                "bits": bits,
+                "all_plus": False,
+            },
+        )
+        assert_allclose_ignorephase(result, expected)
 
     # Both primitives and their controlled forms preserve the uniform superposition.
-    # H before measurement makes relative-phase errors visible as nonzero bits.
-    results = emulator.with_shots(32).run(
-        external_bit=False, target_bit=False, bits=[False, False], all_plus=True
+    # Compare every amplitude directly to detect relative-phase errors.
+    result = get_statevector(
+        emulator,
+        4,
+        main_args_dict={
+            "external_bit": False,
+            "target_bit": False,
+            "bits": [False, False],
+            "all_plus": True,
+        },
     )
-    for result in results.collated_shots():
-        assert result["external"][0] == 0
-        assert result["target"][0] == 0
-        assert result["data"][0] == [False, False]
+    assert_allclose_ignorephase(result, np.full(16, 0.25, dtype=np.complex128))
