@@ -126,7 +126,7 @@ class CnxPartialToffoliLadder:  # noqa: D101
     ) -> array[qubit, comptime(max(n - 2, 0))]:  # ty:ignore[unsupported-operator]
         """Compute AND of controls onto target using temp AND ladder.
 
-        returns ancilla workspace to be uncomputed by `uncompute_workspace` or 
+        returns ancilla workspace to be uncomputed by `uncompute_workspace` or
         `uncompute`.
         """
         work = qarray(comptime(max(n - 2, 0)))
@@ -147,7 +147,7 @@ class CnxPartialToffoliLadder:  # noqa: D101
     ) -> None:
         """Uncompute ancilla workspace, keeping result of AND in target."""
         if n > 2:
-            for index in range(n - 3):
+            for index in range(n - 4, -1, -1):
                 temp_and_uncompute(work[index], controls[index + 2], work[index + 1])
             temp_and_uncompute(controls[0], controls[1], work[0])
         discard_array(work)
