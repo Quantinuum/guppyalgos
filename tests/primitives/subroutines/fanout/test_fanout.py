@@ -369,7 +369,7 @@ def test_basic_modifiers(
         expected_output, controlled=mode in ("control", "controlled_dagger")
     )
     n_extra = (
-        2
+        1
         if operation is fanout_basic and mode in ("control", "controlled_dagger")
         else 0
     )
@@ -408,8 +408,10 @@ def test_fanout_basic_multiple_controls(
     expected = _expected_unitary(
         _fanout_output, controlled=True, n_controls=n_controls, n_data=n_data
     )
-    # One slot for borrowing the intrinsic control, one flag, and CNX ancillas.
-    n_extra = 2 + n_controls // 2 if n_controls and n_data else 0
+    # One external-control flag; MultiCntrlFunction adds work for multiple controls.
+    n_extra = 1 if n_controls == 1 else 2 + (n_controls - 1) // 2
+    if n_data == 0:
+        n_extra = 0
     actual = get_unitary(
         circuit, n_qubits, endianness=Endianness.LITTLE, n_extra_qubits=n_extra
     )
