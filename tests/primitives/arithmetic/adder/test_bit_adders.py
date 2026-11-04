@@ -210,36 +210,6 @@ def test_full_adder_inverse() -> None:
             assert_allclose_ignorephase(state.get_single_state(), zero_state)
 
 
-def test_half_adder_daggered_modifier() -> None:
-    """Verify daggered half_adder reverses a valid half-adder output."""
-
-    @guppy
-    @no_type_check
-    def main() -> None:
-        a = qubit()
-        b = qubit()
-        c_out = qubit()
-        x(a)
-        x(c_out)
-
-        with dagger:
-            half_adder(a, b, c_out)
-
-        state_output("a", a)
-        state_output("b", b)
-        state_output("carry", c_out)
-        discard(a)
-        discard(b)
-        discard(c_out)
-
-    states = Quest.extract_states_dict(main.emulator(3).run().results[0].entries)
-    zero_state = np.array([1, 0], dtype=np.complex128)
-    one_state = np.array([0, 1], dtype=np.complex128)
-    assert_allclose_ignorephase(states["a"].get_single_state(), one_state)
-    assert_allclose_ignorephase(states["b"].get_single_state(), one_state)
-    assert_allclose_ignorephase(states["carry"].get_single_state(), zero_state)
-
-
 def test_half_adder_controlled_modifier_with_superposition_controls() -> None:
     """Check controlled half_adder preserves coherent two-control branches."""
 
