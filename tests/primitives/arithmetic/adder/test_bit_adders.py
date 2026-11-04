@@ -4,7 +4,7 @@ from typing import no_type_check
 
 import numpy as np
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, control, dagger
+from guppylang.std.builtins import control, dagger
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, h, qubit, x
 from selene_sim import Quest
