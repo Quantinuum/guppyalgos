@@ -17,6 +17,7 @@ from typing import no_type_check
 
 import numpy as np
 import pytest
+from numpy.typing import NDArray
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, control, dagger, output
@@ -38,7 +39,6 @@ from guppyalgos.primitives.subroutines.fanout import (
     fanout_measurement_parity_total_qubits,
     fanout_measurement_uncompute,
 )
-
 from guppyalgos.primitives.subroutines.parity import parity_sequential
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
@@ -289,6 +289,40 @@ def _parity_output(target: bool, bits: list[bool]) -> tuple[bool, list[bool]]:
     return target ^ bits[0] ^ bits[1], bits
 
 
+def _expected_unitary(
+    expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
+    *,
+    controlled: bool,
+) -> NDArray[np.complex128]:
+    """Build a four-qubit permutation matrix from a primitive's output rule.
+
+    Bits are little endian: external control, target, data0, data1. Each
+    column represents an input bitstring; its single entry of 1 selects the
+    corresponding output bitstring. All other amplitudes are zero.
+
+    With ``controlled=False``, apply the primitive for both values of the
+    external bit, leaving that bit unchanged. With ``controlled=True``, use
+    the identity when the external bit is 0 and apply the primitive when it
+    is 1. The external bit is preserved in both cases.
+
+    Both primitives are self-adjoint, so forward and dagger share the
+    uncontrolled matrix; control and controlled dagger share the controlled
+    matrix. This helper describes their phase-free permutations only.
+    """
+    unitary = np.zeros((16, 16), dtype=np.complex128)
+    for external_bit, input_target, data0, data1 in product([False, True], repeat=4):
+        input_data = [data0, data1]
+        if controlled and not external_bit:
+            output_target, output_data = input_target, input_data
+        else:
+            output_target, output_data = expected_output(input_target, input_data)
+
+        input_index = bits_to_int([external_bit, input_target, *input_data])
+        output_index = bits_to_int([external_bit, output_target, *output_data])
+        unitary[output_index, input_index] = 1
+    return unitary
+
+
 @pytest.mark.parametrize(
     ("operation", "expected_output"),
     [
@@ -307,6 +341,11 @@ def test_basic_modifiers(
     @guppy
     @no_type_check
     def circuit(qs: array[qubit, 4]) -> None:
+        """Adapt the primitive to get_unitary's single borrowed-array argument.
+
+        Temporarily split the array into the external control/target prefix
+        and the data register, then restore all qubits to the original array.
+        """
         controls, data, suffix = _unsafe_array_borrow_slice(qs, 2, 2, 0)
         if comptime(mode == "forward"):
             operation(controls[1], data)
@@ -321,18 +360,9 @@ def test_basic_modifiers(
                 operation(controls[1], data)
         _unsafe_array_unborrow_slice(qs, controls, data, suffix)
 
-    expected = np.zeros((16, 16), dtype=np.complex128)
-    for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
-        bits = [data0, data1]
-        enabled = mode in ("forward", "dagger") or external_bit
-        expected_target, expected_data = (
-            expected_output(target_bit, bits) if enabled else (target_bit, bits)
-        )
-        # Each column maps one input bitstring to its expected output bitstring.
-        column = bits_to_int([external_bit, target_bit, *bits])
-        row = bits_to_int([external_bit, expected_target, *expected_data])
-        expected[row, column] = 1
-
+    expected = _expected_unitary(
+        expected_output, controlled=mode in ("control", "controlled_dagger")
+    )
     assert_allclose_ignorephase(
         get_unitary(circuit, 4, endianness=Endianness.LITTLE), expected
     )
