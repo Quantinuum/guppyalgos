@@ -296,11 +296,13 @@ def test_basic_modifiers(
     expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
     mode: str,
 ) -> None:
-    """Check each primitive's modifier outputs for every basis input."""
+    """Check basis outputs and preserve all-plus phases for each modifier."""
 
     @guppy
     @no_type_check
-    def main(external_bit: bool, target_bit: bool, bits: array[bool, 2]) -> None:
+    def main(
+        external_bit: bool, target_bit: bool, bits: array[bool, 2], all_plus: bool
+    ) -> None:
         external = qubit()
         target = qubit()
         data = qarray(2)
@@ -311,6 +313,10 @@ def test_basic_modifiers(
         for i in range(2):
             if bits[i]:
                 x(data[i])
+        if all_plus:
+            h(external)
+            h(target)
+            transversal(h, data)
 
         if comptime(mode == "forward"):
             operation(target, data)
@@ -324,6 +330,10 @@ def test_basic_modifiers(
             with control(external), dagger:
                 operation(target, data)
 
+        if all_plus:
+            h(external)
+            h(target)
+            transversal(h, data)
         output("external", measure(external).read())
         output("target", measure(target).read())
         output("data", collect_measurements(measure_array(data)))
@@ -336,8 +346,18 @@ def test_basic_modifiers(
             expected_output(target_bit, bits) if enabled else (target_bit, bits)
         )
         result = emulator.run(
-            external_bit=external_bit, target_bit=target_bit, bits=bits
+            external_bit=external_bit, target_bit=target_bit, bits=bits, all_plus=False
         ).collated_shots()[0]
         assert result["external"][0] == external_bit
         assert result["target"][0] == expected_target
         assert result["data"][0] == expected_data
+
+    # Both primitives and their controlled forms preserve the uniform superposition.
+    # H before measurement makes relative-phase errors visible as nonzero bits.
+    results = emulator.with_shots(32).run(
+        external_bit=False, target_bit=False, bits=[False, False], all_plus=True
+    )
+    for result in results.collated_shots():
+        assert result["external"][0] == 0
+        assert result["target"][0] == 0
+        assert result["data"][0] == [False, False]
