@@ -9,12 +9,15 @@ from guppylang.std.builtins import array, comptime
 from guppylang.std.quantum import qubit
 
 from guppyalgos.testing import assert_unitary_modifiers
-from guppyalgos.utils.guppy.gates import apply_bitstring
+from guppyalgos.primitives.utilities.gates import apply_bitstring
 
 
 @pytest.mark.parametrize("kind", ["bits", "frozen"])
 def test_bitstring_modifiers(kind: str) -> None:
-    """Check array and frozen-array bit flips through the public overload."""
+    """Check array and frozen-array bit flips through the public overload.
+    
+    `assert_unitary_modifiers` only checks single bit control.
+    """
     if kind == "bits":
 
         @guppy(unitary=True)
