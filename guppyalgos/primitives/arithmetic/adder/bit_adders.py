@@ -2,7 +2,7 @@
 
 from typing import no_type_check
 
-from guppylang.std.quantum import cx, h, t, tdg
+from guppylang.std.quantum import toffoli, cx
 
 from guppylang import guppy, qubit
 from guppylang.std.builtins import dagger
@@ -22,25 +22,9 @@ def half_adder(a: qubit, b: qubit, c_out: qubit) -> None:
 
     Maps (a, b, c_out) to (a, a xor b, c_out xor (a and b)) on all inputs.
     Use ``with dagger`` for the inverse and ``with control`` for external controls.
-
-    Explicit Clifford+T gates avoid an upstream controlled-Toffoli output permutation.
-    The final CX of the Toffoli decomposition cancels with the sum-bit CX. See
-    https://github.com/Quantinuum/guppyalgos/issues/156.
     """
-    h(c_out)
-    cx(b, c_out)
-    tdg(c_out)
-    cx(a, c_out)
-    t(c_out)
-    cx(b, c_out)
-    tdg(c_out)
-    cx(a, c_out)
-    t(c_out)
-    h(c_out)
-    t(b)
+    toffoli(a, b, c_out)
     cx(a, b)
-    t(a)
-    tdg(b)
 
 
 @guppy
