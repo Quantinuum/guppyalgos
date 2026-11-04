@@ -20,11 +20,8 @@ import pytest
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, control, dagger, output
-from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
-    discard,
-    discard_array,
     h,
     measure,
     measure_array,
@@ -44,8 +41,12 @@ from guppyalgos.primitives.subroutines.fanout import (
 
 from guppyalgos.primitives.subroutines.parity import parity_sequential
 from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.testing import assert_allclose_ignorephase, get_statevector
+from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
 from guppyalgos.utils import bits_to_int, qarray
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow_slice,
+    _unsafe_array_unborrow_slice,
+)
 
 
 _ZERO_BITS = [False, False, False, False, False, False]
@@ -301,77 +302,37 @@ def test_basic_modifiers(
     expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
     mode: str,
 ) -> None:
-    """Check basis and all-plus statevectors for each primitive and modifier."""
+    """Check each primitive and modifier against its full permutation unitary."""
 
     @guppy
     @no_type_check
-    def main(
-        external_bit: bool, target_bit: bool, bits: array[bool, 2], all_plus: bool
-    ) -> None:
-        external = qubit()
-        target = qubit()
-        data = qarray(2)
-        if external_bit:
-            x(external)
-        if target_bit:
-            x(target)
-        for i in range(2):
-            if bits[i]:
-                x(data[i])
-        if all_plus:
-            h(external)
-            h(target)
-            transversal(h, data)
-
+    def circuit(qs: array[qubit, 4]) -> None:
+        controls, data, suffix = _unsafe_array_borrow_slice(qs, 2, 2, 0)
         if comptime(mode == "forward"):
-            operation(target, data)
+            operation(controls[1], data)
         elif comptime(mode == "dagger"):
             with dagger:
-                operation(target, data)
+                operation(controls[1], data)
         elif comptime(mode == "control"):
-            with control(external):
-                operation(target, data)
+            with control(controls[0]):
+                operation(controls[1], data)
         else:
-            with control(external), dagger:
-                operation(target, data)
+            with control(controls[0]), dagger:
+                operation(controls[1], data)
+        _unsafe_array_unborrow_slice(qs, controls, data, suffix)
 
-        state_output("result_state", external, target, data[0], data[1])
-        discard(external)
-        discard(target)
-        discard_array(data)
-
-    emulator = main.emulator(n_qubits=4).with_seed(42).with_shots(1)
+    expected = np.zeros((16, 16), dtype=np.complex128)
     for external_bit, target_bit, data0, data1 in product([False, True], repeat=4):
         bits = [data0, data1]
         enabled = mode in ("forward", "dagger") or external_bit
         expected_target, expected_data = (
             expected_output(target_bit, bits) if enabled else (target_bit, bits)
         )
-        expected = np.zeros(16, dtype=np.complex128)
-        # Statevector indices follow little-endian qubit order.
-        expected[bits_to_int([external_bit, expected_target, *expected_data])] = 1
-        result = get_statevector(
-            emulator,
-            4,
-            main_args_dict={
-                "external_bit": external_bit,
-                "target_bit": target_bit,
-                "bits": bits,
-                "all_plus": False,
-            },
-        )
-        assert_allclose_ignorephase(result, expected)
+        # Each column maps one input bitstring to its expected output bitstring.
+        column = bits_to_int([external_bit, target_bit, *bits])
+        row = bits_to_int([external_bit, expected_target, *expected_data])
+        expected[row, column] = 1
 
-    # Both primitives and their controlled forms preserve the uniform superposition.
-    # Compare every amplitude directly to detect relative-phase errors.
-    result = get_statevector(
-        emulator,
-        4,
-        main_args_dict={
-            "external_bit": False,
-            "target_bit": False,
-            "bits": [False, False],
-            "all_plus": True,
-        },
+    assert_allclose_ignorephase(
+        get_unitary(circuit, 4, endianness=Endianness.LITTLE), expected
     )
-    assert_allclose_ignorephase(result, np.full(16, 0.25, dtype=np.complex128))
