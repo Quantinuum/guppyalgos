@@ -47,14 +47,10 @@ different register shapes:
 
 ```python
 # Avoid: the target is not always a flat qubit array.
-GuppyFunctionDefinition[
-    [qubit, array[qubit, n_i_q], array[qubit, n_s_q]], None
-]
+GuppyFunctionDefinition[[qubit, array[qubit, n_i_q], array[qubit, n_s_q]], None]
 
 # Prefer: this matches the returned Guppy function.
-GuppyFunctionDefinition[
-    [qubit, array[qubit, n_i_q], TargetRegs], None
-]
+GuppyFunctionDefinition[[qubit, array[qubit, n_i_q], TargetRegs], None]
 ```
 
 # Validation

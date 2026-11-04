@@ -38,12 +38,12 @@ from guppyalgos.algorithms.phase_estimation import (
 from guppyalgos.algorithms.block_encoding.qubitization import QubitizationCntrl
 from guppyalgos.primitives.subroutines.reflection import ReflectionCntrl
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 from guppyalgos.utils import (
     binary_fraction,
     phase_distance_mod_2,
-    qarray,
     phase_to_energy_qubitized_qpe,
-    transversal,
 )
 
 dagger = object()
@@ -70,7 +70,7 @@ def build_qubitized_power_oracle() -> GuppyFunctionDefinition[
         qubit,
         QubitizationRegs[
             1,
-            array[qubit, 1],  # ty: ignore[not-subscriptable]
+            array[qubit, 1],
         ],
         int,
     ],

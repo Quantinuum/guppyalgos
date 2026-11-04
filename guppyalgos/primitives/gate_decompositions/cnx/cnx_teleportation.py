@@ -15,7 +15,8 @@ from guppylang.std.quantum import (
     collect_measurements,
 )
 
-from guppyalgos.utils import transversal, qarray
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 
 from typing import no_type_check
 

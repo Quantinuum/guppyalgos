@@ -21,7 +21,9 @@ from guppyalgos.primitives.arithmetic.hamming_weight import (
     hamming_weight_func_inv,
     num_hamming_weight_bits,
 )
-from guppyalgos.utils import int_to_bits, qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import assert_allclose_ignorephase, switch_endianness
 
 

@@ -12,7 +12,8 @@ from selene_sim import Quest
 from guppyalgos.primitives.rotations.hamming_weight_phasing import (
     hamming_weight_phase,
 )
-from guppyalgos.utils import qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 from guppyalgos.testing import assert_allclose_ignorephase
 
 

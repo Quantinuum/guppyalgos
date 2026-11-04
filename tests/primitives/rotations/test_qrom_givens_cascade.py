@@ -20,12 +20,12 @@ from guppyalgos.primitives.state_preparation.phase_gradient import (
     Convention,
     phase_gradient,
 )
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 from guppyalgos.utils import (
     discard_nested_arrays,
     bits_to_int,
     int_to_bits,
-    qarray,
-    transversal,
 )
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
