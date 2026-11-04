@@ -497,11 +497,33 @@ def __apply_bitstring_frozen_kernel[n: nat](
             x(reg[i])
 
 
+@guppy
+@no_type_check
+def __apply_bitstring_frozen_control_kernel[n: nat, n_ctrl: nat](
+    reg: array[qubit, n],
+    bit_array: frozenarray[bool, n],
+    controls: array[qubit, n_ctrl],
+) -> None:
+    """Apply bitstring controlled on register, for multicontrol use a flag bit."""
+    if n_ctrl == 0:
+        pass
+    if n_ctrl == 1:
+        with control(controls[0]):
+            __apply_bitstring_frozen_kernel(reg, bit_array)
+    else:
+        work = qubit()
+        cnx(controls, work)
+        with control(work):
+            __apply_bitstring_frozen_kernel(reg, bit_array)
+        cnx(controls, work)
+        discard(work)
+
+
 @guppy.unitary
 class _apply_bitstring_frozen[n: nat]:
     # Apply the circuit with dagger and external-control support.
 
-    @guppy(controllable=True)
+    @guppy
     @no_type_check
     def __call__(reg: array[qubit, n], bit_array: frozenarray[bool, n]) -> None:
         """Apply bit flips to a reg according to bit_array."""
@@ -515,12 +537,19 @@ class _apply_bitstring_frozen[n: nat]:
 
     @guppy
     @no_type_check
+    def controlled[k: nat](
+        reg: array[qubit, n], bit_array: frozenarray[bool, n], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_frozen_control_kernel(reg, bit_array, controls)
+
+    @guppy
+    @no_type_check
     def ctrl_daggered[k: nat](
         reg: array[qubit, n], bit_array: frozenarray[bool, n], controls: array[qubit, k]
     ) -> None:
         """Apply the selected circuit mode."""
-        with control(controls):
-            __apply_bitstring_frozen_kernel(reg, bit_array)
+        __apply_bitstring_frozen_control_kernel(reg, bit_array, controls)
 
 
 @guppy(controllable=True)
@@ -532,6 +561,26 @@ def __apply_bitstring_arr_kernel[n: nat](
     for i in range(n):
         if bit_array[i]:
             x(reg[i])
+
+
+@guppy
+@no_type_check
+def __apply_bitstring_arr_control_kernel[n: nat, n_ctrl: nat](
+    reg: array[qubit, n], bit_array: array[bool, n], controls: array[qubit, n_ctrl]
+) -> None:
+    """Apply bitstring controlled on register, for multicontrol use a flag bit."""
+    if n_ctrl == 0:
+        pass
+    if n_ctrl == 1:
+        with control(controls[0]):
+            __apply_bitstring_arr_kernel(reg, bit_array)
+    else:
+        work = qubit()
+        cnx(controls, work)
+        with control(work):
+            __apply_bitstring_arr_kernel(reg, bit_array)
+        cnx(controls, work)
+        discard(work)
 
 
 @guppy.unitary
@@ -552,12 +601,19 @@ class _apply_bitstring_arr[n: nat]:
 
     @guppy
     @no_type_check
+    def controlled[k: nat](
+        reg: array[qubit, n], bit_array: array[bool, n], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_arr_control_kernel(reg, bit_array, controls)
+
+    @guppy
+    @no_type_check
     def ctrl_daggered[k: nat](
         reg: array[qubit, n], bit_array: array[bool, n], controls: array[qubit, k]
     ) -> None:
         """Apply the selected circuit mode."""
-        with control(controls):
-            __apply_bitstring_arr_kernel(reg, bit_array)
+        __apply_bitstring_arr_control_kernel(reg, bit_array, controls)
 
 
 @guppy.overload(_apply_bitstring_arr, _apply_bitstring_frozen)
