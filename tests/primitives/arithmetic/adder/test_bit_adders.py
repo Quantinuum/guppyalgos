@@ -17,6 +17,23 @@ from guppyalgos.testing import get_total_state_on_only_specified_registers
 from guppyalgos.utils import qarray
 
 
+def _full_adder_basis_output(
+    cin_bit: bool,
+    a_bit: bool,
+    b_bit: bool,
+    carry_bit: bool,
+    *,
+    daggered: bool,
+) -> tuple[bool, bool, bool, bool]:
+    """Return the basis-state output of full_adder or its inverse."""
+    b_for_carry = b_bit ^ cin_bit ^ a_bit if daggered else b_bit
+    carry_bit ^= (
+        (cin_bit and a_bit) or (cin_bit and b_for_carry) or (a_bit and b_for_carry)
+    )
+    b_bit ^= cin_bit ^ a_bit
+    return cin_bit, a_bit, b_bit, carry_bit
+
+
 def test_half_adder_truth_table() -> None:
     """Verify half_adder implements sum = a xor b and carry = a and b."""
 
@@ -292,3 +309,149 @@ def test_half_adder_controlled_daggered_modifier_with_superposition_controls() -
         expected_state[index] = 0.5
 
     assert_allclose_ignorephase(total_state.state, expected_state)
+
+
+def test_full_adder_controlled_modifier_with_superposition_controls() -> None:
+    """Check controlled full_adder preserves coherent two-control branches."""
+
+    @guppy
+    @no_type_check
+    def main(cin_bit: bool, a_bit: bool, b_bit: bool, carry_bit: bool) -> None:
+        controls = qarray(2)
+        h(controls[0])
+        h(controls[1])
+        cin = qubit()
+        a = qubit()
+        b = qubit()
+        c_out = qubit()
+        if cin_bit:
+            x(cin)
+        if a_bit:
+            x(a)
+        if b_bit:
+            x(b)
+        if carry_bit:
+            x(c_out)
+
+        with control(controls):
+            full_adder(cin, a, b, c_out)
+
+        state_output("controls", controls)
+        state_output("cin", cin)
+        state_output("a", a)
+        state_output("b", b)
+        state_output("carry", c_out)
+        discard_array(controls)
+        discard(cin)
+        discard(a)
+        discard(b)
+        discard(c_out)
+
+    emulator = main.emulator(6)
+    for data_value in range(16):
+        cin_bit = bool(data_value & 1)
+        a_bit = bool(data_value & 2)
+        b_bit = bool(data_value & 4)
+        carry_bit = bool(data_value & 8)
+        res = emulator.run(
+            cin_bit=cin_bit,
+            a_bit=a_bit,
+            b_bit=b_bit,
+            carry_bit=carry_bit,
+        )
+        states = Quest.extract_states_dict(res.results[0].entries)
+        total_state, _ = get_total_state_on_only_specified_registers(
+            states, ["controls", "cin", "a", "b", "carry"]
+        )
+        expected_state = np.zeros(2**6, dtype=np.complex128)
+        for control_value in range(4):
+            if control_value == 3:
+                output_bits = _full_adder_basis_output(
+                    cin_bit, a_bit, b_bit, carry_bit, daggered=False
+                )
+            else:
+                output_bits = cin_bit, a_bit, b_bit, carry_bit
+            output_cin, output_a, output_b, output_carry = output_bits
+            index = (
+                control_value
+                + (int(output_cin) << 2)
+                + (int(output_a) << 3)
+                + (int(output_b) << 4)
+                + (int(output_carry) << 5)
+            )
+            expected_state[index] = 0.5
+
+        assert_allclose_ignorephase(total_state.state, expected_state)
+
+
+def test_full_adder_controlled_daggered_modifier_with_superposition_controls() -> None:
+    """Check controlled daggered full_adder preserves coherent control branches."""
+
+    @guppy
+    @no_type_check
+    def main(cin_bit: bool, a_bit: bool, b_bit: bool, carry_bit: bool) -> None:
+        controls = qarray(2)
+        h(controls[0])
+        h(controls[1])
+        cin = qubit()
+        a = qubit()
+        b = qubit()
+        c_out = qubit()
+        if cin_bit:
+            x(cin)
+        if a_bit:
+            x(a)
+        if b_bit:
+            x(b)
+        if carry_bit:
+            x(c_out)
+
+        with control(controls), dagger:
+            full_adder(cin, a, b, c_out)
+
+        state_output("controls", controls)
+        state_output("cin", cin)
+        state_output("a", a)
+        state_output("b", b)
+        state_output("carry", c_out)
+        discard_array(controls)
+        discard(cin)
+        discard(a)
+        discard(b)
+        discard(c_out)
+
+    emulator = main.emulator(6)
+    for data_value in range(16):
+        cin_bit = bool(data_value & 1)
+        a_bit = bool(data_value & 2)
+        b_bit = bool(data_value & 4)
+        carry_bit = bool(data_value & 8)
+        res = emulator.run(
+            cin_bit=cin_bit,
+            a_bit=a_bit,
+            b_bit=b_bit,
+            carry_bit=carry_bit,
+        )
+        states = Quest.extract_states_dict(res.results[0].entries)
+        total_state, _ = get_total_state_on_only_specified_registers(
+            states, ["controls", "cin", "a", "b", "carry"]
+        )
+        expected_state = np.zeros(2**6, dtype=np.complex128)
+        for control_value in range(4):
+            if control_value == 3:
+                output_bits = _full_adder_basis_output(
+                    cin_bit, a_bit, b_bit, carry_bit, daggered=True
+                )
+            else:
+                output_bits = cin_bit, a_bit, b_bit, carry_bit
+            output_cin, output_a, output_b, output_carry = output_bits
+            index = (
+                control_value
+                + (int(output_cin) << 2)
+                + (int(output_a) << 3)
+                + (int(output_b) << 4)
+                + (int(output_carry) << 5)
+            )
+            expected_state[index] = 0.5
+
+        assert_allclose_ignorephase(total_state.state, expected_state)
