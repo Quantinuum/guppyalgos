@@ -4,16 +4,18 @@ from typing import no_type_check
 
 import numpy as np
 from guppylang.decorator import guppy
+from guppylang.std.builtins import control, dagger
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard, qubit, x
+from guppylang.std.quantum import discard, discard_array, h, qubit, x
 from selene_sim import Quest
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
     full_adder_inverse,
     half_adder,
-    half_adder_inverse,
 )
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.testing import get_total_state_on_only_specified_registers
+from guppyalgos.utils import qarray
 
 
 def test_half_adder_truth_table() -> None:
@@ -115,7 +117,7 @@ def test_full_adder_truth_table() -> None:
 
 
 def test_half_adder_inverse() -> None:
-    """Verify half_adder_inverse acts as the inverse."""
+    """Verify daggered half_adder acts as the inverse."""
 
     @guppy
     @no_type_check
@@ -130,7 +132,8 @@ def test_half_adder_inverse() -> None:
             x(b)
 
         half_adder(a, b, c_out)
-        half_adder_inverse(a, b, c_out)
+        with dagger:
+            half_adder(a, b, c_out)
         if a_bit:
             x(a)
         if b_bit:
@@ -205,3 +208,87 @@ def test_full_adder_inverse() -> None:
         zero_state = np.array([1, 0], dtype=np.complex128)
         for state in states.values():
             assert_allclose_ignorephase(state.get_single_state(), zero_state)
+
+
+def test_half_adder_controlled_modifier_with_superposition_controls() -> None:
+    """Check controlled half_adder preserves coherent two-control branches."""
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(2)
+        h(controls[0])
+        h(controls[1])
+        a = qubit()
+        b = qubit()
+        c_out = qubit()
+        x(a)
+        x(b)
+
+        with control(controls):
+            half_adder(a, b, c_out)
+
+        state_output("controls", controls)
+        state_output("a", a)
+        state_output("b", b)
+        state_output("carry", c_out)
+        discard_array(controls)
+        discard(a)
+        discard(b)
+        discard(c_out)
+
+    states = Quest.extract_states_dict(main.emulator(5).run().results[0].entries)
+    total_state, _ = get_total_state_on_only_specified_registers(
+        states, ["controls", "a", "b", "carry"]
+    )
+    expected_state = np.zeros(2**5, dtype=np.complex128)
+    for control_value in range(4):
+        # Qubit positions are controls[0], controls[1], a, b, and carry.
+        b_value = 0 if control_value == 3 else 1
+        carry_value = 1 if control_value == 3 else 0
+        index = control_value + (1 << 2) + (b_value << 3) + (carry_value << 4)
+        expected_state[index] = 0.5
+
+    assert_allclose_ignorephase(total_state.state, expected_state)
+
+
+def test_half_adder_controlled_daggered_modifier_with_superposition_controls() -> None:
+    """Check controlled daggered half_adder preserves coherent control branches."""
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(2)
+        h(controls[0])
+        h(controls[1])
+        a = qubit()
+        b = qubit()
+        c_out = qubit()
+        x(a)
+        x(c_out)
+
+        with control(controls), dagger:
+            half_adder(a, b, c_out)
+
+        state_output("controls", controls)
+        state_output("a", a)
+        state_output("b", b)
+        state_output("carry", c_out)
+        discard_array(controls)
+        discard(a)
+        discard(b)
+        discard(c_out)
+
+    states = Quest.extract_states_dict(main.emulator(5).run().results[0].entries)
+    total_state, _ = get_total_state_on_only_specified_registers(
+        states, ["controls", "a", "b", "carry"]
+    )
+    expected_state = np.zeros(2**5, dtype=np.complex128)
+    for control_value in range(4):
+        # Qubit positions are controls[0], controls[1], a, b, and carry.
+        b_value = 1 if control_value == 3 else 0
+        carry_value = 0 if control_value == 3 else 1
+        index = control_value + (1 << 2) + (b_value << 3) + (carry_value << 4)
+        expected_state[index] = 0.5
+
+    assert_allclose_ignorephase(total_state.state, expected_state)
