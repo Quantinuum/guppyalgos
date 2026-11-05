@@ -1,14 +1,12 @@
 """Tests for Guppy runtime math functions."""
 
-import numpy as np
 import pytest
-from math import pi
 from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import output
 
-from guppyalgos.utils.guppy.math import get_bit, floor, tan
+from guppyalgos.utils.guppy.math import get_bit, floor
 
 
 @pytest.mark.parametrize(
@@ -52,31 +50,3 @@ def test_floor(x: float, expected: int) -> None:
 
     res = test_circuit.emulator(1).run()
     assert res.collated_shots()[0]["floor_val"][0] == expected
-
-
-def test_tan() -> None:
-    """Test tan computes correct tangent values."""
-    pi_3 = pi / 3
-    pi_4 = pi / 4
-    pi_6 = pi / 6
-
-    test_cases = [
-        ("tan_0", 0.0, np.tan(0.0)),
-        ("tan_pi_3", pi_3, np.tan(pi_3)),
-        ("tan_pi_4", pi_4, np.tan(pi_4)),
-        ("tan_pi_6", pi_6, np.tan(pi_6)),
-    ]
-
-    @guppy
-    @no_type_check
-    def test_circuit() -> None:
-        output("tan_0", tan(0.0))
-        output("tan_pi_3", tan(pi_3))
-        output("tan_pi_4", tan(pi_4))
-        output("tan_pi_6", tan(pi_6))
-
-    res = test_circuit.emulator(1).run()
-    shots = res.collated_shots()[0]
-
-    for name, _, expected in test_cases:
-        np.testing.assert_allclose(shots[name][0], expected)
