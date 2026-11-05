@@ -6,7 +6,7 @@ from itertools import product
 from guppylang import guppy
 from collections.abc import Callable
 from guppylang.std.quantum import qubit, x, array, angle
-from guppylang.std.builtins import comptime
+from guppylang.std.builtins import comptime, control, dagger
 from guppylang.std.debug import state_output
 from guppylang.defs import GuppyFunctionDefinition
 from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
@@ -211,7 +211,7 @@ def test_ccry_gate(
     ccry_fun: GuppyFunctionDefinition[[qubit, qubit, qubit, angle], None],
 ) -> None:
     """Test CCRy gate with different decompositions and angles."""
-    thetas = np.arange(0, 11) / 10
+    thetas = np.arange(-10, 11) / 10
 
     for theta in thetas:
 
@@ -223,3 +223,35 @@ def test_ccry_gate(
         u_guppy = get_unitary(apply_ccry, 3)
         u_exact = ccry_unitary(theta * np.pi)
         assert_allclose_ignorephase(u_guppy, u_exact)
+
+
+def test_ccry_modifier_compilation() -> None:
+    """Compile public modes with runtime angles and two extra controls."""
+
+    @guppy
+    @no_type_check
+    def program(qs: array[qubit, 3], controls: array[qubit, 2], theta: angle) -> None:
+        ccry_toffoli(qs[0], qs[1], qs[2], theta)
+        ccry_cx(qs[0], qs[1], qs[2], theta)
+        with dagger:
+            ccry_toffoli(qs[0], qs[1], qs[2], theta)
+            ccry_cx(qs[0], qs[1], qs[2], theta)
+        with control(controls):
+            ccry_toffoli(qs[0], qs[1], qs[2], theta)
+            ccry_cx(qs[0], qs[1], qs[2], theta)
+        with control(controls), dagger:
+            ccry_toffoli(qs[0], qs[1], qs[2], theta)
+            ccry_cx(qs[0], qs[1], qs[2], theta)
+
+    # Guppy 1.1.1's default optimizer panics on this mixed-mode runtime-angle
+    # composition. Minimal optimization still lowers all generated modifiers.
+    program.with_minimal_opt().compile_function()
+
+    @guppy
+    @no_type_check
+    def combined(qs: array[qubit, 3], controls: array[qubit, 2], theta: angle) -> None:
+        with control(controls), dagger:
+            ccry_toffoli(qs[0], qs[1], qs[2], theta)
+            ccry_cx(qs[0], qs[1], qs[2], theta)
+
+    combined.compile_function()

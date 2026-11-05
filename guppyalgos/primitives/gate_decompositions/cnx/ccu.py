@@ -91,12 +91,13 @@ def ccz(control1: qubit, control2: qubit, target: qubit) -> None:
     ccu_phase_correction(control1, control2)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccry_toffoli(control1: qubit, control2: qubit, target: qubit, theta: angle) -> None:
     """CCRy gate implementation using toffolis.
 
-    Requires 2 toffolis and 2 ry.
+    Requires 2 toffolis and 2 ry. Supports dagger and added external controls
+    via Guppy modifiers; the two intrinsic controls remain separate.
 
     .. code-block:: text
 
@@ -123,12 +124,13 @@ def ccry_toffoli(control1: qubit, control2: qubit, target: qubit, theta: angle) 
     toffoli(control1, control2, target)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccry_cx(control1: qubit, control2: qubit, target: qubit, theta: angle) -> None:
     """CCRy gate implementation using cx gates.
 
-    Requires 4 cx and 4 ry.
+    Requires 4 cx and 4 ry. Supports dagger and added external controls
+    via Guppy modifiers; the two intrinsic controls remain separate.
 
     .. code-block:: text
 
@@ -150,8 +152,12 @@ def ccry_cx(control1: qubit, control2: qubit, target: qubit, theta: angle) -> No
         theta: The rotation angle.
 
     """
-    for _ in range(2):
-        ry(target, theta / 4)
-        cx(control2, target)
-        ry(target, -theta / 4)
-        cx(control1, target)
+    # Spell out the fixed two repetitions so Guppy can generate the adjoint.
+    ry(target, theta / 4)
+    cx(control2, target)
+    ry(target, -theta / 4)
+    cx(control1, target)
+    ry(target, theta / 4)
+    cx(control2, target)
+    ry(target, -theta / 4)
+    cx(control1, target)
