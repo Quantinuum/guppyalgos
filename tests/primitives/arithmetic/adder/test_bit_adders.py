@@ -10,7 +10,6 @@ from guppylang.std.quantum import discard, discard_array, h, qubit, x
 from selene_sim import Quest
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
-    full_adder_inverse,
     half_adder,
 )
 from guppyalgos.testing import assert_allclose_ignorephase
@@ -156,8 +155,8 @@ def test_half_adder_inverse() -> None:
             assert_allclose_ignorephase(state.get_single_state(), zero_state)
 
 
-def test_full_adder_inverse() -> None:
-    """Verify full_adder_inverse does act as the inverse."""
+def test_full_adder_dagger() -> None:
+    """Verify daggered full_adder acts as the inverse."""
 
     @guppy
     @no_type_check
@@ -175,7 +174,8 @@ def test_full_adder_inverse() -> None:
             x(b)
 
         full_adder(cin, a, b, c_out)
-        full_adder_inverse(cin, a, b, c_out)
+        with dagger:
+            full_adder(cin, a, b, c_out)
 
         if cin_bit:
             x(cin)

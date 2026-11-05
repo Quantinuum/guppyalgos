@@ -1,14 +1,11 @@
 """Single bit adder and half adders."""
 
-from typing import no_type_check
-
 from guppylang.std.quantum import toffoli, cx
 
 from guppylang import guppy, qubit
-from guppylang.std.builtins import dagger
 
 
-@guppy
+@guppy(unitary=True)
 def full_adder(c_in: qubit, a: qubit, b: qubit, c_out: qubit) -> None:
     """Bitwise adder, sum bit computed onto b."""
     half_adder(c_in, a, c_out)
@@ -24,14 +21,3 @@ def half_adder(a: qubit, b: qubit, c_out: qubit) -> None:
     """
     toffoli(a, b, c_out)
     cx(a, b)
-
-
-@guppy
-@no_type_check
-def full_adder_inverse(c_in: qubit, a: qubit, b: qubit, c_out: qubit) -> None:
-    """Inverse of bitwise adder, sum bit computed onto b."""
-    cx(c_in, a)
-    with dagger:
-        half_adder(a, b, c_out)
-    with dagger:
-        half_adder(c_in, a, c_out)
