@@ -293,32 +293,37 @@ def _expected_unitary(
     expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
     *,
     controlled: bool,
+    n_controls: int = 1,
+    n_data: int = 2,
 ) -> NDArray[np.complex128]:
-    """Build a four-qubit permutation matrix from a primitive's output rule.
+    """Build a permutation matrix from a primitive's output rule.
 
-    Bits are little endian: external control, target, data0, data1. Each
-    column represents an input bitstring; its single entry of 1 selects the
-    corresponding output bitstring. All other amplitudes are zero.
+    Bits are little endian: external controls, target, then data qubits.
+    Each column represents an input bitstring; its single entry of 1 selects
+    the corresponding output bitstring. All other amplitudes are zero.
 
-    With ``controlled=False``, apply the primitive for both values of the
-    external bit, leaving that bit unchanged. With ``controlled=True``, use
-    the identity when the external bit is 0 and apply the primitive when it
-    is 1. The external bit is preserved in both cases.
+    With ``controlled=False``, apply the primitive for every external control
+    bitstring. With ``controlled=True``, apply it only when all external
+    controls are 1, using the identity otherwise. External controls are always
+    preserved. With no external controls, both cases apply the primitive.
 
     Both primitives are self-adjoint, so forward and dagger share the
     uncontrolled matrix; control and controlled dagger share the controlled
     matrix. This helper describes their phase-free permutations only.
     """
-    unitary = np.zeros((16, 16), dtype=np.complex128)
-    for external_bit, input_target, data0, data1 in product([False, True], repeat=4):
-        input_data = [data0, data1]
-        if controlled and not external_bit:
+    n_qubits = n_controls + 1 + n_data
+    unitary = np.zeros((2**n_qubits, 2**n_qubits), dtype=np.complex128)
+    for input_bits in product([False, True], repeat=n_qubits):
+        external_bits = list(input_bits[:n_controls])
+        input_target = input_bits[n_controls]
+        input_data = list(input_bits[n_controls + 1 :])
+        if controlled and not all(external_bits):
             output_target, output_data = input_target, input_data
         else:
             output_target, output_data = expected_output(input_target, input_data)
 
-        input_index = bits_to_int([external_bit, input_target, *input_data])
-        output_index = bits_to_int([external_bit, output_target, *output_data])
+        input_index = bits_to_int(list(input_bits))
+        output_index = bits_to_int([*external_bits, output_target, *output_data])
         unitary[output_index, input_index] = 1
     return unitary
 
@@ -363,6 +368,49 @@ def test_basic_modifiers(
     expected = _expected_unitary(
         expected_output, controlled=mode in ("control", "controlled_dagger")
     )
-    assert_allclose_ignorephase(
-        get_unitary(circuit, 4, endianness=Endianness.LITTLE), expected
+    n_extra = int(
+        operation is fanout_basic and mode in ("control", "controlled_dagger")
     )
+    assert_allclose_ignorephase(
+        get_unitary(circuit, 4, endianness=Endianness.LITTLE, n_extra_qubits=n_extra),
+        expected,
+    )
+
+
+@pytest.mark.parametrize(
+    ("n_controls", "n_data"), [(1, 0), (2, 0), (2, 1), (2, 3), (3, 2)]
+)
+@pytest.mark.parametrize(
+    "daggered", [False, True], ids=["control", "controlled-dagger"]
+)
+def test_fanout_basic_multiple_controls(
+    n_controls: int, n_data: int, daggered: bool
+) -> None:
+    """Check shared-flag controls and clean work qubits against the full unitary."""
+    n_qubits = n_controls + 1 + n_data
+
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, n_qubits]) -> None:
+        controls, targets, suffix = _unsafe_array_borrow_slice(
+            qs, n_controls, comptime(1 + n_data), 0
+        )
+        intrinsic, data, empty = _unsafe_array_borrow_slice(targets, 1, n_data, 0)
+        with control(controls):
+            if comptime(daggered):
+                with dagger:
+                    fanout_basic(intrinsic[0], data)
+            else:
+                fanout_basic(intrinsic[0], data)
+        _unsafe_array_unborrow_slice(targets, intrinsic, data, empty)
+        _unsafe_array_unborrow_slice(qs, controls, targets, suffix)
+
+    expected = _expected_unitary(
+        _fanout_output, controlled=True, n_controls=n_controls, n_data=n_data
+    )
+    # The predicate includes the intrinsic control: one flag plus CNX ancillas.
+    n_extra = 1 + n_controls // 2
+    actual = get_unitary(
+        circuit, n_qubits, endianness=Endianness.LITTLE, n_extra_qubits=n_extra
+    )
+    assert_allclose_ignorephase(actual, expected)
