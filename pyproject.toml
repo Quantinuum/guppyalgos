@@ -76,6 +76,10 @@ lint.select = ["E", "F", "B", "RUF", "PT", "UP", "C4", "D", "T10"]
 lint.ignore = ["RUF002"]
 extend-exclude = ["**/*.ipynb", "tests/conftest.py", ".venv/**", "docs/**"]
 target-version = "py312"
+[tool.ruff.lint.per-file-ignores]
+"guppyalgos/primitives/subroutines/fanout/fanout_basic.py" = ["D101"]
+"guppyalgos/primitives/subroutines/parity/parity.py" = ["D101"]
+
 [tool.lint.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/conftest.py" = ["D103"]
