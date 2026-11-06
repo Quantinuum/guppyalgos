@@ -95,9 +95,7 @@ def _parity_sequential_kernel[n_qs_qubits: nat](
 
 
 @guppy.unitary
-class parity_sequential[n_qs_qubits: nat]:  # noqa: D101 - Guppy unitary classes reject docstrings
-    # Apply the circuit with dagger and external-control support.
-
+class parity_sequential[n_qs_qubits: nat]:
     @guppy
     @no_type_check
     def __call__(q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]) -> None:

@@ -48,9 +48,7 @@ def _fanout_basic_cntrl[n_data_qubits: nat, k: nat](
 
 
 @guppy.unitary
-class fanout_basic[n_data_qubits: nat]:  # noqa: D101 - Guppy unitary classes reject docstrings
-    # Apply the circuit with dagger and external-control support.
-
+class fanout_basic[n_data_qubits: nat]:
     @guppy
     @no_type_check
     def __call__(control: qubit, data_qs: array[qubit, n_data_qubits]) -> None:
