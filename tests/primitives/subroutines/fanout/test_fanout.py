@@ -286,7 +286,7 @@ def _fanout_output(target: bool, bits: list[bool]) -> tuple[bool, list[bool]]:
 
 
 def _parity_output(target: bool, bits: list[bool]) -> tuple[bool, list[bool]]:
-    return target ^ bits[0] ^ bits[1], bits
+    return target ^ (sum(bits) % 2 == 1), bits
 
 
 def _expected_unitary(
@@ -368,9 +368,7 @@ def test_basic_modifiers(
     expected = _expected_unitary(
         expected_output, controlled=mode in ("control", "controlled_dagger")
     )
-    n_extra = int(
-        operation is fanout_basic and mode in ("control", "controlled_dagger")
-    )
+    n_extra = int(mode in ("control", "controlled_dagger"))
     assert_allclose_ignorephase(
         get_unitary(circuit, 4, endianness=Endianness.LITTLE, n_extra_qubits=n_extra),
         expected,
@@ -378,13 +376,24 @@ def test_basic_modifiers(
 
 
 @pytest.mark.parametrize(
+    ("operation", "expected_output"),
+    [
+        pytest.param(fanout_basic, _fanout_output, id="fanout-basic"),
+        pytest.param(parity_sequential, _parity_output, id="parity-sequential"),
+    ],
+)
+@pytest.mark.parametrize(
     ("n_controls", "n_data"), [(1, 0), (2, 0), (2, 1), (2, 3), (3, 2)]
 )
 @pytest.mark.parametrize(
     "daggered", [False, True], ids=["control", "controlled-dagger"]
 )
-def test_fanout_basic_multiple_controls(
-    n_controls: int, n_data: int, daggered: bool
+def test_basic_multiple_controls(
+    operation: GuppyFunctionDefinition,
+    expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
+    n_controls: int,
+    n_data: int,
+    daggered: bool,
 ) -> None:
     """Check shared-flag controls and clean work qubits against the full unitary."""
     n_qubits = n_controls + 1 + n_data
@@ -399,14 +408,14 @@ def test_fanout_basic_multiple_controls(
         with control(controls):
             if comptime(daggered):
                 with dagger:
-                    fanout_basic(intrinsic[0], data)
+                    operation(intrinsic[0], data)
             else:
-                fanout_basic(intrinsic[0], data)
+                operation(intrinsic[0], data)
         _unsafe_array_unborrow_slice(targets, intrinsic, data, empty)
         _unsafe_array_unborrow_slice(qs, controls, targets, suffix)
 
     expected = _expected_unitary(
-        _fanout_output, controlled=True, n_controls=n_controls, n_data=n_data
+        expected_output, controlled=True, n_controls=n_controls, n_data=n_data
     )
     # The predicate includes the intrinsic control: one flag plus CNX ancillas.
     n_extra = 1 + n_controls // 2
