@@ -30,7 +30,6 @@ from guppyalgos.algorithms.block_encoding.lcu import (
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
 
 
-
 def _assert_lcu_encodes_hamiltonian[n_prep_q: nat, n_state_q: nat](
     ham_op: zqp.RealTermSum | zqp.ComplexTermSum,
     data: LCUData,

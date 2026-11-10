@@ -6,7 +6,7 @@ import pytest
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, nat, dagger
 from guppylang.std.quantum import h, qubit
 from pytest_lazy_fixtures import lf as lazy_fixture
 
