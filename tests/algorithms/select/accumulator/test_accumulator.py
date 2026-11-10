@@ -45,7 +45,6 @@ from guppyalgos.algorithms.select.accumulator.accumulator_unary_iteration import
 )
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
-    uncompute_and,
 )
 from guppyalgos.primitives.state_preparation import uniform_state
 from guppyalgos.utils import int_to_bits, qarray, transversal
@@ -122,8 +121,8 @@ def make_cntrl_op_test_circuit(
 
 # AND compute/uncompute primitives tested across accumulator tests.
 AND_PRIMITIVES = [
-    (toffoli, toffoli),
-    (temp_and, uncompute_and),
+    toffoli,
+    temp_and,
 ]
 
 
@@ -173,14 +172,13 @@ def test_index_prep_encoding(ldx: int) -> None:
 # -----------------------------------------------------------------------------
 # Test 3: classical correctness of accumulator_unary_iteration
 # -----------------------------------------------------------------------------
-@pytest.mark.parametrize(("comp_and_op", "uncomp_and_op"), AND_PRIMITIVES)
+@pytest.mark.parametrize("and_op", AND_PRIMITIVES)
 @pytest.mark.parametrize(
     ("n_index_elements", "ldx"),
     [(n, ldx) for n in [4, 8] for ldx in range(n)],
 )
 def test_accumulator_unary_iteration_basic(
-    comp_and_op: GuppyFunctionDefinition,
-    uncomp_and_op: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
     n_index_elements: int,
     ldx: int,
 ) -> None:
@@ -210,7 +208,7 @@ def test_accumulator_unary_iteration_basic(
         state = qarray(n_state_qubits)
         ops = build_ops()
 
-        accumulator_unary_iteration(ops, comp_and_op, uncomp_and_op, index, state)
+        accumulator_unary_iteration(ops, and_op, index, state)
 
         output("state", collect_measurements(measure_array(state)))
         discard_array(index)
@@ -227,12 +225,11 @@ def test_accumulator_unary_iteration_basic(
 # -----------------------------------------------------------------------------
 # Test 4: statevector correctness of accumulator_unary_iteration
 # -----------------------------------------------------------------------------
-@pytest.mark.parametrize(("comp_and_op", "uncomp_and_op"), AND_PRIMITIVES)
+@pytest.mark.parametrize("and_op", AND_PRIMITIVES)
 @pytest.mark.parametrize("n_index_elements", [4, 5])
 @pytest.mark.parametrize("ryangle", [0.31, 0.7])
 def test_accumulator_unary_iteration_statevector(
-    comp_and_op: GuppyFunctionDefinition,
-    uncomp_and_op: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
     n_index_elements: int,
     ryangle: float,
 ) -> None:
@@ -261,7 +258,7 @@ def test_accumulator_unary_iteration_statevector(
             ry(state[i], angle(ryangle))
 
         ops = build_ops()
-        accumulator_unary_iteration(ops, comp_and_op, uncomp_and_op, index, state)
+        accumulator_unary_iteration(ops, and_op, index, state)
 
         state_output("index", index)
         state_output("state", state)
@@ -297,12 +294,11 @@ def test_accumulator_unary_iteration_statevector(
 # -----------------------------------------------------------------------------
 # Test 5: statevector correctness of guarded_accumulator_unary_iteration
 # -----------------------------------------------------------------------------
-@pytest.mark.parametrize(("comp_and_op", "uncomp_and_op"), AND_PRIMITIVES)
+@pytest.mark.parametrize("and_op", AND_PRIMITIVES)
 @pytest.mark.parametrize("n_index_elements", [3, 4])
 @pytest.mark.parametrize("ryangle", [0.31, 0.7])
 def test_guarded_accumulator_unary_iteration_statevector(
-    comp_and_op: GuppyFunctionDefinition,
-    uncomp_and_op: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
     n_index_elements: int,
     ryangle: float,
 ) -> None:
@@ -329,9 +325,7 @@ def test_guarded_accumulator_unary_iteration_statevector(
             ry(state[i], angle(ryangle))
 
         ops = build_ops()
-        guarded_accumulator_unary_iteration(
-            ops, comp_and_op, uncomp_and_op, index, state
-        )
+        guarded_accumulator_unary_iteration(ops, and_op, index, state)
 
         state_output("index", index)
         state_output("state", state)

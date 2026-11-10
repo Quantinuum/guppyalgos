@@ -14,7 +14,7 @@ from selene_sim import QuantumReplay, Quest
 
 from guppyalgos.primitives.rotations import (
     ComparatorBasedRz,
-    ConstantComparatorCascade,
+    constant_comparator_cascade,
     comparator_based_rz_cascade,
     n_comparator_based_rz_cascade_ancillas,
     n_constant_comparator_cascade_ancillas,
@@ -76,16 +76,13 @@ def test_comparator_based_rz_replay(theta: float) -> None:
     epsilon = 0.01
     n = 1 + ceil(log2(1 / epsilon))
     n_comparator_ancillas = n_constant_comparator_cascade_ancillas(n)
+    cascade = constant_comparator_cascade(toffoli)
 
     @guppy
     @no_type_check
     def rz_fn(target: qubit, theta: angle) -> None:
-        comparator = ConstantComparatorCascade[
-            comptime(n), comptime(n_comparator_ancillas)
-        ](toffoli, toffoli, False)
-        inverse_comparator = ConstantComparatorCascade[
-            comptime(n), comptime(n_comparator_ancillas)
-        ](toffoli, toffoli, True)
+        comparator = cascade[comptime(n), comptime(n_comparator_ancillas)](False)
+        inverse_comparator = cascade[comptime(n), comptime(n_comparator_ancillas)](True)
         rz = ComparatorBasedRz(
             comparator,
             inverse_comparator,
@@ -132,16 +129,13 @@ def test_comparator_based_rz_max_attempts() -> None:
     max_attempts = 3
     n = 1 + ceil(log2(1 / epsilon))
     n_comparator_ancillas = n_constant_comparator_cascade_ancillas(n)
+    cascade = constant_comparator_cascade(toffoli)
 
     @guppy
     @no_type_check
     def circ_rus() -> None:
-        comparator = ConstantComparatorCascade[
-            comptime(n), comptime(n_comparator_ancillas)
-        ](toffoli, toffoli, False)
-        inverse_comparator = ConstantComparatorCascade[
-            comptime(n), comptime(n_comparator_ancillas)
-        ](toffoli, toffoli, True)
+        comparator = cascade[comptime(n), comptime(n_comparator_ancillas)](False)
+        inverse_comparator = cascade[comptime(n), comptime(n_comparator_ancillas)](True)
         rz = ComparatorBasedRz(
             comparator,
             inverse_comparator,

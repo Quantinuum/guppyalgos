@@ -17,7 +17,6 @@ from guppyalgos.utils import int_to_bits
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
-    uncompute_and,
 )
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
@@ -31,11 +30,11 @@ from guppyalgos.utils import qarray
 from typing import no_type_check
 
 
-@pytest.mark.parametrize("comp_and_op", [toffoli, temp_and])
+@pytest.mark.parametrize("and_op", [toffoli, temp_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
 def test_index_temp_and_comp(
     i: int,
-    comp_and_op: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
 ) -> None:
     """Test index_temp_and_comp with different implementations.
 
@@ -46,7 +45,7 @@ def test_index_temp_and_comp(
 
     Args:
         i (int): Integer index to determine input bits.
-        comp_and_op (GuppyFunctionDefinition): The AND computation operation
+        and_op (GuppyFunctionDefinition): The AND computation operation
 
     """
     binary_index = int_to_bits(i, 2)
@@ -62,7 +61,7 @@ def test_index_temp_and_comp(
                 x(index_qreg[bit])
 
         target = temp_and_comp_index(
-            index_qreg[0], idx[0], index_qreg[1], idx[1], comp_and_op
+            index_qreg[0], idx[0], index_qreg[1], idx[1], and_op
         )
 
         output("index", collect_measurements(measure_array(index_qreg)))
@@ -79,11 +78,11 @@ def test_index_temp_and_comp(
     assert measure_array == result
 
 
-@pytest.mark.parametrize("comp_and_op", [toffoli, uncompute_and])
+@pytest.mark.parametrize("and_op", [toffoli, temp_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
 def test_index_uncompute_temp_and(
     i: int,
-    comp_and_op: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
 ) -> None:
     """Test index_temp_and_uncomp with different implementations.
 
@@ -94,9 +93,8 @@ def test_index_uncompute_temp_and(
 
     Args:
         i (int): Integer index to determine input bits.
-        comp_and_op (GuppyFunctionDefinition): The AND uncomputation operation
-            to be tested. This can be either the toffoli or the uncompute_temp_and
-            function.
+        and_op (GuppyFunctionDefinition): The AND unitary whose dagger is tested,
+            either toffoli or temp_and.
 
     """
     binary_index = int_to_bits(i, 2)
@@ -114,7 +112,7 @@ def test_index_uncompute_temp_and(
                 x(index_qreg[bit])
 
         temp_and_uncomp_index(
-            target, index_qreg[0], idx[0], index_qreg[1], idx[1], comp_and_op
+            target, index_qreg[0], idx[0], index_qreg[1], idx[1], and_op
         )
 
         output("index", collect_measurements(measure_array(index_qreg)))

@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import no_type_check
 
 from guppylang import comptime, guppy
-from guppylang.std.builtins import array, frozenarray, nat
+from guppylang.std.builtins import array, frozenarray, nat, Unitary, dagger
 from guppylang.std.quantum import cx, discard, discard_array, qubit, reset, x
 
 from guppyalgos.algorithms.select.select_unary_iteration import (
@@ -27,16 +27,14 @@ def accumulator_unary_iteration[
     n_s_q: nat,
     n_index_qubits: nat,
     n_index_elements: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    AndOp: Unitary[[qubit, qubit, qubit], None],
     ControlledOp: Callable[[qubit, array[qubit, n_s_q]], None],
 ](
     controlled_ops: array[
         ControlledOp,
         n_index_elements,
     ],
-    comp_and_op: CompAND,
-    uncomp_and_op: UncompAND,
+    and_op: AndOp,
     index_qreg: array[qubit, n_index_qubits],
     state_qreg: array[qubit, n_s_q],
 ) -> None:
@@ -64,8 +62,7 @@ def accumulator_unary_iteration[
 
     Args:
         controlled_ops: The array of controlled operations.
-        comp_and_op: The compute AND operation.
-        uncomp_and_op: The uncompute AND operation.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
         index_qreg: The little-endian index qubit register.
         state_qreg: The state qubit register.
 
@@ -87,7 +84,7 @@ def accumulator_unary_iteration[
     for i in range(n_data):
         if i == 0:
             compute_cascade(
-                comp_and_op,
+                and_op,
                 max_cascade_depth,
                 msb_diff_depths[i],
                 index_bools[i],
@@ -114,7 +111,7 @@ def accumulator_unary_iteration[
 
             if msb_diff_depths[i] != max_cascade_depth:
                 compute_cascade(
-                    comp_and_op,
+                    and_op,
                     max_cascade_depth,
                     msb_diff_depths[i],
                     index_bools[i],
@@ -139,7 +136,7 @@ def accumulator_unary_iteration[
                     index_bools[i],
                     index_qreg,
                     work_qreg,
-                    uncomp_and_op,
+                    and_op,
                 )
 
     # Discard work register and accumulator qubit
@@ -157,8 +154,7 @@ def accumulator_unary_iteration[
 def _geq_const_compute[
     n_i_q: nat,
     n_w_q: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    AndOp: Unitary[[qubit, qubit, qubit], None],
 ](
     comparison_depth: int,
     most_significant_index: int,
@@ -166,8 +162,7 @@ def _geq_const_compute[
     index_qreg: array[qubit, n_i_q],
     target_q: qubit,
     work_qreg: array[qubit, n_w_q],
-    comp_and_op: CompAND,
-    uncomp_and_op: UncompAND,
+    and_op: AndOp,
 ) -> None:
     """Compute a comparator over little-endian index and threshold registers.
 
@@ -202,7 +197,7 @@ def _geq_const_compute[
                 True,
                 index_qreg[physical_index],
                 True,
-                comp_and_op,
+                and_op,
             )
             cx(term_q, target_q)
             temp_and_uncomp_index(
@@ -211,7 +206,7 @@ def _geq_const_compute[
                 True,
                 index_qreg[physical_index],
                 True,
-                uncomp_and_op,
+                and_op,
             )
 
         # Equality of the two most-significant bits.
@@ -221,7 +216,7 @@ def _geq_const_compute[
             True,
             index_qreg[physical_index],
             threshold_bits[physical_index],
-            comp_and_op,
+            and_op,
         )
 
     else:
@@ -236,7 +231,7 @@ def _geq_const_compute[
                 True,
                 index_qreg[physical_index],
                 True,
-                comp_and_op,
+                and_op,
             )
             cx(term_q, target_q)
             temp_and_uncomp_index(
@@ -245,7 +240,7 @@ def _geq_const_compute[
                 True,
                 index_qreg[physical_index],
                 True,
-                uncomp_and_op,
+                and_op,
             )
 
         # Extend prefix equality toward the least-significant bit.
@@ -255,7 +250,7 @@ def _geq_const_compute[
             True,
             index_qreg[physical_index],
             threshold_bits[physical_index],
-            comp_and_op,
+            and_op,
         )
 
     _geq_const_compute(
@@ -265,8 +260,7 @@ def _geq_const_compute[
         index_qreg,
         target_q,
         work_qreg,
-        comp_and_op,
-        uncomp_and_op,
+        and_op,
     )
 
 
@@ -280,7 +274,7 @@ def _geq_const_uncompute[
     threshold_bits: frozenarray[bool, n_i_q],
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute the little-endian prefix-equality ladder toward the MSB."""
     most_significant_index = len(index_qreg) - 1
@@ -288,24 +282,26 @@ def _geq_const_uncompute[
     work_index = most_significant_index - comparison_depth
 
     if comparison_depth == 1:
-        index_and(
-            work_qreg[work_index],
-            index_qreg[most_significant_index],
-            True,
-            index_qreg[physical_index],
-            threshold_bits[physical_index],
-            uncomp_and_op,
-        )
+        with dagger:
+            index_and(
+                work_qreg[work_index],
+                index_qreg[most_significant_index],
+                True,
+                index_qreg[physical_index],
+                threshold_bits[physical_index],
+                and_op,
+            )
     else:
         previous_work_index = work_index + 1
-        index_and(
-            work_qreg[work_index],
-            work_qreg[previous_work_index],
-            True,
-            index_qreg[physical_index],
-            threshold_bits[physical_index],
-            uncomp_and_op,
-        )
+        with dagger:
+            index_and(
+                work_qreg[work_index],
+                work_qreg[previous_work_index],
+                True,
+                index_qreg[physical_index],
+                threshold_bits[physical_index],
+                and_op,
+            )
     reset(work_qreg[work_index])
 
     if comparison_depth == 1:
@@ -316,7 +312,7 @@ def _geq_const_uncompute[
         threshold_bits,
         index_qreg,
         work_qreg,
-        uncomp_and_op,
+        and_op,
     )
 
 
@@ -325,13 +321,11 @@ def _geq_const_uncompute[
 def _xor_geq_const_into[
     n_i_q: nat,
     n_w_q: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    AndOp: Unitary[[qubit, qubit, qubit], None],
 ](
     target_q: qubit,
     threshold_bits: frozenarray[bool, n_i_q],
-    comp_and_op: CompAND,
-    uncomp_and_op: UncompAND,
+    and_op: AndOp,
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
 ) -> None:
@@ -354,8 +348,7 @@ def _xor_geq_const_into[
         index_qreg,
         target_q,
         work_qreg,
-        comp_and_op,
-        uncomp_and_op,
+        and_op,
     )
 
     # XOR equality case: index == threshold
@@ -366,7 +359,7 @@ def _xor_geq_const_into[
         threshold_bits,
         index_qreg,
         work_qreg,
-        uncomp_and_op,
+        and_op,
     )
 
 
@@ -376,16 +369,14 @@ def guarded_accumulator_unary_iteration[
     n_s_q: nat,
     n_index_qubits: nat,
     n_index_elements: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    AndOp: Unitary[[qubit, qubit, qubit], None],
     ControlledOp: Callable[[qubit, array[qubit, n_s_q]], None],
 ](
     controlled_ops: array[
         ControlledOp,
         n_index_elements,
     ],
-    comp_and_op: CompAND,
-    uncomp_and_op: UncompAND,
+    and_op: AndOp,
     index_qreg: array[qubit, n_index_qubits],
     state_qreg: array[qubit, n_s_q],
 ) -> None:
@@ -415,18 +406,14 @@ def guarded_accumulator_unary_iteration[
     Args:
         controlled_ops: Array of functions acting on a control qubit and the
             state register.
-        comp_and_op   : Logical AND operation used to build comparator terms
-            and the unary tree.
-        uncomp_and_op : Logical AND uncompute used for comparator terms and
-            cascade uncomputation.
+        and_op: AND unitary used to build comparator terms and the unary tree;
+            its dagger uncomputes the workspace.
         index_qreg    : Indexing quantum register.
         state_qreg    : Quantum register on which the controlled_ops act.
 
     """
     if n_index_elements == 2**n_index_qubits:
-        accumulator_unary_iteration(
-            controlled_ops, comp_and_op, uncomp_and_op, index_qreg, state_qreg
-        )
+        accumulator_unary_iteration(controlled_ops, and_op, index_qreg, state_qreg)
         return
     threshold_bits = comptime(
         int_to_bits(n_index_elements % 2**n_index_qubits, n_index_qubits)
@@ -446,8 +433,7 @@ def guarded_accumulator_unary_iteration[
     _xor_geq_const_into(
         acc_q,
         threshold_bits,
-        comp_and_op,
-        uncomp_and_op,
+        and_op,
         index_qreg,
         work_qreg,
     )
@@ -455,7 +441,7 @@ def guarded_accumulator_unary_iteration[
     for i in range(n_data):
         if i == 0:
             compute_cascade(
-                comp_and_op,
+                and_op,
                 max_cascade_depth,
                 msb_diff_depths[i],
                 index_bools[i],
@@ -482,7 +468,7 @@ def guarded_accumulator_unary_iteration[
 
             if msb_diff_depths[i] != max_cascade_depth:
                 compute_cascade(
-                    comp_and_op,
+                    and_op,
                     max_cascade_depth,
                     msb_diff_depths[i],
                     index_bools[i],
@@ -506,7 +492,7 @@ def guarded_accumulator_unary_iteration[
                     index_bools[i],
                     index_qreg,
                     work_qreg,
-                    uncomp_and_op,
+                    and_op,
                 )
 
     # Discard work register and accumulator qubit

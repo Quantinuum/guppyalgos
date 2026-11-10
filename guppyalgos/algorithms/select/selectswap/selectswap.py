@@ -11,7 +11,6 @@ from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
-    uncompute_and,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
 from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
@@ -22,8 +21,7 @@ def selectswap[TargetRegs, n_i_q: nat, n_j_q: nat](
     data_inputs: list[list[bool]],
     n_target_registers: int,
     fanout_op: GuppyFunctionDefinition = fanout_basic,
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
     fanout_from_data_fn: Callable[
         [list[list[bool]], GuppyFunctionDefinition],
         GuppyFunctionDefinition[[qubit, TargetRegs], None],
@@ -50,8 +48,7 @@ def selectswap[TargetRegs, n_i_q: nat, n_j_q: nat](
             and produce at least three QROM rows.
         uncompute: Whether to construct the inverse operation.
         fanout_op: Flat fanout operation forwarded to unary-iteration QROM.
-        comp_and_op: Temporary-AND compute operation forwarded to QROM.
-        uncomp_and_op: Temporary-AND uncompute operation forwarded to QROM.
+        and_op: AND unitary forwarded to QROM; its dagger uncomputes workspace.
         fanout_from_data_fn: Python metafunction adapting a grouped data row and
             ``fanout_op`` to the nested target-register type.
 
@@ -106,8 +103,7 @@ def selectswap[TargetRegs, n_i_q: nat, n_j_q: nat](
     qrom = qrom_unary_iteration(
         grouped_data,
         fanout_op=fanout_op,
-        comp_and_op=comp_and_op,
-        uncomp_and_op=uncomp_and_op,
+        and_op=and_op,
         fanout_from_data_fn=fanout_from_data_fn,
     )
 

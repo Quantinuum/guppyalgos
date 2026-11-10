@@ -2,7 +2,7 @@
 
 from .comparator_based_rz import (
     ConstantComparator,
-    ConstantComparatorCascade,
+    constant_comparator_cascade,
     ComparatorBasedRz,
     comparator_based_rz_cascade,
     n_comparator_based_rz_cascade_ancillas,
@@ -34,7 +34,6 @@ from .register_incremented_rotation import RotationRegisterIncremented
 __all__ = [
     "ComparatorBasedRz",
     "ConstantComparator",
-    "ConstantComparatorCascade",
     "GivensCascadePhaseGradient",
     "GivensRotationPhaseGradient",
     "GivensRotationRegisterIncremented",
@@ -48,6 +47,7 @@ __all__ = [
     "Rotator",
     "basis_rotation_implementation",
     "comparator_based_rz_cascade",
+    "constant_comparator_cascade",
     "dummy_theta_resource_state",
     "givens_rotation",
     "givens_with_custom_rz",

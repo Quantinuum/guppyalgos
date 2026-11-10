@@ -295,15 +295,13 @@ def build_double_cntrl_select[n_state_q: nat](
 
 def build_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
     data: LCUData,
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = toffoli,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = toffoli,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = toffoli,
 ) -> GuppyFunctionDefinition[[array[qubit, n_prep_q], array[qubit, n_state_q]], None]:
     """Build a unary-iteration SELECT oracle from LCU data.
 
     Args:
         data: Classical Hamiltonian data used to build SELECT.
-        comp_and_op: Function to compute temporary AND operations.
-        uncomp_and_op: Function to uncompute temporary AND operations.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
 
     Returns:
         The unary-iteration SELECT function.
@@ -323,8 +321,7 @@ def build_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
     select_unary = build_select_unary_from_data(
         list(zip(data.pauli_strings, data.coefficient_phases, strict=True)),
         lambda item: pauli_to_cntrl_gate(item[0], n_state_qubits, item[1]),
-        comp_and_op=comp_and_op,
-        uncomp_and_op=uncomp_and_op,
+        and_op=and_op,
     )
 
     @guppy
@@ -340,8 +337,7 @@ def build_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
 
 def build_cntrl_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
     data: LCUData,
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = toffoli,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = toffoli,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = toffoli,
 ) -> GuppyFunctionDefinition[
     [qubit, array[qubit, n_prep_q], array[qubit, n_state_q]], None
 ]:
@@ -349,8 +345,7 @@ def build_cntrl_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
 
     Args:
         data: Classical Hamiltonian data used to build SELECT.
-        comp_and_op: Function to compute temporary AND operations.
-        uncomp_and_op: Function to uncompute temporary AND operations.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
 
     Returns:
         The externally controlled unary-iteration SELECT function.
@@ -365,8 +360,7 @@ def build_cntrl_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
     controlled_select_unary = build_cntrl_select_unary_from_data(
         list(zip(data.pauli_strings, data.coefficient_phases, strict=True)),
         lambda item: pauli_to_cntrl_gate(item[0], n_state_qubits, item[1]),
-        comp_and_op=comp_and_op,
-        uncomp_and_op=uncomp_and_op,
+        and_op=and_op,
     )
 
     @guppy

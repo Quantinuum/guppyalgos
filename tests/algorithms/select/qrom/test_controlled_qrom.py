@@ -25,7 +25,6 @@ from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
-    uncompute_and,
 )
 from guppyalgos.algorithms.select.qrom.controlled_qrom_unary_iteration import (
     cntrl_qrom_unary_iteration,
@@ -42,8 +41,7 @@ from guppyalgos.utils import qarray
 def cntrl_qrom_unary_iteration_test(
     n_index_elements: int,
     idxs: list[int],
-    compute_temp_and: GuppyFunctionDefinition,
-    uncompute_temp_and: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
 ) -> None:
     """Validate cntrl_qrom_unary_iteration for given indices.
 
@@ -53,7 +51,7 @@ def cntrl_qrom_unary_iteration_test(
 
     The test is exercised with two AND implementations:
     - Toffoli-only (compute and uncompute with toffoli).
-    - 4T compute (compute_temp_and) with measurement-based uncomp (uncompute_temp_and).
+    - Temporary AND with a measurement-based dagger.
     - It could be further extended to include other AND implementations.
 
     - It also tests cases where n_index_elements < 2^n_index_qubits.
@@ -61,8 +59,7 @@ def cntrl_qrom_unary_iteration_test(
     Args:
         n_index_elements: Number of index qubits (and state bits per entry).
         idxs: List of indices to load and verify.
-        compute_temp_and: AND compute primitive used inside the QROM gadget.
-        uncompute_temp_and: AND uncompute primitive used inside the QROM gadget.
+        and_op: AND unitary used for computation and daggered uncomputation.
 
     """
     n_index_qubits = ceil(log2(n_index_elements))
@@ -70,9 +67,7 @@ def cntrl_qrom_unary_iteration_test(
 
     data_input = [int_to_bits(i, n_state_qubits) for i in range(n_index_elements)]
 
-    qrom = cntrl_qrom_unary_iteration(
-        data_input, comp_and_op=compute_temp_and, uncomp_and_op=uncompute_temp_and
-    )
+    qrom = cntrl_qrom_unary_iteration(data_input, and_op=and_op)
 
     @guppy
     @no_type_check
@@ -109,7 +104,7 @@ def test_cntrl_qrom_unary_iteration_single_targ_toffoli(
 ) -> None:
     """Test cntrl_qrom_unary_iteration with toffoli-based AND."""
     cntrl_qrom_unary_iteration_test(
-        n_index_elements, list(range(n_index_elements)), toffoli, toffoli
+        n_index_elements, list(range(n_index_elements)), toffoli
     )
 
 
@@ -128,7 +123,6 @@ def test_cntrl_qrom_unary_iteration_single_targ_google(
         n_index_elements,
         list(range(n_index_elements)),
         temp_and,
-        uncompute_and,
     )
 
 
@@ -147,14 +141,12 @@ def test_cntrl_qrom_unary_iteration_single_targ_google_shorter(
         n_index_elements,
         list(range(n_index_elements)),
         temp_and,
-        uncompute_and,
     )
 
 
 def cntrl_qrom_unary_iteration_test_statevector(
     n_index_elements: int,
-    compute_temp_and: GuppyFunctionDefinition,
-    uncompute_temp_and: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
 ) -> EmulatorResult:
     """Validate cntrl_qrom_unary_iteration for a given index.
 
@@ -163,8 +155,7 @@ def cntrl_qrom_unary_iteration_test_statevector(
 
     Args:
         n_index_elements: Number of index qubits (and state bits per entry).
-        compute_temp_and: AND compute primitive used inside the QROM gadget.
-        uncompute_temp_and: AND uncompute primitive used inside the QROM gadget.
+        and_op: AND unitary used for computation and daggered uncomputation.
 
     """
     n_index_qubits = ceil(log2(n_index_elements))
@@ -172,9 +163,7 @@ def cntrl_qrom_unary_iteration_test_statevector(
 
     data_input = [int_to_bits(i, n_state_qubits) for i in range(n_index_elements)]
 
-    qrom = cntrl_qrom_unary_iteration(
-        data_input, comp_and_op=compute_temp_and, uncomp_and_op=uncompute_temp_and
-    )
+    qrom = cntrl_qrom_unary_iteration(data_input, and_op=and_op)
 
     def test_input() -> GuppyFunctionDefinition:
         @guppy
@@ -215,9 +204,7 @@ def test_cntrl_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
     n_index_elements = 2**n_index_qubits
     n_state_qubits = n_index_qubits
 
-    res = cntrl_qrom_unary_iteration_test_statevector(
-        n_index_elements, temp_and, uncompute_and
-    )
+    res = cntrl_qrom_unary_iteration_test_statevector(n_index_elements, temp_and)
     states = Quest.extract_states_dict(res.results[0].entries)
 
     non_work_state, spec_qubits_dict = get_total_state_on_only_specified_registers(
@@ -248,8 +235,7 @@ def test_cntrl_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
 
 def cntrl_qrom_unary_iteration_test_statevector_zero(
     n_index_elements: int,
-    compute_temp_and: GuppyFunctionDefinition,
-    uncompute_temp_and: GuppyFunctionDefinition,
+    and_op: GuppyFunctionDefinition,
 ) -> tuple[GuppyFunctionDefinition[[], None], EmulatorResult]:
     """Validate controlled QROM for a given index when the control is |0>.
 
@@ -258,8 +244,7 @@ def cntrl_qrom_unary_iteration_test_statevector_zero(
 
     Args:
         n_index_elements: Number of index qubits (and state bits per entry).
-        compute_temp_and: AND compute primitive used inside the QROM gadget.
-        uncompute_temp_and: AND uncompute primitive used inside the QROM gadget.
+        and_op: AND unitary used for computation and daggered uncomputation.
 
     """
     n_index_qubits = ceil(log2(n_index_elements))
@@ -267,9 +252,7 @@ def cntrl_qrom_unary_iteration_test_statevector_zero(
 
     data_input = [int_to_bits(i, n_state_qubits) for i in range(n_index_elements)]
 
-    qrom = cntrl_qrom_unary_iteration(
-        data_input, comp_and_op=compute_temp_and, uncomp_and_op=uncompute_temp_and
-    )
+    qrom = cntrl_qrom_unary_iteration(data_input, and_op=and_op)
 
     def test_input() -> GuppyFunctionDefinition:
         @guppy
@@ -313,7 +296,7 @@ def test_cntrl_qrom_unary_iteration_statevector_zero(n_index_qubits: int) -> Non
     total_qubits = n_state_qubits + n_index_qubits + n_index_qubits + 1
 
     _, res = cntrl_qrom_unary_iteration_test_statevector_zero(
-        n_index_elements, temp_and, uncompute_and
+        n_index_elements, temp_and
     )
 
     states = Quest.extract_states_dict(res.results[0].entries)
@@ -352,16 +335,15 @@ def test_cntrl_qrom_unary_iteration_statevector_zero(n_index_qubits: int) -> Non
 
 @pytest.mark.parametrize(("n_index_qubits"), [2, 3, 4])
 @pytest.mark.parametrize(
-    ("compute_and", "uncompute_and"),
+    "and_op",
     [
-        (toffoli, toffoli),
-        (temp_and, uncompute_and),
+        toffoli,
+        temp_and,
     ],
 )
 def test_cntrl_qrom_inversion(
     n_index_qubits: int,
-    compute_and: GuppyFunctionDefinition[[qubit, qubit, qubit], None],
-    uncompute_and: GuppyFunctionDefinition[[qubit, qubit, qubit], None],
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None],
 ) -> None:
     """Test controlled_qrom_unary_iteration using the fact that data index loading.
 
@@ -372,9 +354,7 @@ def test_cntrl_qrom_inversion(
 
     data_input = [int_to_bits(i, n_state_qubits) for i in range(n_index_elements)]
 
-    qrom = cntrl_qrom_unary_iteration(
-        data_input, comp_and_op=compute_and, uncomp_and_op=uncompute_and
-    )
+    qrom = cntrl_qrom_unary_iteration(data_input, and_op=and_op)
 
     @guppy
     @no_type_check

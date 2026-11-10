@@ -11,7 +11,6 @@ from guppylang.std.quantum import cz, discard_array, h, measure_array, qubit, x
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
-    uncompute_and,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
 from guppyalgos.algorithms.select import (
@@ -24,8 +23,7 @@ from guppyalgos.utils import transversal
 def qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     data_input: list[Data],
     fanout_op: GuppyFunctionDefinition = fanout_basic,
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
     fanout_from_data_fn: Callable[
         [Data, GuppyFunctionDefinition],
         GuppyFunctionDefinition[[qubit, TargetRegs], None],
@@ -41,11 +39,11 @@ def qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     the QROM operation. For the algorithmic details of the QROM operation please see
     section guppyalgos/select/select_unary_iteration.py.
 
-    There is an option to provide custom fanout, compute AND and uncompute AND
-    operations. The default options are basic fanout using CNOTs onto a single target
-    register and compute AND using the procedure from https://arxiv.org/pdf/1805.03662
-    which uses 4 T gates once the compute ANDs and zero the uncompute AND due to
-    measurement based uncomputation.
+    There is an option to provide a custom fanout and an AND unitary.
+    Uncomputation uses the AND unitary's dagger. The defaults are CNOT fanout
+    onto a single target register and the temporary AND from
+    https://arxiv.org/pdf/1805.03662, which uses four T gates for computation
+    and none for measurement-based uncomputation.
 
     The default ``fanout_from_data_fn`` supports one register or equal-sized nested
     registers, flattening nested registers around one ``fanout_op`` call. Supply
@@ -70,8 +68,7 @@ def qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     Args:
         data_input (list[list[bool]]): Classical data to be stored in QROM.
         fanout_op: Flat fanout operation applied to selected data qubits.
-        comp_and_op: Function to compute temporary AND operations.
-        uncomp_and_op: Function to uncompute temporary AND operations.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
         fanout_from_data_fn: Python metafunction adapting ``data_input`` elements and
             ``fanout_op`` to the target type. Override it for heterogeneous
             collections not supported by :func:`fanout_from_data`.
@@ -88,15 +85,13 @@ def qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     return build_select_unary_from_data(
         data_input,
         fanout_method,
-        comp_and_op,
-        uncomp_and_op,
+        and_op,
     )
 
 
 def qrom_measure_uncompute[n_s_q: nat, n_i_q: nat](
     data_input: list[list[bool]],
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
 ) -> GuppyFunctionDefinition[[array[qubit, n_i_q], array[qubit, n_s_q]], None]:
     """QROM measurement based uncompute.
 
@@ -115,8 +110,7 @@ def qrom_measure_uncompute[n_s_q: nat, n_i_q: nat](
 
     Args:
         data_input (list[list[bool]]): Classical data to be uncomputed
-        comp_and_op: Function to compute temporary AND operations.
-        uncomp_and_op: Function to uncompute temporary AND operations.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
 
     Returns:
         GuppyFunctionDefinition: Measurement based QROM function, see internal
@@ -181,9 +175,7 @@ def qrom_measure_uncompute[n_s_q: nat, n_i_q: nat](
         x(flip_qubit)
         controlled_ops = array(cz_or_identity(bit) for bit in flip_amp_flags)
         fq_array = array(flip_qubit)
-        select_unary_iteration(
-            controlled_ops, comp_and_op, uncomp_and_op, index_qreg, fq_array
-        )
+        select_unary_iteration(controlled_ops, and_op, index_qreg, fq_array)
         discard_array(fq_array)
 
     return measure_uncompute

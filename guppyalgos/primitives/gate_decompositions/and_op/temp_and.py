@@ -111,11 +111,3 @@ class temp_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
         with dagger:
             temp_and(controls[0], q0, work[0])
         discard_array(work)
-
-
-@guppy
-@no_type_check
-def uncompute_and(q0: qubit, q1: qubit, target_q: qubit) -> None:
-    """Adapt the custom dagger for APIs accepting an uncompute callback."""
-    with dagger:
-        temp_and(q0, q1, target_q)
