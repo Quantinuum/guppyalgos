@@ -5,7 +5,7 @@ from typing import no_type_check
 
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, output
+from guppylang.std.builtins import array, control, dagger, output
 from guppylang.std.quantum import (
     collect_measurements,
     measure,
@@ -17,6 +17,7 @@ from guppylang.std.quantum import (
 from guppyalgos.utils import qarray
 
 from guppyalgos.primitives.arithmetic.incrementer.incrementer_cca import (
+    cat_cca,
     cca_incrementer,
     cca_decrementer,
     cntrl_cca_incrementer,
@@ -200,3 +201,15 @@ def test_cntrl_cca_incrementer(
             assert result.collated_counts() == Counter(
                 {(("ctrl", expected_ctrl), ("out", expected)): 10}
             ), (value, control_on, dagger)
+
+
+def test_cat_cca_modifier_compilation() -> None:
+    """Compile added controls and adjoints for the incrementer CCA catalyst."""
+
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, 3], cs: array[qubit, 2]) -> None:
+        with control(cs), dagger:
+            cat_cca(qs[0], qs[1], qs[2])
+
+    circuit.compile_function()

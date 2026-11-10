@@ -44,7 +44,7 @@ def _and_uncompute(q0: qubit, q1: qubit, target: qubit, dirty: bool) -> None:
         temp_and_uncompute(q0, q1, target)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def cat_cca(q0: qubit, q1: qubit, target: qubit) -> None:
     """Catalyze a conditionally clean ancilla.
