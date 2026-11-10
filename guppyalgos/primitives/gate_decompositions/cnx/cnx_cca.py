@@ -16,12 +16,9 @@ The dirty variant (Section 5.5) uses two dirty ancillae and 4n - 6 Toffoli gates
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.std.builtins import array, comptime, nat, dagger
 from guppylang.std.quantum import qubit, toffoli, x, cx, discard
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 
 
 @guppy
@@ -31,7 +28,7 @@ def _and_compute(q0: qubit, q1: qubit, target: qubit, dirty: bool) -> None:
     if dirty:
         toffoli(q0, q1, target)
     else:
-        temp_and_compute(q0, q1, target)
+        temp_and(q0, q1, target)
 
 
 @guppy
@@ -41,7 +38,8 @@ def _and_uncompute(q0: qubit, q1: qubit, target: qubit, dirty: bool) -> None:
     if dirty:
         toffoli(q0, q1, target)
     else:
-        temp_and_uncompute(q0, q1, target)
+        with dagger:
+            temp_and(q0, q1, target)
 
 
 @guppy
@@ -109,7 +107,8 @@ def _log_ladder_one_ancilla[n_controls: nat](
         cat_cca(control[1], control[2], control[0])
         cat_cca(control[3], control[4], control[1])
     if not dirty:
-        temp_and_uncompute(control[0], control[1], allocated_ancilla)
+        with dagger:
+            temp_and(control[0], control[1], allocated_ancilla)
 
 
 @guppy
@@ -591,11 +590,12 @@ def _log_ladder_two_ancillas[n_controls: nat](
         )
 
     if not dirty:
-        temp_and_uncompute(
-            control[outer_c0[0]],
-            control[outer_c1[0]],
-            allocated_ancilla,
-        )
+        with dagger:
+            temp_and(
+                control[outer_c0[0]],
+                control[outer_c1[0]],
+                allocated_ancilla,
+            )
 
 
 @guppy

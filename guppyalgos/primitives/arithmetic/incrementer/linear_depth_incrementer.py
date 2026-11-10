@@ -3,13 +3,10 @@
 from typing import no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.std.builtins import array, comptime, nat, dagger
 from guppylang.std.quantum import cx, discard, qubit, x
 
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 
 
 @guppy
@@ -26,9 +23,10 @@ def _incrementer_aux[n_q: nat](
         return
 
     next_carry = qubit()
-    temp_and_compute(carry, q[bit_idx], next_carry)
+    temp_and(carry, q[bit_idx], next_carry)
     _incrementer_aux(q, next_carry, bit_idx + 1, last_idx)
-    temp_and_uncompute(carry, q[bit_idx], next_carry)
+    with dagger:
+        temp_and(carry, q[bit_idx], next_carry)
     discard(next_carry)
     cx(carry, q[bit_idx])
 
@@ -92,9 +90,10 @@ def linear_depth_incrementer_2[n_q: nat](
         return
 
     carry = qubit()
-    temp_and_compute(q[0], q[1], carry)
+    temp_and(q[0], q[1], carry)
     _incrementer_aux(q, carry, 2, active_bits - 1)
-    temp_and_uncompute(q[0], q[1], carry)
+    with dagger:
+        temp_and(q[0], q[1], carry)
     discard(carry)
     cx(q[0], q[1])
     x(q[0])
@@ -144,9 +143,10 @@ def cntrl_linear_depth_incrementer_2[n_q: nat](
         return
 
     carry = qubit()
-    temp_and_compute(control, q[0], carry)
+    temp_and(control, q[0], carry)
     _incrementer_aux(q, carry, 1, active_bits - 1)
-    temp_and_uncompute(control, q[0], carry)
+    with dagger:
+        temp_and(control, q[0], carry)
     discard(carry)
     cx(control, q[0])
 

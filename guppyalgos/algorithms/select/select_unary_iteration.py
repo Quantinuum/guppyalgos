@@ -11,8 +11,8 @@ from guppylang.std.quantum import cx, qubit, reset, x, discard_array
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     index_and,
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.utils import int_to_bits, qarray
 
@@ -700,12 +700,8 @@ def build_select_unary_from_data[Data, TargetRegs, n_i_q: nat](
     data_to_ctrl_op: Callable[
         [Data], GuppyFunctionDefinition[[qubit, TargetRegs], None]
     ],
-    comp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_compute,
-    uncomp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_uncompute,
+    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
+    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
 ) -> GuppyFunctionDefinition[[array[qubit, n_i_q], TargetRegs], None]:
     """Construct a unary iteration over unitaries constructed from Python data.
 
@@ -770,12 +766,8 @@ def build_cntrl_select_unary_from_data[Data, TargetRegs, n_i_q: nat](
     data_to_ctrl_op: Callable[
         [Data], GuppyFunctionDefinition[[qubit, TargetRegs], None]
     ],
-    comp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_compute,
-    uncomp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_uncompute,
+    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
+    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
 ) -> GuppyFunctionDefinition[[qubit, array[qubit, n_i_q], TargetRegs], None]:
     """Construct a unary iteration over unitaries constructed from Python data.
 

@@ -24,8 +24,8 @@ from guppylang.std.quantum import (
 from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.algorithms.select.qrom.controlled_qrom_unary_iteration import (
     cntrl_qrom_unary_iteration,
@@ -127,8 +127,8 @@ def test_cntrl_qrom_unary_iteration_single_targ_google(
     cntrl_qrom_unary_iteration_test(
         n_index_elements,
         list(range(n_index_elements)),
-        temp_and_compute,
-        temp_and_uncompute,
+        temp_and,
+        uncompute_and,
     )
 
 
@@ -146,8 +146,8 @@ def test_cntrl_qrom_unary_iteration_single_targ_google_shorter(
     cntrl_qrom_unary_iteration_test(
         n_index_elements,
         list(range(n_index_elements)),
-        temp_and_compute,
-        temp_and_uncompute,
+        temp_and,
+        uncompute_and,
     )
 
 
@@ -216,7 +216,7 @@ def test_cntrl_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
     n_state_qubits = n_index_qubits
 
     res = cntrl_qrom_unary_iteration_test_statevector(
-        n_index_elements, temp_and_compute, temp_and_uncompute
+        n_index_elements, temp_and, uncompute_and
     )
     states = Quest.extract_states_dict(res.results[0].entries)
 
@@ -313,7 +313,7 @@ def test_cntrl_qrom_unary_iteration_statevector_zero(n_index_qubits: int) -> Non
     total_qubits = n_state_qubits + n_index_qubits + n_index_qubits + 1
 
     _, res = cntrl_qrom_unary_iteration_test_statevector_zero(
-        n_index_elements, temp_and_compute, temp_and_uncompute
+        n_index_elements, temp_and, uncompute_and
     )
 
     states = Quest.extract_states_dict(res.results[0].entries)
@@ -355,7 +355,7 @@ def test_cntrl_qrom_unary_iteration_statevector_zero(n_index_qubits: int) -> Non
     ("compute_and", "uncompute_and"),
     [
         (toffoli, toffoli),
-        (temp_and_compute, temp_and_uncompute),
+        (temp_and, uncompute_and),
     ],
 )
 def test_cntrl_qrom_inversion(

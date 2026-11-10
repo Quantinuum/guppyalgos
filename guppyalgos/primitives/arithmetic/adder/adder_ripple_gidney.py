@@ -11,13 +11,10 @@ References:
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.std.builtins import array, comptime, control, dagger, nat
 from guppylang.std.quantum import cx, discard_array, qubit, discard, toffoli
 
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 from guppyalgos.utils import qarray
 
 
@@ -33,37 +30,16 @@ def _cxx(control: qubit, target1: qubit, target2: qubit) -> None:
 def _ccx(ctrl: qubit, x: qubit, y: qubit) -> None:
     """Toffoli gate via Gidney's measurement-based AND: y ^= ctrl AND x (4T gates).
 
-    Uses ``temp_and_compute`` (4T, ancilla starts in ``|0⟩``) followed by
-    ``cx`` and ``temp_and_uncompute`` (0T), giving a total cost of 4T gates.
-    The ancilla qubit is allocated internally and consumed by the measurement
-    in ``temp_and_uncompute``.
+    Uses ``temp_and`` (4T, ancilla starts in ``|0⟩``) followed by
+    ``cx`` and its custom dagger (0T), giving a total cost of 4T gates.
+    The ancilla qubit is allocated internally, reset by the custom dagger,
+    and then discarded.
     """
     anc = qubit()
-    temp_and_compute(ctrl, x, anc)
+    temp_and(ctrl, x, anc)
     cx(anc, y)
-    temp_and_uncompute(ctrl, x, anc)
-    discard(anc)
-
-
-@guppy
-@no_type_check
-def _temp_and_cccx(ctrl: qubit, x: qubit, y: qubit, z: qubit) -> None:
-    """Triply-controlled temporary AND gate via Gidney's measurement-based AND."""
-    anc = qubit()
-    temp_and_compute(ctrl, x, anc)
-    temp_and_compute(anc, y, z)
-    temp_and_uncompute(ctrl, x, anc)
-    discard(anc)
-
-
-@guppy
-@no_type_check
-def _temp_and_cccx_uncompute(ctrl: qubit, x: qubit, y: qubit, z: qubit) -> None:
-    """Triply-controlled uncomputation of AND gate."""
-    anc = qubit()
-    temp_and_compute(ctrl, x, anc)
-    temp_and_uncompute(anc, y, z)
-    temp_and_uncompute(ctrl, x, anc)
+    with dagger:
+        temp_and(ctrl, x, anc)
     discard(anc)
 
 
@@ -77,9 +53,10 @@ def _cccx_toggle(
 ) -> None:
     """Implement z ^= ctrl & x & y."""
     anc = qubit()
-    temp_and_compute(ctrl, x, anc)
+    temp_and(ctrl, x, anc)
     _ccx(anc, y, z)
-    temp_and_uncompute(ctrl, x, anc)
+    with dagger:
+        temp_and(ctrl, x, anc)
     discard(anc)
 
 
@@ -102,7 +79,7 @@ def _g_majority_gate(a: qubit, b: qubit, c: qubit, carry_out: qubit) -> None:
 
     """
     _cxx(c, a, b)
-    temp_and_compute(a, b, carry_out)
+    temp_and(a, b, carry_out)
     cx(c, carry_out)
 
 
@@ -124,7 +101,8 @@ def _g_majority_inverse_gate(a: qubit, b: qubit, c: qubit, carry_out: qubit) -> 
 
     """
     cx(c, carry_out)
-    temp_and_uncompute(a, b, carry_out)
+    with dagger:
+        temp_and(a, b, carry_out)
     _cxx(c, a, b)
 
 
@@ -148,7 +126,8 @@ def _g_unmajority_gate(a: qubit, b: qubit, c: qubit, carry_out: qubit) -> None:
 
     """
     cx(c, carry_out)
-    temp_and_uncompute(a, b, carry_out)
+    with dagger:
+        temp_and(a, b, carry_out)
     cx(c, a)
     cx(a, b)
 
@@ -172,7 +151,7 @@ def _g_unmajority_inverse_gate(a: qubit, b: qubit, c: qubit, carry_out: qubit) -
     """
     cx(a, b)
     cx(c, a)
-    temp_and_compute(a, b, carry_out)
+    temp_and(a, b, carry_out)
     cx(c, carry_out)
 
 
@@ -200,7 +179,7 @@ def _gmaj_gumaj_bottom_carry_out_gate(
 
     """
     _cxx(c, a, b)
-    temp_and_compute(a, b, carry_out)
+    temp_and(a, b, carry_out)
     cx(c, carry_out)
     cx(c, a)
     cx(a, b)
@@ -241,9 +220,10 @@ def _gmaj_gumaj_bottom_carry_out_inverse_gate(
 
     if uncompute_carry_out:
         cx(c, carry_out)
-        temp_and_uncompute(a, b, carry_out)
+        with dagger:
+            temp_and(a, b, carry_out)
     else:
-        temp_and_compute(a, b, carry_out)
+        temp_and(a, b, carry_out)
         cx(c, carry_out)
 
     _cxx(c, a, b)
@@ -278,7 +258,7 @@ def adder_ripple_gidney_mod[n: nat](
 
     anc = qarray(comptime(n - 1))
 
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     for i in range(n - 2):
         _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
@@ -291,7 +271,8 @@ def adder_ripple_gidney_mod[n: nat](
             a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
     cx(a_reg[0], b_reg[0])
 
     discard_array(anc)
@@ -328,7 +309,7 @@ def adder_ripple_gidney_mod_dagger[n: nat](
     anc = qarray(comptime(n - 1))
 
     cx(a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     for i in range(n - 2):
         _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
@@ -341,7 +322,8 @@ def adder_ripple_gidney_mod_dagger[n: nat](
             a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
 
     discard_array(anc)
 
@@ -368,7 +350,7 @@ def adder_ripple_gidney_carry_out[n: nat](
 
     """
     if n == 1:
-        temp_and_compute(a_reg[0], b_reg[0], carry_out)
+        temp_and(a_reg[0], b_reg[0], carry_out)
         cx(a_reg[0], b_reg[0])
         return
 
@@ -377,7 +359,7 @@ def adder_ripple_gidney_carry_out[n: nat](
     # ------------------------------------------------------------------ #
     # Forward sweep                                                      #
     # ------------------------------------------------------------------ #
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     for i in range(n - 2):
         _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
@@ -392,7 +374,8 @@ def adder_ripple_gidney_carry_out[n: nat](
             a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
     cx(a_reg[0], b_reg[0])
 
     discard_array(anc)
@@ -426,15 +409,16 @@ def _adder_ripple_gidney_carry_out_dagger_impl[n: nat](
     if n == 1:
         cx(a_reg[0], b_reg[0])
         if uncompute_carry_out:
-            temp_and_uncompute(a_reg[0], b_reg[0], carry_out)
+            with dagger:
+                temp_and(a_reg[0], b_reg[0], carry_out)
         else:
-            temp_and_compute(a_reg[0], b_reg[0], carry_out)
+            temp_and(a_reg[0], b_reg[0], carry_out)
         return
 
     anc = qarray(comptime(n - 1))
 
     cx(a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     # ------------------------------------------------------------------ #
     # Forward sweep                                                      #
@@ -455,7 +439,8 @@ def _adder_ripple_gidney_carry_out_dagger_impl[n: nat](
             a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
 
     discard_array(anc)
 
@@ -491,7 +476,8 @@ def _cntrl_g_unmajority_gate(
 ) -> None:
     """Control G-unmajority gate."""
     cx(c, carry_out)
-    temp_and_uncompute(a, b, carry_out)
+    with dagger:
+        temp_and(a, b, carry_out)
 
     _ccx(ctrl, a, b)
     _cxx(c, a, b)
@@ -504,7 +490,8 @@ def _cntrl_g_majority_inverse_gate(
 ) -> None:
     """Control the inverse G-majority gate."""
     cx(c, carry_out)
-    temp_and_uncompute(a, b, carry_out)
+    with dagger:
+        temp_and(a, b, carry_out)
 
     _ccx(ctrl, a, b)
     cx(c, a)
@@ -547,7 +534,8 @@ def _cntrl_gmaj_gumaj_bottom_carry_out_gate(
     """
     _cxx(c, a, b)
 
-    _temp_and_cccx(ctrl, a, b, carry_out)
+    with control(ctrl):
+        temp_and(a, b, carry_out)
     _ccx(ctrl, c, carry_out)
     _ccx(ctrl, a, b)
 
@@ -582,9 +570,11 @@ def _cntrl_gmaj_gumaj_bottom_carry_out_inverse_gate(
 
     if uncompute_carry_out:
         _ccx(ctrl, c, carry_out)
-        _temp_and_cccx_uncompute(ctrl, a, b, carry_out)
+        with control(ctrl), dagger:
+            temp_and(a, b, carry_out)
     else:
-        _temp_and_cccx(ctrl, a, b, carry_out)
+        with control(ctrl):
+            temp_and(a, b, carry_out)
         _ccx(ctrl, c, carry_out)
 
     _ccx(ctrl, a, b)
@@ -609,7 +599,7 @@ def cntrl_adder_ripple_gidney_mod[n: nat](
     Implements the controlled modular addition circuit from Figure 4 of
     https://quantum-journal.org/papers/q-2018-06-18-74/pdf/.
 
-    Each intermediate bit gadget costs 8T gates: one ``temp_and_compute`` for
+    Each intermediate bit gadget costs 8T gates: one ``temp_and`` for
     the carry and one temporary logical-AND pair in the backward pass for the
     controlled addend contribution.
 
@@ -629,7 +619,7 @@ def cntrl_adder_ripple_gidney_mod[n: nat](
     # ------------------------------------------------------------------ #
     # Forward sweep                                                      #
     # ------------------------------------------------------------------ #
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     for i in range(n - 2):
         _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
@@ -644,7 +634,8 @@ def cntrl_adder_ripple_gidney_mod[n: nat](
             ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
     _ccx(ctrl, a_reg[0], b_reg[0])
 
     discard_array(anc)
@@ -683,7 +674,7 @@ def cntrl_adder_ripple_gidney_mod_dagger[n: nat](
     # Forward sweep                                                      #
     # ------------------------------------------------------------------ #
     _ccx(ctrl, a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     for i in range(n - 2):
         _g_unmajority_inverse_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
@@ -698,7 +689,8 @@ def cntrl_adder_ripple_gidney_mod_dagger[n: nat](
             ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
 
     discard_array(anc)
 
@@ -727,12 +719,9 @@ def cntrl_adder_ripple_gidney_carry_out[n: nat](
 
     """
     if n == 1:
-        ancilla = qubit()
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
-        temp_and_compute(ctrl, ancilla, carry_out)
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with control(ctrl):
+            temp_and(a_reg[0], b_reg[0], carry_out)
         toffoli(ctrl, a_reg[0], b_reg[0])
-        discard(ancilla)
         return
 
     anc = qarray(comptime(n - 1))
@@ -740,7 +729,7 @@ def cntrl_adder_ripple_gidney_carry_out[n: nat](
     # ------------------------------------------------------------------ #
     # Forward sweep                                                      #
     # ------------------------------------------------------------------ #
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     for i in range(n - 2):
         _g_majority_gate(a_reg[i + 1], b_reg[i + 1], anc[i], anc[i + 1])
@@ -757,7 +746,8 @@ def cntrl_adder_ripple_gidney_carry_out[n: nat](
             ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
     _ccx(ctrl, a_reg[0], b_reg[0])
 
     discard_array(anc)
@@ -791,21 +781,19 @@ def _cntrl_adder_ripple_gidney_carry_out_dagger_impl[n: nat](
 
     """
     if n == 1:
-        ancilla = qubit()
         toffoli(ctrl, a_reg[0], b_reg[0])
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
         if uncompute_carry_out:
-            temp_and_uncompute(ctrl, ancilla, carry_out)
+            with control(ctrl), dagger:
+                temp_and(a_reg[0], b_reg[0], carry_out)
         else:
-            temp_and_compute(ctrl, ancilla, carry_out)
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
-        discard(ancilla)
+            with control(ctrl):
+                temp_and(a_reg[0], b_reg[0], carry_out)
         return
 
     anc = qarray(comptime(n - 1))
 
     _ccx(ctrl, a_reg[0], b_reg[0])
-    temp_and_compute(a_reg[0], b_reg[0], anc[0])
+    temp_and(a_reg[0], b_reg[0], anc[0])
 
     # ------------------------------------------------------------------ #
     # Forward sweep                                                      #
@@ -826,7 +814,8 @@ def _cntrl_adder_ripple_gidney_carry_out_dagger_impl[n: nat](
             ctrl, a_reg[n - 2 - i], b_reg[n - 2 - i], anc[n - 3 - i], anc[n - 2 - i]
         )
 
-    temp_and_uncompute(a_reg[0], b_reg[0], anc[0])
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], anc[0])
 
     discard_array(anc)
 

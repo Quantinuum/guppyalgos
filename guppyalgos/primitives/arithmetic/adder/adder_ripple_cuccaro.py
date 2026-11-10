@@ -18,12 +18,9 @@ from typing import no_type_check
 from guppylang import guppy
 from guppyalgos.utils import apply_bitstring, transversal
 from guppylang.std.quantum import qubit, cx, x, toffoli, discard
-from guppylang.std.builtins import array, frozenarray, nat
+from guppylang.std.builtins import array, control, dagger, frozenarray, nat
 from guppyalgos.utils import qarray
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 from guppyalgos.primitives.subroutines.ladders import CXLadderLinear
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
@@ -123,7 +120,7 @@ def _maj_umaj_bottom_carry_out_gate(
     cx(a, b)
     cx(a, c)
 
-    temp_and_compute(c, b, carry_out)
+    temp_and(c, b, carry_out)
     cx(a, carry_out)
 
     cx(a, c)
@@ -172,9 +169,10 @@ def _maj_umaj_bottom_carry_out_inverse_gate(
 
     if uncompute_carry_out:
         cx(a, carry_out)
-        temp_and_uncompute(c, b, carry_out)
+        with dagger:
+            temp_and(c, b, carry_out)
     else:
-        temp_and_compute(c, b, carry_out)
+        temp_and(c, b, carry_out)
         cx(a, carry_out)
 
     cx(a, c)
@@ -323,18 +321,19 @@ def adder_ripple_cuccaro_mod[n: nat](
 
     if n == 2:
         # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
         _maj_umaj_bottom_mod_gate(a_reg[1], b_reg[1], ancilla)
 
         # Boundary UMAJ: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         cx(a_reg[0], b_reg[0])
         discard(ancilla)
         return
 
     # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, n)
 
@@ -374,7 +373,8 @@ def adder_ripple_cuccaro_mod[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 0, comptime(n - 1))
 
@@ -419,18 +419,19 @@ def adder_ripple_cuccaro_mod_dagger[n: nat](
     if n == 2:
         # Boundary UMAJ†: carry-in is known to be 0 and ancilla is clean.
         cx(a_reg[0], b_reg[0])
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
         with dagger:
             _maj_umaj_bottom_mod_gate(a_reg[1], b_reg[1], ancilla)
 
         # Boundary MAJ†: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         discard(ancilla)
         return
 
     transversal(cx, a_reg, b_reg, 0, comptime(n - 1))
 
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
@@ -477,7 +478,8 @@ def adder_ripple_cuccaro_mod_dagger[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, n)
 
@@ -528,24 +530,25 @@ def adder_ripple_cuccaro_carry_out[n: nat](
     ancilla = qubit()
 
     if n == 1:
-        temp_and_compute(a_reg[0], b_reg[0], carry_out)
+        temp_and(a_reg[0], b_reg[0], carry_out)
         cx(a_reg[0], b_reg[0])
         discard(ancilla)
         return
 
     if n == 2:
         # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
         _maj_umaj_bottom_carry_out_gate(a_reg[1], b_reg[1], ancilla, carry_out)
 
         # Boundary UMAJ: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         cx(a_reg[0], b_reg[0])
         discard(ancilla)
         return
 
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, n)
 
@@ -560,7 +563,7 @@ def adder_ripple_cuccaro_carry_out[n: nat](
     for i in range(n - 3):
         toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
 
-    temp_and_compute(a_reg[n - 2], b_reg[n - 1], carry_out)
+    temp_and(a_reg[n - 2], b_reg[n - 1], carry_out)
     cx(a_reg[n - 1], carry_out)
 
     for i in range(n - 2):
@@ -584,7 +587,8 @@ def adder_ripple_cuccaro_carry_out[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg)
 
@@ -622,29 +626,31 @@ def _adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
     if n == 1:
         cx(a_reg[0], b_reg[0])
         if uncompute_carry_out:
-            temp_and_uncompute(a_reg[0], b_reg[0], carry_out)
+            with dagger:
+                temp_and(a_reg[0], b_reg[0], carry_out)
         else:
-            temp_and_compute(a_reg[0], b_reg[0], carry_out)
+            temp_and(a_reg[0], b_reg[0], carry_out)
         discard(ancilla)
         return
 
     if n == 2:
         # Boundary UMAJ†: carry-in is known to be 0 and ancilla is clean.
         cx(a_reg[0], b_reg[0])
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
         _maj_umaj_bottom_carry_out_inverse_gate(
             a_reg[1], b_reg[1], ancilla, carry_out, uncompute_carry_out
         )
 
         # Boundary MAJ†: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         discard(ancilla)
         return
 
     transversal(cx, a_reg, b_reg)
 
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     # Forward n-1 CX ladder
     cx(a_reg[1], ancilla)
@@ -674,9 +680,10 @@ def _adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
 
     if uncompute_carry_out:
         cx(a_reg[n - 1], carry_out)
-        temp_and_uncompute(a_reg[n - 2], b_reg[n - 1], carry_out)
+        with dagger:
+            temp_and(a_reg[n - 2], b_reg[n - 1], carry_out)
     else:
-        temp_and_compute(a_reg[n - 2], b_reg[n - 1], carry_out)
+        temp_and(a_reg[n - 2], b_reg[n - 1], carry_out)
         cx(a_reg[n - 1], carry_out)
 
     # Reverse n-2 Toffoli ladder
@@ -690,7 +697,8 @@ def _adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, n)
 
@@ -772,18 +780,19 @@ def cntrl_adder_ripple_cuccaro_mod[n: nat](
 
     if n == 2:
         # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
         _cntrl_maj_umaj_bottom_mod_gate(ctrl, a_reg[1], b_reg[1], ancilla)
 
         # Boundary controlled-UMAJ: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         toffoli(ctrl, a_reg[0], b_reg[0])
         discard(ancilla)
         return
 
     transversal(cx, a_reg, b_reg, 1, comptime(n - 1))
 
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
@@ -817,7 +826,8 @@ def cntrl_adder_ripple_cuccaro_mod[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, comptime(n - 1))
     toffoli(ctrl, a_reg[0], b_reg[0])
@@ -865,13 +875,14 @@ def cntrl_adder_ripple_cuccaro_mod_dagger[n: nat](
     if n == 2:
         # Boundary UMAJ†: carry-in is known to be 0 and ancilla is clean.
         cx(a_reg[0], b_reg[0])
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
         with dagger:
             _cntrl_maj_umaj_bottom_mod_gate(ctrl, a_reg[1], b_reg[1], ancilla)
 
         # Boundary controlled MAJ†: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         toffoli(ctrl, a_reg[0], b_reg[0])
         cx(a_reg[0], b_reg[0])
         discard(ancilla)
@@ -880,7 +891,7 @@ def cntrl_adder_ripple_cuccaro_mod_dagger[n: nat](
     toffoli(ctrl, a_reg[0], b_reg[0])
     transversal(cx, a_reg, b_reg, 1, comptime(n - 1))
 
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     # Forward n-2 CX ladder
     cx(a_reg[1], ancilla)
@@ -914,7 +925,8 @@ def cntrl_adder_ripple_cuccaro_mod_dagger[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, comptime(n - 1))
 
@@ -952,32 +964,32 @@ def cntrl_adder_ripple_cuccaro_carry_out[n: nat](
 
     """
     cx_ladder = CXLadderLinear()
-    ancilla = qubit()
 
     if n == 1:
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
-        temp_and_compute(ctrl, ancilla, carry_out)
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with control(ctrl):
+            temp_and(a_reg[0], b_reg[0], carry_out)
         toffoli(ctrl, a_reg[0], b_reg[0])
-        discard(ancilla)
         return
+
+    ancilla = qubit()
 
     if n == 2:
         # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
         _majority_gate(a_reg[1], b_reg[1], ancilla)
-        temp_and_compute(ctrl, a_reg[1], carry_out)
+        temp_and(ctrl, a_reg[1], carry_out)
         _cntrl_unmajority_gate(ctrl, a_reg[1], b_reg[1], ancilla)
 
         # Boundary controlled-UMAJ: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         toffoli(ctrl, a_reg[0], b_reg[0])
         discard(ancilla)
         return
 
     # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, n)
 
@@ -992,7 +1004,7 @@ def cntrl_adder_ripple_cuccaro_carry_out[n: nat](
     for i in range(n - 2):
         toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
 
-    temp_and_compute(ctrl, a_reg[n - 1], carry_out)
+    temp_and(ctrl, a_reg[n - 1], carry_out)
 
     # Reverse n-1 Toffoli ladders
     for i in range(n - 2):
@@ -1007,7 +1019,8 @@ def cntrl_adder_ripple_cuccaro_carry_out[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, n)
     toffoli(ctrl, a_reg[0], b_reg[0])
@@ -1050,34 +1063,36 @@ def _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
 
     """
     cx_ladder = CXLadderLinear()
-    ancilla = qubit()
 
     if n == 1:
         toffoli(ctrl, a_reg[0], b_reg[0])
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
         if uncompute_carry_out:
-            temp_and_uncompute(ctrl, ancilla, carry_out)
+            with control(ctrl), dagger:
+                temp_and(a_reg[0], b_reg[0], carry_out)
         else:
-            temp_and_compute(ctrl, ancilla, carry_out)
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
-        discard(ancilla)
+            with control(ctrl):
+                temp_and(a_reg[0], b_reg[0], carry_out)
         return
+
+    ancilla = qubit()
 
     if n == 2:
         # Boundary UMAJ†: carry-in is known to be 0 and ancilla is clean.
         cx(a_reg[0], b_reg[0])
-        temp_and_compute(a_reg[0], b_reg[0], ancilla)
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
         with dagger:
             _unmajority_gate(a_reg[1], b_reg[1], ancilla)
         if uncompute_carry_out:
-            temp_and_uncompute(ctrl, a_reg[1], carry_out)
+            with dagger:
+                temp_and(ctrl, a_reg[1], carry_out)
         else:
-            temp_and_compute(ctrl, a_reg[1], carry_out)
+            temp_and(ctrl, a_reg[1], carry_out)
         _cntrl_majority_dagger_gate(ctrl, a_reg[1], b_reg[1], ancilla)
 
         # Boundary controlled-MAJ†: uncompute the clean ancilla.
-        temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+        with dagger:
+            temp_and(a_reg[0], b_reg[0], ancilla)
         toffoli(ctrl, a_reg[0], b_reg[0])
         cx(a_reg[0], b_reg[0])
         discard(ancilla)
@@ -1086,7 +1101,7 @@ def _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
     toffoli(ctrl, a_reg[0], b_reg[0])
     transversal(cx, a_reg, b_reg, 1, n)
 
-    temp_and_compute(a_reg[0], b_reg[0], ancilla)
+    temp_and(a_reg[0], b_reg[0], ancilla)
 
     # Forward n-1 CX ladder
     cx(a_reg[1], ancilla)
@@ -1103,9 +1118,10 @@ def _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
 
     # Reverse n-1 Toffoli ladder
     if uncompute_carry_out:
-        temp_and_uncompute(ctrl, a_reg[n - 1], carry_out)
+        with dagger:
+            temp_and(ctrl, a_reg[n - 1], carry_out)
     else:
-        temp_and_compute(ctrl, a_reg[n - 1], carry_out)
+        temp_and(ctrl, a_reg[n - 1], carry_out)
     for i in range(n - 3, -1, -1):
         toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
     toffoli(ancilla, b_reg[1], a_reg[1])
@@ -1116,7 +1132,8 @@ def _cntrl_adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
     _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
     cx(a_reg[1], ancilla)
 
-    temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+    with dagger:
+        temp_and(a_reg[0], b_reg[0], ancilla)
 
     transversal(cx, a_reg, b_reg, 1, n)
 

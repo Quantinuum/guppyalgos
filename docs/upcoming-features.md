@@ -58,8 +58,10 @@ repository:
   uncompute implementations. The approach is correct, but it is not yet
   uniform across the library.
 
-We are waiting for custom-modifier support in Guppy before standardizing this
-across guppyalgos. The intended direction is to:
+Guppy's `@guppy.unitary` classes support custom implementations of these
+modifiers. The `temp_and` primitive uses them for controlled computation and
+measurement-based uncomputation, and CX ladders provide custom modifiers too.
+The intended direction for the rest of guppyalgos is to:
 
 - define control and adjoint transformations through one modifier framework;
 - let higher-order functions and structs request those capabilities through
@@ -69,6 +71,6 @@ across guppyalgos. The intended direction is to:
 - retain explicit specialized implementations where measurement-based
   uncomputation or another non-unitary technique requires them.
 
-Until that support is available, use the controlled and inverse variants
-documented by each component rather than assuming that every library function
-can be placed inside `control` or `dagger`.
+Use the modifiers or explicit controlled and inverse variants documented by
+each component; not every library function can be placed inside `control` or
+`dagger`.

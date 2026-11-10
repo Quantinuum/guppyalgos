@@ -24,8 +24,8 @@ from guppylang.std.quantum import (
 from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_measurement_parity
 from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
@@ -141,8 +141,8 @@ def test_qrom_unary_iteration_single_targ_google(n_index_elements: int) -> None:
     qrom_unary_iteration_test(
         n_index_elements,
         list(range(n_index_elements)),
-        temp_and_compute,
-        temp_and_uncompute,
+        temp_and,
+        uncompute_and,
     )
 
 
@@ -158,8 +158,8 @@ def test_qrom_unary_iteration_single_targ_google_shorter(n_index_elements: int) 
     qrom_unary_iteration_test(
         n_index_elements,
         list(range(n_index_elements)),
-        temp_and_compute,
-        temp_and_uncompute,
+        temp_and,
+        uncompute_and,
     )
 
 
@@ -261,7 +261,7 @@ def test_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
     n_index_elements = 2**n_index_qubits
     n_state_qubits = n_index_qubits
     res = qrom_unary_iteration_test_statevector(
-        n_index_elements, temp_and_compute, temp_and_uncompute
+        n_index_elements, temp_and, uncompute_and
     )
     states = Quest.extract_states_dict(res.results[0].entries)
     non_work_state, spec_qubits_dict = get_total_state_on_only_specified_registers(
@@ -285,7 +285,7 @@ def test_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
     ("compute_and", "uncompute_and"),
     [
         (toffoli, toffoli),
-        (temp_and_compute, temp_and_uncompute),
+        (temp_and, uncompute_and),
     ],
 )
 def test_qrom_inversion(
