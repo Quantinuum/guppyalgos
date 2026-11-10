@@ -161,6 +161,7 @@ def get_doubly_cntrl_paulis[n_state_q: nat](
                     sdg(q[idx])
                     toffoli(ctrl0, ctrl1, q[idx])
                     s(q[idx])
+        # using internal cphase as with control not supported in comptime https://github.com/Quantinuum/guppylang/issues/1701
         _cphase(ctrl0, ctrl1, angle(phase))
 
     return doubly_cntrl_paulis
