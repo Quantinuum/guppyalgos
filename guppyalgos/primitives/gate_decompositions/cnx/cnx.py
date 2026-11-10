@@ -112,12 +112,12 @@ def cnx_toffoli_ladder[n_controls: nat](
         target (qubit): target qubit.
 
     """
-    work = CnxPartialToffoliLadder.compute(control, target)
-    CnxPartialToffoliLadder.uncompute_workspace(control, work)
+    work = CNXPartialAndLadder.compute(control, target)
+    CNXPartialAndLadder.uncompute_workspace(control, work)
 
 
 @guppy.struct
-class CnxPartialToffoliLadder:  # noqa: D101
+class CNXPartialAndLadder:  # noqa: D101
     @guppy
     @no_type_check
     @staticmethod
@@ -135,7 +135,7 @@ class CnxPartialToffoliLadder:  # noqa: D101
             for index in range(n - 3):
                 temp_and_compute(work[index], controls[index + 2], work[index + 1])
 
-        CnxPartialToffoliLadder._final_gate(controls, work, target)
+        CNXPartialAndLadder._final_gate(controls, work, target)
         return work
 
     @guppy
@@ -161,8 +161,8 @@ class CnxPartialToffoliLadder:  # noqa: D101
         target: qubit,
     ) -> None:
         """Uncompute target and ancilla workspace."""
-        CnxPartialToffoliLadder._final_gate(controls, work, target)
-        CnxPartialToffoliLadder.uncompute_workspace(controls, work)
+        CNXPartialAndLadder._final_gate(controls, work, target)
+        CNXPartialAndLadder.uncompute_workspace(controls, work)
 
     @guppy
     @no_type_check
