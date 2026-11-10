@@ -50,8 +50,7 @@ def _build_basis_emulator(
     operation = selectswap(
         data_inputs,
         n_target_registers,
-        comp_and_op=toffoli,
-        uncomp_and_op=toffoli,
+        and_op=toffoli,
     )
 
     @guppy

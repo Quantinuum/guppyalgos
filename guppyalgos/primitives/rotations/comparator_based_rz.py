@@ -1,15 +1,15 @@
 """Approximate Rz rotation with logarithmic Toffoli count."""
 
 from math import ceil, log2
-from typing import no_type_check
+from typing import cast, no_type_check
 
 from guppylang import guppy
-from guppylang.defs import GuppyFunctionDefinition
+from guppylang.defs import GuppyDefinition, GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import (
-    Function,
     array,
     comptime,
+    dagger,
     exit,
     nat,
     nothing,
@@ -31,7 +31,6 @@ from guppylang.std.quantum import (
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
-    uncompute_and,
 )
 from guppyalgos.utils import qarray
 from guppyalgos.utils.guppy.math import floor, get_bit, tan
@@ -69,81 +68,99 @@ class ConstantComparator[n: nat, n_ancillas: nat]:
         ...
 
 
-@guppy.struct(frozen=True)
-class ConstantComparatorCascade[n: nat, n_ancillas: nat]:
-    """Constant comparator configured with its AND operations and direction."""
+def constant_comparator_cascade(
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
+) -> GuppyDefinition:
+    """Build a cascade comparator type using one AND unitary.
 
-    comp_and_op: Function[[qubit, qubit, qubit], None]
-    uncomp_and_op: Function[[qubit, qubit, qubit], None]
-    dagger: bool
+    Args:
+        and_op: AND unitary used to compute the ladder. Its dagger uncomputes it.
 
-    @guppy
-    @no_type_check
-    def _apply_x_gates(
-        self,
-        a: array[qubit, n],
-        target: qubit,
-        k: int,
-    ) -> None:
-        """Apply the comparator's constant-dependent X gates."""
-        for i in range(n):
-            if not get_bit(k, i):
-                x(a[i])
+    Returns:
+        A Guppy struct ``ConstantComparatorCascade[n: nat, n_ancillas: nat]``
+        implementing :class:`ConstantComparator`, with a single ``dagger: bool``
+        field selecting the direction. Configure the AND unitary in Python,
+        then instantiate the returned struct inside Guppy code.
 
-        if not get_bit(k, comptime(n - 1)):
-            x(target)
+    """
 
-    @guppy
-    @no_type_check
-    def _apply_toffoli_ladder(
-        self,
-        a: array[qubit, n],
-        b: array[qubit, n_ancillas],
-        target: qubit,
-        k: int,
-    ) -> None:
-        """Apply or unapply the comparator's Toffoli ladder."""
-        if self.dagger:
-            toffoli(b[comptime(n - 3)], a[comptime(n - 1)], target)
-            for i in range(comptime(n - 2), 1, -1):
-                if get_bit(k, i + 1) != get_bit(k, i):
-                    x(b[i - 1])
-                self.uncomp_and_op(b[i - 2], a[i], b[i - 1])
-            if get_bit(k, 2) != get_bit(k, 1):
-                x(b[0])
-            if get_bit(k, 0):
-                self.uncomp_and_op(a[0], a[1], b[0])
-            elif get_bit(k, 1):
-                cx(a[1], b[0])
-        else:
-            if get_bit(k, 0):
-                self.comp_and_op(a[0], a[1], b[0])
-            elif get_bit(k, 1):
-                cx(a[1], b[0])
-            if get_bit(k, 2) != get_bit(k, 1):
-                x(b[0])
-            for i in range(2, comptime(n - 1)):
-                self.comp_and_op(b[i - 2], a[i], b[i - 1])
-                if get_bit(k, i + 1) != get_bit(k, i):
-                    x(b[i - 1])
-            toffoli(b[comptime(n - 3)], a[comptime(n - 1)], target)
+    @guppy.struct(frozen=True)
+    class ConstantComparatorCascade[n: nat, n_ancillas: nat]:
+        """Constant comparator configured with its direction."""
 
-    @guppy
-    @no_type_check
-    def compose(
-        self,
-        a: array[qubit, n],
-        b: array[qubit, n_ancillas],
-        target: qubit,
-        k: int,
-    ) -> None:
-        """Compare ``a`` against ``k``."""
-        if self.dagger:
-            self._apply_toffoli_ladder(a, b, target, k)
-            self._apply_x_gates(a, target, k)
-        else:
-            self._apply_x_gates(a, target, k)
-            self._apply_toffoli_ladder(a, b, target, k)
+        dagger: bool
+
+        @guppy
+        @no_type_check
+        def _apply_x_gates(
+            self,
+            a: array[qubit, n],
+            target: qubit,
+            k: int,
+        ) -> None:
+            """Apply the comparator's constant-dependent X gates."""
+            for i in range(n):
+                if not get_bit(k, i):
+                    x(a[i])
+
+            if not get_bit(k, comptime(n - 1)):
+                x(target)
+
+        @guppy
+        @no_type_check
+        def _apply_toffoli_ladder(
+            self,
+            a: array[qubit, n],
+            b: array[qubit, n_ancillas],
+            target: qubit,
+            k: int,
+        ) -> None:
+            """Apply or unapply the comparator's Toffoli ladder."""
+            if self.dagger:
+                toffoli(b[comptime(n - 3)], a[comptime(n - 1)], target)
+                for i in range(comptime(n - 2), 1, -1):
+                    if get_bit(k, i + 1) != get_bit(k, i):
+                        x(b[i - 1])
+                    with dagger:
+                        and_op(b[i - 2], a[i], b[i - 1])
+                if get_bit(k, 2) != get_bit(k, 1):
+                    x(b[0])
+                if get_bit(k, 0):
+                    with dagger:
+                        and_op(a[0], a[1], b[0])
+                elif get_bit(k, 1):
+                    cx(a[1], b[0])
+            else:
+                if get_bit(k, 0):
+                    and_op(a[0], a[1], b[0])
+                elif get_bit(k, 1):
+                    cx(a[1], b[0])
+                if get_bit(k, 2) != get_bit(k, 1):
+                    x(b[0])
+                for i in range(2, comptime(n - 1)):
+                    and_op(b[i - 2], a[i], b[i - 1])
+                    if get_bit(k, i + 1) != get_bit(k, i):
+                        x(b[i - 1])
+                toffoli(b[comptime(n - 3)], a[comptime(n - 1)], target)
+
+        @guppy
+        @no_type_check
+        def compose(
+            self,
+            a: array[qubit, n],
+            b: array[qubit, n_ancillas],
+            target: qubit,
+            k: int,
+        ) -> None:
+            """Compare ``a`` against ``k``."""
+            if self.dagger:
+                self._apply_toffoli_ladder(a, b, target, k)
+                self._apply_x_gates(a, target, k)
+            else:
+                self._apply_x_gates(a, target, k)
+                self._apply_toffoli_ladder(a, b, target, k)
+
+    return cast(GuppyDefinition, ConstantComparatorCascade)
 
 
 @guppy.struct(frozen=True)
@@ -179,7 +196,7 @@ class ComparatorBasedRz[
     implements the :class:`ConstantComparator` protocol can be used. The
     comparator owns the details of the constant comparison, while
     ``n_ancillas`` captures the workspace required by that implementation. The
-    :class:`ConstantComparatorCascade` implementation is the concrete cascade
+    :func:`constant_comparator_cascade` implementation is the concrete cascade
     example from the paper and realizes the comparison with Clifford+Toffoli
     operations.
 
@@ -255,7 +272,7 @@ def comparator_based_rz_cascade(
     """Build a comparator-based Rz using the cascade comparator.
 
     This is a convenience function that constructs a :class:`ComparatorBasedRz`
-    using the :class:`ConstantComparatorCascade` implementation. The returned
+    using the :func:`constant_comparator_cascade` implementation. The returned
     function uses temporary AND compute and uncompute operations.
 
     Args:
@@ -277,25 +294,14 @@ def comparator_based_rz_cascade(
 
     n = 1 + ceil(log2(1 / epsilon))
     n_comparator_ancillas = n_constant_comparator_cascade_ancillas(n)
+    cascade = constant_comparator_cascade(temp_and)
 
     @guppy
     @no_type_check
     def rz_fn(target: qubit, theta: angle) -> None:
         """Apply comparator-based Rz using temporary AND operations."""
-        comparator = ConstantComparatorCascade[
-            comptime(n), comptime(n_comparator_ancillas)
-        ](
-            temp_and,
-            uncompute_and,
-            False,
-        )
-        inverse_comparator = ConstantComparatorCascade[
-            comptime(n), comptime(n_comparator_ancillas)
-        ](
-            temp_and,
-            uncompute_and,
-            True,
-        )
+        comparator = cascade[comptime(n), comptime(n_comparator_ancillas)](False)
+        inverse_comparator = cascade[comptime(n), comptime(n_comparator_ancillas)](True)
         rz = ComparatorBasedRz(
             comparator,
             inverse_comparator,

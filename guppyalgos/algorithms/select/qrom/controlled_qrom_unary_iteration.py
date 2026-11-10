@@ -8,7 +8,6 @@ from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
-    uncompute_and,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
 from guppyalgos.algorithms.select import (
@@ -19,8 +18,7 @@ from guppyalgos.algorithms.select import (
 def cntrl_qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     data_input: list[Data],
     fanout_op: GuppyFunctionDefinition = fanout_basic,
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
     fanout_from_data_fn: Callable[
         [Data, GuppyFunctionDefinition],
         GuppyFunctionDefinition[[qubit, TargetRegs], None],
@@ -44,10 +42,10 @@ def cntrl_qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     the QROM operation. For the algorithmic details of the QROM operation please see
     section guppyalgos/select/select_unary_iteration.py.
 
-    There is an option to provide custom fanout, compute AND and uncompute AND
-    operations. The default options are basic fanout using CNOTs and compute AND using
-    the procedure from https://arxiv.org/pdf/1805.03662 which uses 4 T gates once the
-    compute ANDs and zero the uncompute AND due to measurement based uncomputation.
+    There is an option to provide a custom fanout and an AND unitary.
+    Uncomputation uses the AND unitary's dagger. The defaults are CNOT fanout
+    and the temporary AND from https://arxiv.org/pdf/1805.03662, which uses four
+    T gates for computation and none for measurement-based uncomputation.
 
     The default factory maps a bitstring to one register. Supply a custom
     ``fanout_from_data_fn`` when the data uses another static target shape, such as
@@ -71,8 +69,7 @@ def cntrl_qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     Args:
         data_input: Classical data used to construct the controlled operations.
         fanout_op: Flat Guppy fanout operation applied to selected data qubits.
-        comp_and_op: Function to compute temporary AND operations.
-        uncomp_and_op: Function to uncompute temporary AND operations.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
         fanout_from_data_fn: Python metafunction adapting a data element and
             ``fanout_op`` to the target type.
 
@@ -88,6 +85,5 @@ def cntrl_qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     return build_cntrl_select_unary_from_data(
         data_input,
         fanout_method,
-        comp_and_op,
-        uncomp_and_op,
+        and_op,
     )

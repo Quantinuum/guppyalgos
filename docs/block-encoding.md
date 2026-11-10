@@ -253,9 +253,7 @@ the address cascade around their controlled forms:
 
 ```{code-cell} ipython3
 from guppyalgos.algorithms.select import build_select_unary_from_data
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and, uncompute_and,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
 
 terms = [
@@ -268,15 +266,13 @@ terms = [
 unary_select_toffoli = build_select_unary_from_data(
     terms,
     lambda term: pauli_to_cntrl_gate(term, 2),
-    comp_and_op=toffoli,
-    uncomp_and_op=toffoli,
+    and_op=toffoli,
 )
 
 unary_select_temporary_and = build_select_unary_from_data(
     terms,
     lambda term: pauli_to_cntrl_gate(term, 2),
-    comp_and_op=temp_and,
-    uncomp_and_op=uncompute_and,
+    and_op=temp_and,
 )
 
 
@@ -285,15 +281,14 @@ def select_example(index_qreg: array[qubit, 3], qreg: array[qubit, 2]) -> None:
     unary_select_toffoli(index_qreg, qreg)
 ```
 
-| Compute | Uncompute | Behavior |
-| --- | --- | --- |
-| `toffoli` | `toffoli` | Fully unitary cascade shown above. |
-| `temp_and` | `uncompute_and` | Four-T temporary AND compute with measurement-based uncomputation. |
+| AND unitary | Behavior |
+| --- | --- |
+| `toffoli` | Fully unitary cascade shown above. |
+| `temp_and` | Four-T temporary AND compute with measurement-based uncomputation. |
 
 `temp_and` provides custom `dagger`, `control`, and combined control/dagger
-implementations. The `uncompute_and` callback delegates to its custom dagger
-for APIs that accept separate compute and uncompute functions. Direct callers
-can use the modifiers themselves:
+implementations. The builder accepts one `and_op` and invokes its dagger for
+uncomputation. Direct callers can use the modifiers themselves:
 
 ```{code-cell} ipython3
 from guppylang.std.builtins import control, dagger
@@ -311,7 +306,7 @@ def controlled_and_round_trip(ctrl: qubit, a: qubit, b: qubit, target: qubit) ->
 
 Both choices implement the same SELECT. The temporary-AND version trades
 mid-circuit measurement and feed-forward for a lower T cost. The builder also
-accepts other compatible three-qubit compute and uncompute functions. In every
+accepts other compatible three-qubit AND unitaries. In every
 case, the work flags are cleared before SELECT returns.
 
 This construction follows the unary-iteration approach introduced in

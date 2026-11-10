@@ -6,13 +6,12 @@ from typing import no_type_check
 
 from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import Function, array, nat
+from guppylang.std.builtins import Function, array, nat, Unitary, dagger
 from guppylang.std.quantum import cx, qubit, reset, x, discard_array
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     index_and,
     temp_and,
-    uncompute_and,
 )
 from guppyalgos.utils import int_to_bits, qarray
 
@@ -72,7 +71,7 @@ def msb_diff_depths(bools: list[list[bool]]) -> list[int]:
 @guppy
 @no_type_check
 def compute_cascade[n_i_q: nat, n_w_q: nat](
-    comp_and_op: Callable[[qubit, qubit, qubit], None],
+    and_op: Unitary[[qubit, qubit, qubit], None],
     max_cascade_depth: int,
     msb_diff_depth: int,
     bools: array[bool, n_i_q],
@@ -87,7 +86,7 @@ def compute_cascade[n_i_q: nat, n_w_q: nat](
     qubit 0.
 
     Args:
-        comp_and_op: The AND operation used to compute each work qubit.
+        and_op: The AND operation used to compute each work qubit.
         max_cascade_depth: The deepest cascade depth, equal to the final physical
             index of ``index_qreg``.
         msb_diff_depth: The cascade depth of the most-significant differing bit
@@ -111,7 +110,7 @@ def compute_cascade[n_i_q: nat, n_w_q: nat](
             bools[max_cascade_depth],
             index_qreg[max_cascade_depth - 1],
             bools[max_cascade_depth - 1],
-            comp_and_op,
+            and_op,
         )
     else:
         previous_work_index = work_index + 1
@@ -122,11 +121,11 @@ def compute_cascade[n_i_q: nat, n_w_q: nat](
             True,
             index_qreg[physical_index],
             bools[physical_index],
-            comp_and_op,
+            and_op,
         )
 
     compute_cascade(
-        comp_and_op,
+        and_op,
         max_cascade_depth,
         next_cascade_depth,
         bools,
@@ -181,7 +180,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     bools: array[bool, n_i_q],
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute a little-endian unary cascade from qubit 0 toward a high index.
 
@@ -197,7 +196,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
         bools: The little-endian boolean values used to compute the work qubits.
         index_qreg: The little-endian index qubit register.
         work_qreg: The work-qubit array, uncomputed from position 0 upward.
-        uncomp_and_op: The AND operation used to uncompute each work qubit.
+        and_op: The AND operation used to uncompute each work qubit.
 
     """
     if current_cascade_depth <= next_msb_diff_depth:
@@ -206,25 +205,27 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     most_significant_index = len(index_qreg) - 1
     work_index = most_significant_index - current_cascade_depth
     if current_cascade_depth == 1:
-        index_and(
-            work_qreg[work_index],
-            index_qreg[most_significant_index],
-            bools[most_significant_index],
-            index_qreg[most_significant_index - 1],
-            bools[most_significant_index - 1],
-            uncomp_and_op,
-        )
+        with dagger:
+            index_and(
+                work_qreg[work_index],
+                index_qreg[most_significant_index],
+                bools[most_significant_index],
+                index_qreg[most_significant_index - 1],
+                bools[most_significant_index - 1],
+                and_op,
+            )
     else:
         previous_work_index = work_index + 1
         physical_index = most_significant_index - current_cascade_depth
-        index_and(
-            work_qreg[work_index],
-            work_qreg[previous_work_index],
-            True,
-            index_qreg[physical_index],
-            bools[physical_index],
-            uncomp_and_op,
-        )
+        with dagger:
+            index_and(
+                work_qreg[work_index],
+                work_qreg[previous_work_index],
+                True,
+                index_qreg[physical_index],
+                bools[physical_index],
+                and_op,
+            )
     reset(work_qreg[work_index])
 
     uncompute_cascade(
@@ -233,7 +234,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
         bools,
         index_qreg,
         work_qreg,
-        uncomp_and_op,
+        and_op,
     )
 
 
@@ -272,15 +273,13 @@ def select_unary_iteration[
     TargetRegs,
     n_index_el: nat,
     n_index_qubits: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    AndOp: Unitary[[qubit, qubit, qubit], None],
 ](
     controlled_ops: array[
         Callable[[qubit, TargetRegs], None],
         n_index_el,
     ],
-    comp_and_op: CompAND,
-    uncomp_and_op: UncompAND,
+    and_op: AndOp,
     index_qreg: array[qubit, n_index_qubits],
     state_qreg: TargetRegs,
 ) -> None:
@@ -289,9 +288,8 @@ def select_unary_iteration[
     This function performs the unary iteration select operation.
     The index register is little-endian: ``index_qreg[0]`` is the
     least-significant qubit, and integer index ``i`` selects ``controlled_ops[i]``.
-    There is also freedom to choose the compute and uncompute AND operations.
-    However it is up to the user to ensure that the AND operations
-    are correct.
+    The supplied AND unitary computes each work qubit, and its dagger
+    uncomputes it. The caller must satisfy the unitary's target-state requirements.
 
     Algorithmic workflow:
 
@@ -310,8 +308,7 @@ def select_unary_iteration[
 
     Args:
         controlled_ops: The array of controlled operations.
-        comp_and_op: The compute AND operation.
-        uncomp_and_op: The uncompute AND operation.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
         index_qreg: The index qubit register.
         state_qreg: The state qubit register.
 
@@ -334,7 +331,7 @@ def select_unary_iteration[
     for iteration_index in range(n_iterations):
         if iteration_index == 0:
             compute_cascade(
-                comp_and_op,
+                and_op,
                 max_cascade_depth,
                 msb_diff_depths[iteration_index],
                 index_bools[iteration_index],
@@ -352,7 +349,7 @@ def select_unary_iteration[
 
             if msb_diff_depths[iteration_index] != max_cascade_depth:
                 compute_cascade(
-                    comp_and_op,
+                    and_op,
                     max_cascade_depth,
                     msb_diff_depths[iteration_index],
                     index_bools[iteration_index],
@@ -374,7 +371,7 @@ def select_unary_iteration[
             index_bools[iteration_index],
             index_qreg,
             work_qreg,
-            uncomp_and_op,
+            and_op,
         )
 
     discard_array(work_qreg)
@@ -419,15 +416,13 @@ def cntrl_select_unary_iteration[
     TargetRegs,
     n_index_qubits: nat,
     n_index_elements: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    AndOp: Unitary[[qubit, qubit, qubit], None],
 ](
     controlled_ops: array[
         Callable[[qubit, TargetRegs], None],
         n_index_elements,
     ],
-    comp_and_op: CompAND,
-    uncomp_and_op: UncompAND,
+    and_op: AndOp,
     control: qubit,
     index_qreg: array[qubit, n_index_qubits],
     state_qreg: TargetRegs,
@@ -437,9 +432,8 @@ def cntrl_select_unary_iteration[
     This function performs the unary iteration select operation.
     The index register is little-endian: ``index_qreg[0]`` is the
     least-significant qubit, and integer index ``i`` selects ``controlled_ops[i]``.
-    There is also freedom to choose the compute and uncompute
-    AND operations. However it is up to the user to ensure that the AND operations
-    are correct.
+    The supplied AND unitary computes each work qubit, and its dagger
+    uncomputes it. The caller must satisfy the unitary's target-state requirements.
 
     Algorithmic workflow:
 
@@ -458,8 +452,7 @@ def cntrl_select_unary_iteration[
 
     Args:
         controlled_ops: The array of controlled operations.
-        comp_and_op: The compute AND operation.
-        uncomp_and_op: The uncompute AND operation.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
         control: The control qubit for the controlled version of the select unary
             iteration.
         index_qreg: The index qubit register.
@@ -478,7 +471,7 @@ def cntrl_select_unary_iteration[
     for iteration_index in range(n_iterations):
         if iteration_index == 0:
             compute_cntrl_cascade(
-                comp_and_op,
+                and_op,
                 max_cascade_depth,
                 msb_diff_depths[iteration_index],
                 index_bools[iteration_index],
@@ -492,7 +485,7 @@ def cntrl_select_unary_iteration[
 
             if msb_diff_depths[iteration_index] != max_cascade_depth:
                 compute_cntrl_cascade(
-                    comp_and_op,
+                    and_op,
                     max_cascade_depth,
                     msb_diff_depths[iteration_index],
                     index_bools[iteration_index],
@@ -516,7 +509,7 @@ def cntrl_select_unary_iteration[
             control,
             index_qreg,
             work_qreg,
-            uncomp_and_op,
+            and_op,
         )
 
     discard_array(work_qreg)
@@ -525,7 +518,7 @@ def cntrl_select_unary_iteration[
 @guppy
 @no_type_check
 def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
-    comp_and_op: Callable[[qubit, qubit, qubit], None],
+    and_op: Unitary[[qubit, qubit, qubit], None],
     max_cascade_depth: int,
     msb_diff_depth: int,
     bools: array[bool, n_i_q],
@@ -542,7 +535,7 @@ def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     the highest required index toward ``work_qreg[0]``.
 
     Args:
-        comp_and_op: The AND operation used to compute each work qubit.
+        and_op: The AND operation used to compute each work qubit.
         max_cascade_depth: The deepest controlled-cascade depth.
         msb_diff_depth: The cascade depth of the most-significant differing bit
             at which computation starts.
@@ -566,7 +559,7 @@ def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
             True,
             index_qreg[most_significant_index],
             bools[most_significant_index],
-            comp_and_op,
+            and_op,
         )
 
     else:
@@ -578,11 +571,11 @@ def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
             True,
             index_qreg[physical_index],
             bools[physical_index],
-            comp_and_op,
+            and_op,
         )
 
     compute_cntrl_cascade(
-        comp_and_op,
+        and_op,
         max_cascade_depth,
         next_cascade_depth,
         bools,
@@ -635,7 +628,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     control_q: qubit,
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute a controlled little-endian cascade away from index qubit 0.
 
@@ -654,7 +647,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
         control_q: The external control qubit.
         index_qreg: The little-endian index qubit register.
         work_qreg: The work-qubit array, uncomputed from position 0 upward.
-        uncomp_and_op: The AND operation used to uncompute each work qubit.
+        and_op: The AND operation used to uncompute each work qubit.
 
     """
     if current_cascade_depth <= next_msb_diff_depth:
@@ -663,25 +656,27 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     work_index = len(index_qreg) - current_cascade_depth
     if current_cascade_depth == 1:
         most_significant_index = len(index_qreg) - 1
-        index_and(
-            work_qreg[work_index],
-            control_q,
-            True,
-            index_qreg[most_significant_index],
-            bools[most_significant_index],
-            uncomp_and_op,
-        )
+        with dagger:
+            index_and(
+                work_qreg[work_index],
+                control_q,
+                True,
+                index_qreg[most_significant_index],
+                bools[most_significant_index],
+                and_op,
+            )
     else:
         previous_work_index = work_index + 1
         physical_index = len(index_qreg) - current_cascade_depth
-        index_and(
-            work_qreg[work_index],
-            work_qreg[previous_work_index],
-            True,
-            index_qreg[physical_index],
-            bools[physical_index],
-            uncomp_and_op,
-        )
+        with dagger:
+            index_and(
+                work_qreg[work_index],
+                work_qreg[previous_work_index],
+                True,
+                index_qreg[physical_index],
+                bools[physical_index],
+                and_op,
+            )
     reset(work_qreg[work_index])
 
     uncompute_cntrl_cascade(
@@ -691,7 +686,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
         control_q,
         index_qreg,
         work_qreg,
-        uncomp_and_op,
+        and_op,
     )
 
 
@@ -700,16 +695,14 @@ def build_select_unary_from_data[Data, TargetRegs, n_i_q: nat](
     data_to_ctrl_op: Callable[
         [Data], GuppyFunctionDefinition[[qubit, TargetRegs], None]
     ],
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
 ) -> GuppyFunctionDefinition[[array[qubit, n_i_q], TargetRegs], None]:
     """Construct a unary iteration over unitaries constructed from Python data.
 
     Args:
         data_input (list[Data]): Classical data to construct controlled unitaries.
         data_to_ctrl_op: Method to create controlled unitaries from data.
-        comp_and_op: Function to compute temporary AND operations.
-        uncomp_and_op: Function to uncompute temporary AND operations.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
 
     Returns:
         GuppyFunctionDefinition: The unary iteration applying the select using unitaries
@@ -752,8 +745,7 @@ def build_select_unary_from_data[Data, TargetRegs, n_i_q: nat](
         controlled_ops = build_cntrl_ops_from_data[TargetRegs]()
         select_unary_iteration(
             controlled_ops,
-            comp_and_op,
-            uncomp_and_op,
+            and_op,
             index_qreg,
             target_regs,
         )
@@ -766,16 +758,14 @@ def build_cntrl_select_unary_from_data[Data, TargetRegs, n_i_q: nat](
     data_to_ctrl_op: Callable[
         [Data], GuppyFunctionDefinition[[qubit, TargetRegs], None]
     ],
-    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
-    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
+    and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
 ) -> GuppyFunctionDefinition[[qubit, array[qubit, n_i_q], TargetRegs], None]:
     """Construct a unary iteration over unitaries constructed from Python data.
 
     Args:
         data_input (list[Data]): Classical data to construct controlled unitaries.
         data_to_ctrl_op: Method to create controlled unitaries from data.
-        comp_and_op: Function to compute temporary AND operations.
-        uncomp_and_op: Function to uncompute temporary AND operations.
+        and_op: AND unitary whose dagger uncomputes each work qubit.
 
     Returns:
         GuppyFunctionDefinition: The unary iteration applying the select using unitaries
@@ -821,8 +811,7 @@ def build_cntrl_select_unary_from_data[Data, TargetRegs, n_i_q: nat](
         controlled_ops = build_cntrl_ops_from_data[TargetRegs]()
         cntrl_select_unary_iteration(
             controlled_ops,
-            comp_and_op,
-            uncomp_and_op,
+            and_op,
             control,
             index_qreg,
             target_regs,
