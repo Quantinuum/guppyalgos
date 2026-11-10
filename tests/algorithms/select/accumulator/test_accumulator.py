@@ -44,8 +44,8 @@ from guppyalgos.algorithms.select.accumulator.accumulator_unary_iteration import
     guarded_accumulator_unary_iteration,
 )
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.primitives.state_preparation import uniform_state
 from guppyalgos.utils import int_to_bits, qarray, transversal
@@ -123,7 +123,7 @@ def make_cntrl_op_test_circuit(
 # AND compute/uncompute primitives tested across accumulator tests.
 AND_PRIMITIVES = [
     (toffoli, toffoli),
-    (temp_and_compute, temp_and_uncompute),
+    (temp_and, uncompute_and),
 ]
 
 

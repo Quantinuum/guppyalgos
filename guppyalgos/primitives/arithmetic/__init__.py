@@ -1,10 +1,7 @@
 """Quantum arithmetic algorithms."""
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute as compute_and,
-)
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_uncompute as uncompute_and,
+    temp_and,
 )
 
 from .adder.adder_ripple_gidney import (
@@ -68,7 +65,6 @@ __all__ = [
     "cntrl_subtractor_ripple_cuccaro_mod",
     "cntrl_subtractor_ripple_gidney_carry_out",
     "cntrl_subtractor_ripple_gidney_mod",
-    "compute_and",
     "exponentiator_ripple_gidney_mod",
     "multiplier_ripple_gidney_mod",
     "multiplier_ripple_gidney_mod_in_place",
@@ -76,5 +72,5 @@ __all__ = [
     "subtractor_ripple_cuccaro_mod",
     "subtractor_ripple_gidney_carry_out",
     "subtractor_ripple_gidney_mod",
-    "uncompute_and",
+    "temp_and",
 ]

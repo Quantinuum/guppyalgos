@@ -3,13 +3,10 @@
 from typing import no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, nat, dagger
 from guppylang.std.quantum import cx, discard, h, qubit, t, tdg, toffoli, x
 
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 
 
 @guppy
@@ -106,9 +103,10 @@ def cnx_toffoli_ladder[n_controls: nat](
         toffoli(control[0], control[1], target)
     else:
         ancilla = qubit()
-        temp_and_compute(control[0], control[1], ancilla)
+        temp_and(control[0], control[1], ancilla)
         _cnx_n_less_2_ancilla_aux(control, target, ancilla, 2)
-        temp_and_uncompute(control[0], control[1], ancilla)
+        with dagger:
+            temp_and(control[0], control[1], ancilla)
         discard(ancilla)
 
 
@@ -170,9 +168,10 @@ def _tof4(
     ancilla: qubit,
 ) -> None:
     """Apply tof4 block."""
-    temp_and_compute(control0, control1, ancilla)
+    temp_and(control0, control1, ancilla)
     toffoli(ancilla, control2, target)
-    temp_and_uncompute(control0, control1, ancilla)
+    with dagger:
+        temp_and(control0, control1, ancilla)
 
 
 @guppy
@@ -346,7 +345,8 @@ def _cnx_n_less_2_ancilla_aux[n_controls: nat](
         toffoli(ancilla, control[control_idx], target)
     else:
         new_ancilla = qubit()
-        temp_and_compute(ancilla, control[control_idx], new_ancilla)
+        temp_and(ancilla, control[control_idx], new_ancilla)
         _cnx_n_less_2_ancilla_aux(control, target, new_ancilla, control_idx + 1)
-        temp_and_uncompute(ancilla, control[control_idx], new_ancilla)
+        with dagger:
+            temp_and(ancilla, control[control_idx], new_ancilla)
         discard(new_ancilla)

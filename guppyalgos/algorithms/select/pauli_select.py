@@ -9,8 +9,8 @@ from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
 
@@ -18,12 +18,8 @@ from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
 def pauli_select_unary_iteration[n_i_q: nat, n_s_q: nat](
     pauli_strings: zqp.Strings,
     n_state_qubits: int,
-    comp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_compute,
-    uncomp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_uncompute,
+    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
+    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
 ) -> GuppyFunctionDefinition[[array[qubit, n_i_q], array[qubit, n_s_q]], None]:
     """Pauli select based on unary iteration.
 

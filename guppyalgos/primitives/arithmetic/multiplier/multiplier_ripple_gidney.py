@@ -19,14 +19,11 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import Function, array, comptime, nat
+from guppylang.std.builtins import Function, array, comptime, nat, dagger
 from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import discard, qubit
 
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
     cntrl_adder_ripple_gidney_mod,
 )
@@ -183,9 +180,10 @@ def cntrl_multiplier_ripple_gidney_mod[n: nat](
     ] = _build_shifted_adders()
     for i in range(n):
         temp_control = qubit()
-        temp_and_compute(ctrl, b_reg[i], temp_control)
+        temp_and(ctrl, b_reg[i], temp_control)
         shifted_adders[i](temp_control, a_reg, product)
-        temp_and_uncompute(ctrl, b_reg[i], temp_control)
+        with dagger:
+            temp_and(ctrl, b_reg[i], temp_control)
         discard(temp_control)
 
 

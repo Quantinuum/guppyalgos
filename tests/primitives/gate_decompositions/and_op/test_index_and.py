@@ -16,8 +16,8 @@ from guppyalgos.utils import int_to_bits
 
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
@@ -31,7 +31,7 @@ from guppyalgos.utils import qarray
 from typing import no_type_check
 
 
-@pytest.mark.parametrize("comp_and_op", [toffoli, temp_and_compute])
+@pytest.mark.parametrize("comp_and_op", [toffoli, temp_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
 def test_index_temp_and_comp(
     i: int,
@@ -79,7 +79,7 @@ def test_index_temp_and_comp(
     assert measure_array == result
 
 
-@pytest.mark.parametrize("comp_and_op", [toffoli, temp_and_uncompute])
+@pytest.mark.parametrize("comp_and_op", [toffoli, uncompute_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
 def test_index_uncompute_temp_and(
     i: int,

@@ -3,14 +3,11 @@
 from typing import no_type_check
 
 from guppylang import array, guppy, qubit
-from guppylang.std.builtins import nat
+from guppylang.std.builtins import nat, dagger
 from guppylang.std.quantum import cx, x, toffoli, discard
 
 from guppyalgos.utils import transversal
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 
 from guppyalgos.primitives.subroutines.ladders import CXLadderLinear
 from guppyalgos.utils.guppy.unsafe_borrow import (
@@ -67,14 +64,14 @@ def _maj_umaj_bottom_carry_out_partial_gate(
         cx(a, b)
         cx(a, c)
 
-        # Could use temp_and_compute with a clean target
+        # Could use temp_and with a clean target
         toffoli(c, b, target)
         cx(a, target)
 
     else:
         if uncompute_target:
             cx(a, target)
-            # Could use temp_and_uncompute with a clean target
+            # Could use the temp_and dagger with a computed target
             toffoli(c, b, target)
 
         cx(a, c)
@@ -146,13 +143,13 @@ def partial_comparator_ripple_cuccaro[n: nat](
         transversal(x, a_reg)
 
         if n == 1:
-            # Could use temp_and_compute with a clean target
+            # Could use temp_and with a clean target
             toffoli(a_reg[0], b_reg[0], target)
             cx(a_reg[0], b_reg[0])
 
         elif n == 2:
             # Boundary MAJ: carry-in is known to be 0 and ancilla is clean.
-            temp_and_compute(a_reg[0], b_reg[0], ancilla)
+            temp_and(a_reg[0], b_reg[0], ancilla)
 
             _maj_umaj_bottom_carry_out_partial_gate(
                 a_reg[1], b_reg[1], ancilla, target, False, False
@@ -162,7 +159,7 @@ def partial_comparator_ripple_cuccaro[n: nat](
             ## Forward pass
             transversal(cx, a_reg, b_reg, 1, n)
 
-            temp_and_compute(a_reg[0], b_reg[0], ancilla)
+            temp_and(a_reg[0], b_reg[0], ancilla)
 
             # Forward n-1 CX ladder
             cx(a_reg[1], ancilla)
@@ -175,7 +172,7 @@ def partial_comparator_ripple_cuccaro[n: nat](
             for i in range(n - 3):
                 toffoli(a_reg[i + 1], b_reg[i + 2], a_reg[i + 2])
 
-            # Could use temp_and_compute with a clean target
+            # Could use temp_and with a clean target
             toffoli(a_reg[n - 2], b_reg[n - 1], target)
             cx(a_reg[n - 1], target)
 
@@ -183,19 +180,20 @@ def partial_comparator_ripple_cuccaro[n: nat](
         if n == 1:
             cx(a_reg[0], b_reg[0])
             if uncompute_target:
-                # Could use temp_and_uncompute with a clean target
+                # Could use the temp_and dagger with a computed target
                 toffoli(a_reg[0], b_reg[0], target)
 
         elif n == 2:
             _maj_umaj_bottom_carry_out_partial_gate(
                 a_reg[1], b_reg[1], ancilla, target, True, uncompute_target
             )
-            temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+            with dagger:
+                temp_and(a_reg[0], b_reg[0], ancilla)
 
         else:
             if uncompute_target:
                 cx(a_reg[n - 1], target)
-                # Could use temp_and_uncompute with a clean target
+                # Could use the temp_and dagger with a computed target
                 toffoli(a_reg[n - 2], b_reg[n - 1], target)
 
             ## Reverse pass
@@ -210,7 +208,8 @@ def partial_comparator_ripple_cuccaro[n: nat](
             _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
             cx(a_reg[1], ancilla)
 
-            temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
+            with dagger:
+                temp_and(a_reg[0], b_reg[0], ancilla)
 
             transversal(cx, a_reg, b_reg, 1, n)
 

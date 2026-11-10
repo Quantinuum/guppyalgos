@@ -11,8 +11,8 @@ from guppylang.std.quantum import h, qubit
 from pytest_lazy_fixtures import lf as lazy_fixture
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.algorithms.block_encoding.lcu import (
     LCUCntrl,
@@ -127,8 +127,8 @@ def test_cntrl_lcu_unary_iteration_select_custom_and_ops(
     prepare = multiplexor_prep(data.amplitudes)
     cntrl_select = build_cntrl_unary_iteration_select(
         data,
-        comp_and_op=temp_and_compute,
-        uncomp_and_op=temp_and_uncompute,
+        comp_and_op=temp_and,
+        uncomp_and_op=uncompute_and,
     )
 
     _assert_cntrl_lcu_encodes_hamiltonian(

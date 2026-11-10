@@ -10,8 +10,8 @@ from guppylang.std.builtins import array, nat, owned, Function
 from guppylang.std.quantum import cz, discard_array, h, measure_array, qubit, x
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
 from guppyalgos.algorithms.select import (
@@ -24,12 +24,8 @@ from guppyalgos.utils import transversal
 def qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
     data_input: list[Data],
     fanout_op: GuppyFunctionDefinition = fanout_basic,
-    comp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_compute,
-    uncomp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_uncompute,
+    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
+    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
     fanout_from_data_fn: Callable[
         [Data, GuppyFunctionDefinition],
         GuppyFunctionDefinition[[qubit, TargetRegs], None],
@@ -99,12 +95,8 @@ def qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
 
 def qrom_measure_uncompute[n_s_q: nat, n_i_q: nat](
     data_input: list[list[bool]],
-    comp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_compute,
-    uncomp_and_op: GuppyFunctionDefinition[
-        [qubit, qubit, qubit], None
-    ] = temp_and_uncompute,
+    comp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = temp_and,
+    uncomp_and_op: GuppyFunctionDefinition[[qubit, qubit, qubit], None] = uncompute_and,
 ) -> GuppyFunctionDefinition[[array[qubit, n_i_q], array[qubit, n_s_q]], None]:
     """QROM measurement based uncompute.
 

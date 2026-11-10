@@ -16,13 +16,10 @@ from __future__ import annotations
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat, panic
+from guppylang.std.builtins import array, comptime, nat, panic, dagger
 from guppylang.std.quantum import cx, discard, discard_array, qubit, toffoli, x
 from guppylang.std.mem import mem_swap
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
 from guppyalgos.utils import qarray
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
@@ -252,7 +249,7 @@ def _cat_cca_at[n_q: nat, n_a: nat](
 
 @guppy
 @no_type_check
-def _temp_and_compute_at[n_q: nat, n_a: nat](
+def _temp_and_at[n_q: nat, n_a: nat](
     q: array[qubit, n_q],
     ancilla: array[qubit, n_a],
     control0: int,
@@ -276,22 +273,22 @@ def _temp_and_compute_at[n_q: nat, n_a: nat](
 
     if control0 < n_q:
         if control1 < n_q:
-            temp_and_compute(q[control0], q[control1], ancilla[ancilla_target])
+            temp_and(q[control0], q[control1], ancilla[ancilla_target])
         else:
-            temp_and_compute(
+            temp_and(
                 q[control0],
                 ancilla[control1 - n_q],
                 ancilla[ancilla_target],
             )
     else:
         if control1 < n_q:
-            temp_and_compute(
+            temp_and(
                 ancilla[control0 - n_q],
                 q[control1],
                 ancilla[ancilla_target],
             )
         else:
-            temp_and_compute(
+            temp_and(
                 ancilla[control0 - n_q],
                 ancilla[control1 - n_q],
                 ancilla[ancilla_target],
@@ -300,7 +297,7 @@ def _temp_and_compute_at[n_q: nat, n_a: nat](
 
 @guppy
 @no_type_check
-def _temp_and_uncompute_at[n_q: nat, n_a: nat](
+def _uncompute_and_at[n_q: nat, n_a: nat](
     q: array[qubit, n_q],
     ancilla: array[qubit, n_a],
     control0: int,
@@ -324,26 +321,30 @@ def _temp_and_uncompute_at[n_q: nat, n_a: nat](
 
     if control0 < n_q:
         if control1 < n_q:
-            temp_and_uncompute(q[control0], q[control1], ancilla[ancilla_target])
+            with dagger:
+                temp_and(q[control0], q[control1], ancilla[ancilla_target])
         else:
-            temp_and_uncompute(
-                q[control0],
-                ancilla[control1 - n_q],
-                ancilla[ancilla_target],
-            )
+            with dagger:
+                temp_and(
+                    q[control0],
+                    ancilla[control1 - n_q],
+                    ancilla[ancilla_target],
+                )
     else:
         if control1 < n_q:
-            temp_and_uncompute(
-                ancilla[control0 - n_q],
-                q[control1],
-                ancilla[ancilla_target],
-            )
+            with dagger:
+                temp_and(
+                    ancilla[control0 - n_q],
+                    q[control1],
+                    ancilla[ancilla_target],
+                )
         else:
-            temp_and_uncompute(
-                ancilla[control0 - n_q],
-                ancilla[control1 - n_q],
-                ancilla[ancilla_target],
-            )
+            with dagger:
+                temp_and(
+                    ancilla[control0 - n_q],
+                    ancilla[control1 - n_q],
+                    ancilla[ancilla_target],
+                )
 
 
 @guppy.struct
@@ -901,9 +902,9 @@ def _apply_layer_op[n_q: nat, n_a: nat](
     elif kind == 1:
         _cat_cca_at(q, ancilla, c0, c1, target)
     elif kind == 2:
-        _temp_and_compute_at(q, ancilla, c0, c1, target)
+        _temp_and_at(q, ancilla, c0, c1, target)
     elif kind == 3:
-        _temp_and_uncompute_at(q, ancilla, c0, c1, target)
+        _uncompute_and_at(q, ancilla, c0, c1, target)
     else:
         panic("unknown CCA planner operation")
 
@@ -924,9 +925,9 @@ def _apply_inverse_layer_op[n_q: nat, n_a: nat](
     elif kind == 1:
         _cat_cca_at(q, ancilla, c0, c1, target)
     elif kind == 2:
-        _temp_and_uncompute_at(q, ancilla, c0, c1, target)
+        _uncompute_and_at(q, ancilla, c0, c1, target)
     elif kind == 3:
-        _temp_and_compute_at(q, ancilla, c0, c1, target)
+        _temp_and_at(q, ancilla, c0, c1, target)
     else:
         panic("unknown CCA planner operation")
 

@@ -254,7 +254,7 @@ the address cascade around their controlled forms:
 ```{code-cell} ipython3
 from guppyalgos.algorithms.select import build_select_unary_from_data
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute, temp_and_uncompute,
+    temp_and, uncompute_and,
 )
 from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
 
@@ -275,8 +275,8 @@ unary_select_toffoli = build_select_unary_from_data(
 unary_select_temporary_and = build_select_unary_from_data(
     terms,
     lambda term: pauli_to_cntrl_gate(term, 2),
-    comp_and_op=temp_and_compute,
-    uncomp_and_op=temp_and_uncompute,
+    comp_and_op=temp_and,
+    uncomp_and_op=uncompute_and,
 )
 
 
@@ -288,7 +288,26 @@ def select_example(index_qreg: array[qubit, 3], qreg: array[qubit, 2]) -> None:
 | Compute | Uncompute | Behavior |
 | --- | --- | --- |
 | `toffoli` | `toffoli` | Fully unitary cascade shown above. |
-| `temp_and_compute` | `temp_and_uncompute` | Four-T temporary AND compute with measurement-based uncomputation. |
+| `temp_and` | `uncompute_and` | Four-T temporary AND compute with measurement-based uncomputation. |
+
+`temp_and` provides custom `dagger`, `control`, and combined control/dagger
+implementations. The `uncompute_and` callback delegates to its custom dagger
+for APIs that accept separate compute and uncompute functions. Direct callers
+can use the modifiers themselves:
+
+```{code-cell} ipython3
+from guppylang.std.builtins import control, dagger
+
+
+@guppy
+def controlled_and_round_trip(ctrl: qubit, a: qubit, b: qubit, target: qubit) -> None:
+    # The target must start in |0>.
+    with control(ctrl):
+        temp_and(a, b, target)
+    with control(ctrl), dagger:
+        temp_and(a, b, target)
+    # Measurement-based uncomputation returns the target to |0>.
+```
 
 Both choices implement the same SELECT. The temporary-AND version trades
 mid-circuit measurement and feed-forward for a lower T cost. The builder also

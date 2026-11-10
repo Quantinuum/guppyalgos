@@ -30,8 +30,8 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
+    temp_and,
+    uncompute_and,
 )
 from guppyalgos.utils import qarray
 from guppyalgos.utils.guppy.math import floor, get_bit, tan
@@ -285,15 +285,15 @@ def comparator_based_rz_cascade(
         comparator = ConstantComparatorCascade[
             comptime(n), comptime(n_comparator_ancillas)
         ](
-            temp_and_compute,
-            temp_and_uncompute,
+            temp_and,
+            uncompute_and,
             False,
         )
         inverse_comparator = ConstantComparatorCascade[
             comptime(n), comptime(n_comparator_ancillas)
         ](
-            temp_and_compute,
-            temp_and_uncompute,
+            temp_and,
+            uncompute_and,
             True,
         )
         rz = ComparatorBasedRz(
