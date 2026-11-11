@@ -1,13 +1,10 @@
 """Uncompute the logical AND operation."""
 
 from guppylang import guppy
-from guppylang.std.quantum import (
-    qubit,
-    project_z,
-    cz,
-    h,
-    reset,
-)
+from guppylang.std.builtins import dagger
+from guppylang.std.quantum import qubit
+
+from .and_compute import temp_and
 
 
 from typing import no_type_check
@@ -30,7 +27,5 @@ def temp_and_uncompute(q_0: qubit, q_1: qubit, target_q: qubit) -> None:
         target_q (qubit): The auxiliary qubit used in computation.
 
     """
-    h(target_q)
-    if project_z(target_q).read():
-        cz(q_0, q_1)
-        reset(target_q)
+    with dagger:
+        temp_and(q_0, q_1, target_q)
