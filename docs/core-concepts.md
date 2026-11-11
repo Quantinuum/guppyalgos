@@ -436,6 +436,136 @@ def apply_lcu[PrepRegs, TargetRegs](
 The repository uses this pattern for compositions including LCU block
 encodings, qubitization, QSVT, reflections, and rotation strategies.
 
+## Conjugation boxes
+
+`ConjugationBox` stores two functions, G and U. Its `compose` method applies G,
+then U, then G†, representing the matrix G† U G. G must be daggerable and U must
+be unitary. These bounds belong to the struct’s `G` and `U` types; all methods
+use those same types and the shared `Regs` register type.
+
+`compose` is an inner `@guppy.unitary` class. Guppy selects its `__call__`,
+`daggered`, `controlled`, or `ctrl_daggered` implementation from the surrounding
+modifier blocks. The following example defines both component functions and
+uses each modifier inside `circuit`:
+
+```{code-cell} ipython3
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array, control, dagger
+from guppylang.std.quantum import cx, h, qubit, rz
+from guppyalgos.primitives.subroutines.conjugation import ConjugationBox
+
+@guppy(daggerable=True)
+def basis_change(qs: array[qubit, 4]) -> None:
+    h(qs[3])
+    h(qs[2])
+    h(qs[1])
+    cx(qs[3], qs[2])
+    cx(qs[2], qs[1])
+    cx(qs[1], qs[0])
+
+@guppy(unitary=True)
+def rotation(qs: array[qubit, 4]) -> None:
+    rz(qs[0], angle(0.25))
+
+@guppy
+def circuit(qs: array[qubit, 4], controls: array[qubit, 1]) -> None:
+    box = ConjugationBox(basis_change, rotation)
+    box.compose(qs)  # G, U, G†
+    with control(controls):
+        box.compose(qs)  # G, controlled-U, G†
+    with dagger:
+        box.compose(qs)  # G, U†, G†
+    with control(controls), dagger:
+        box.compose(qs)  # G, controlled-U†, G†
+
+circuit.check()
+```
+
+For the Pauli gadget $P = Z_0 X_1 X_2 X_3$, the Hadamard basis changes
+and parity ladder form $G$, and $U = R_z(\theta)$ acts on $q_0$.
+The purple middle box is $\mathrm{C}(U) = \mathrm{C}R_z(\theta)$: a controlled
+$R_z$ with control $c$ and target $q_0$. The blue boxes apply $G$ and
+$G^{\dagger}$ without those controls. Together, the three boxes implement
+the controlled Pauli gadget.
+
+```{tikz}
+:alt: A controlled four-qubit Pauli gadget for Z0 X1 X2 X3. Matching blue boxes enclose G and G dagger, each containing Hadamard basis changes and a CNOT parity ladder. A purple box encloses the middle controlled Rz rotation; the external control c acts only on this rotation.
+
+\begin{tikzcd}[column sep=0.38cm,row sep=0.35cm]
+\lstick{$c$}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \ctrl{4}\gategroup[wires=5,steps=1,style={rounded corners,draw=magenta!60!black,fill=magenta!5,inner xsep=5pt,inner ysep=7pt},background,label style={label position=below,anchor=north,yshift=-5pt}]{$\mathrm{C}(U)$}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw \\
+\lstick{$q_3$}
+  & \gate{H}\gategroup[wires=4,steps=4,style={rounded corners,draw=cyan!60!black,fill=cyan!5,inner xsep=5pt,inner ysep=7pt},background,label style={label position=below,anchor=north,yshift=-5pt}]{$G$}
+  & \ctrl{1}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw\gategroup[wires=4,steps=4,style={rounded corners,draw=cyan!60!black,fill=cyan!5,inner xsep=5pt,inner ysep=7pt},background,label style={label position=below,anchor=north,yshift=-5pt}]{$G^{\dagger}$}
+  & \qw
+  & \ctrl{1}
+  & \gate{H}
+  & \qw \\
+\lstick{$q_2$}
+  & \gate{H}
+  & \targ{}
+  & \ctrl{1}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \ctrl{1}
+  & \targ{}
+  & \gate{H}
+  & \qw \\
+\lstick{$q_1$}
+  & \gate{H}
+  & \qw
+  & \targ{}
+  & \ctrl{1}
+  & \qw
+  & \qw
+  & \qw
+  & \ctrl{1}
+  & \targ{}
+  & \qw
+  & \gate{H}
+  & \qw \\
+\lstick{$q_0$}
+  & \qw
+  & \qw
+  & \qw
+  & \targ{}
+  & \qw
+  & \gate{R_z(\theta)}
+  & \qw
+  & \targ{}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+\end{tikzcd}
+```
+
+
+See the {doc}`conjugation-box walkthrough
+<examples/core_concepts/conjugation_box>` for the four modifier modes of an XYZ
+Pauli gadget and a two-term LCU block encoding with Ry preparation.
+
 ## Protocols for interchangeable structs
 
 A protocol defines the methods a component must provide without requiring a
