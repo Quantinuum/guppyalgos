@@ -192,6 +192,41 @@ def _two_term_lcu_case(theta: float) -> ConjugationCase:
     )
 
 
+def _nested_conjugation_case(theta: float) -> ConjugationCase:
+    """Use a unitary function wrapping one box as another box's U."""
+
+    @guppy(daggerable=True)
+    @no_type_check
+    def inner_basis(qs: array[qubit, 1]) -> None:
+        h(qs[0])
+
+    @guppy(unitary=True)
+    @no_type_check
+    def inner_rotation(qs: array[qubit, 1]) -> None:
+        rz(qs[0], angle(theta))
+
+    @guppy(unitary=True)
+    @no_type_check
+    def inner_conjugation(qs: array[qubit, 1]) -> None:
+        inner = ConjugationBox(inner_basis, inner_rotation)
+        inner.compose(qs)
+
+    @guppy(daggerable=True)
+    @no_type_check
+    def outer_basis(qs: array[qubit, 1]) -> None:
+        ry(qs[0], angle(theta))
+
+    hamiltonian = zqp.RealTermSum.from_str(
+        f"({np.cos(np.pi * theta)}, X0), ({np.sin(np.pi * theta)}, Z0)", 1
+    )
+    return ConjugationCase(
+        g=outer_basis,
+        u=inner_conjugation,
+        width=1,
+        matrix=_hamiltonian_unitary(hamiltonian, theta),
+    )
+
+
 @pytest.mark.parametrize("theta", [0.37, -0.71])
 @pytest.mark.parametrize(
     "make_case",
@@ -202,6 +237,7 @@ def _two_term_lcu_case(theta: float) -> ConjugationCase:
         pytest.param(_zx_pauli_gadget_case, id="pauli_gadget_zx"),
         pytest.param(_xyz_pauli_gadget_case, id="pauli_gadget_xyz"),
         pytest.param(_two_term_lcu_case, id="two_term_lcu"),
+        pytest.param(_nested_conjugation_case, id="nested_conjugation"),
     ],
 )
 def test_nested_compose_modifiers(
