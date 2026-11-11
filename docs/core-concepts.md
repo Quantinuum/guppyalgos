@@ -438,15 +438,32 @@ encodings, qubitization, QSVT, reflections, and rotation strategies.
 
 ## Conjugation boxes
 
-`ConjugationBox` stores two functions, G and U. Its `compose` method applies G,
-then U, then G†, representing the matrix G† U G. G must be daggerable and U must
-be unitary. These bounds belong to the struct’s `G` and `U` types; all methods
-use those same types and the shared `Regs` register type.
+`ConjugationBox` stores two functions, $G$ and $U$, acting on the same
+register. $G$ must be daggerable and $U$ unitary. Calling `box.compose(qs)`
+executes **G → U → G†**. Since matrices act right to left, the resulting
+operation and its adjoint are
 
-`compose` is an inner `@guppy.unitary` class. Guppy selects its `__call__`,
-`daggered`, `controlled`, or `ctrl_daggered` implementation from the surrounding
-modifier blocks. The following example defines both component functions and
-uses each modifier inside `circuit`:
+$$
+W=G^{\dagger}UG,
+\qquad W^{\dagger}=G^{\dagger}U^{\dagger}G.
+$$
+
+`compose` is an inner `@guppy.unitary` class. Guppy chooses its implementation
+from the surrounding modifier blocks:
+
+| Call context | Execution order |
+| --- | --- |
+| Ordinary call | G → U → G† |
+| `with dagger:` | G → U† → G† |
+| `with control(controls):` | G → controlled-U → G† |
+| `with control(controls), dagger:` | G → controlled-U† → G† |
+
+### A controlled Pauli gadget
+
+Take $P=Z_0X_1X_2X_3$. The following functions build its basis change and
+rotation, then demonstrate all four ways to call the box. Guppy rotation
+angles are in half-turns: `angle(0.25)` corresponds to $\theta=\pi/4$ radians
+in the equations and circuit below.
 
 ```{code-cell} ipython3
 from guppylang import guppy
@@ -482,12 +499,30 @@ def circuit(qs: array[qubit, 4], controls: array[qubit, 1]) -> None:
 circuit.check()
 ```
 
-For the Pauli gadget $P = Z_0 X_1 X_2 X_3$, the Hadamard basis changes
-and parity ladder form $G$, and $U = R_z(\theta)$ acts on $q_0$.
-The purple middle box is $\mathrm{C}(U) = \mathrm{C}R_z(\theta)$: a controlled
-$R_z$ with control $c$ and target $q_0$. The blue boxes apply $G$ and
-$G^{\dagger}$ without those controls. Together, the three boxes implement
-the controlled Pauli gadget.
+The first blue box implements $G$ in two stages:
+
+- Hadamards on $q_1$, $q_2$, and $q_3$ change the X factors into Z factors.
+- The CNOT ladder collects their parity onto $q_0$.
+
+Consequently, $G^{\dagger}Z_0G=P$. Choosing $U=R_z(\theta)$ on $q_0$ gives
+
+$$
+W(\theta)=G^{\dagger}R_z(\theta)G
+=e^{-i\theta Z_0X_1X_2X_3/2}.
+$$
+
+Only the central rotation receives the external control $c$. The purple box
+is $\mathrm{C}(U)=\mathrm{C}R_z(\theta)$, with target $q_0$; the matching
+blue boxes apply $G$ and $G^{\dagger}$ unconditionally. Together they implement
+
+$$
+\mathrm{C}(W)=(I_c\otimes G^{\dagger})\,\mathrm{C}(U)\,(I_c\otimes G).
+$$
+
+- $c=0$: the rotation is skipped, so $G^{\dagger}G$ cancels to identity.
+- $c=1$: the complete Pauli gadget $W(\theta)$ is applied.
+- Controlled dagger replaces the central rotation with
+  $\mathrm{C}R_z(-\theta)$, giving $\mathrm{C}(W^{\dagger})$.
 
 ```{tikz}
 :alt: A controlled four-qubit Pauli gadget for Z0 X1 X2 X3. Matching blue boxes enclose G and G dagger, each containing Hadamard basis changes and a CNOT parity ladder. A purple box encloses the middle controlled Rz rotation; the external control c acts only on this rotation.
