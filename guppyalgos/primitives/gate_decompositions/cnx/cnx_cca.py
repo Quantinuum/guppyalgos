@@ -17,11 +17,13 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
-from guppylang.std.quantum import qubit, toffoli, x, cx, discard
+from guppylang.std.quantum import cx, discard, qubit, toffoli, x
+
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import unitary_modify_cnx
 
 
 @guppy
@@ -598,6 +600,7 @@ def _log_ladder_two_ancillas[n_controls: nat](
         )
 
 
+@unitary_modify_cnx
 @guppy
 @no_type_check
 def cnx_cca_logdepth[n_controls: nat](
