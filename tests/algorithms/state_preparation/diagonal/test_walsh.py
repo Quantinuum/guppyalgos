@@ -4,12 +4,26 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from typing import no_type_check
+from guppylang import guppy
+from guppylang.std.builtins import control, dagger
+from guppylang.std.debug import state_output
+from guppylang.std.quantum import discard_array, h
+from selene_sim import Quest
 
 from guppyalgos.algorithms.state_preparation.diagonal import (
     diagonal_unitary_walsh,
     fast_walsh_hadamard_transform,
 )
-from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    get_statevector,
+    get_total_state_on_only_specified_registers,
+    get_unitary,
+    switch_endianness,
+)
+from guppyalgos.utils import qarray
 
 
 # ---------------------------------------------------------------------------
@@ -132,3 +146,52 @@ def test_diagonal_unitary_walsh_invalid_empty() -> None:
     """diagonal_unitary_walsh should reject an empty diagonal cleanly."""
     with pytest.raises(ValueError, match="power of 2"):
         diagonal_unitary_walsh(np.array([]))
+
+
+def test_diagonal_unitary_walsh_controlled_relative_phase() -> None:
+    """Controlled Walsh synthesis preserves its phase relative to the idle branch."""
+    phases = np.array([0.3, -0.3])
+    diagonal = np.exp(1j * phases)
+    circ = diagonal_unitary_walsh(diagonal)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(1)
+        targets = qarray(1)
+        h(controls[0])
+        h(targets[0])
+        with control(controls[0]):
+            circ(targets)
+        state_output("controls", controls)
+        state_output("targets", targets)
+        discard_array(controls)
+        discard_array(targets)
+
+    expected = np.array([1.0, diagonal[0], 1.0, diagonal[1]], dtype=np.complex128) / 2
+    result = main.emulator(2).run()
+    states = Quest.extract_states_dict(result.results[0].entries)
+    actual, _ = get_total_state_on_only_specified_registers(
+        states, ["controls", "targets"]
+    )
+    np.testing.assert_allclose(actual.state, expected, atol=1e-8)
+
+
+def test_diagonal_unitary_walsh_daggered_roundtrip() -> None:
+    """The daggered Walsh circuit reverses its action on a superposition."""
+    circ = diagonal_unitary_walsh(np.exp(1j * np.array([0.3, -0.3])))
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        targets = qarray(1)
+        h(targets[0])
+        circ(targets)
+        with dagger:
+            circ(targets)
+        state_output("result_state", targets)
+        discard_array(targets)
+
+    expected = np.array([1.0, 1.0], dtype=np.complex128) / np.sqrt(2)
+    actual = switch_endianness(get_statevector(main, 1))
+    assert_allclose_ignorephase(actual, expected)
