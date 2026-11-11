@@ -96,9 +96,7 @@ def diagonal_unitary_walsh(
 
     Returns:
         GuppyFunctionDefinition implementing the diagonal unitary on n qubits,
-        where 2^n = len(diagonal). Supports dagger and control modifiers for
-        the synthesized circuit. The identity Walsh coefficient is omitted,
-        so controls preserve the synthesized circuit's phase convention.
+        where 2^n = len(diagonal).
 
     Raises:
         ValueError: If diagonal length is not a power of 2 or entries are not unitary.
