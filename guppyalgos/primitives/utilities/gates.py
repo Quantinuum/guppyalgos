@@ -525,7 +525,7 @@ class apply_phase:  # noqa: D101
         Not just equal to controlled Rz as global phase in __call__ gets converted to
         a relative phase.
         """
-        if n==1:
+        if n == 1:
             _cphase(ctrls[0], q, theta)
         else:
             temp_control = qubit()
@@ -542,7 +542,7 @@ class apply_phase:  # noqa: D101
         Not just equal to controlled Rz as global phase gets converted to
         a relative phase.
         """
-        if n==1:
+        if n == 1:
             _cphase(ctrls[0], q, -theta)
         else:
             temp_control = qubit()
