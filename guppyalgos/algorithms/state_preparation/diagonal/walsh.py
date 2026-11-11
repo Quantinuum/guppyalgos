@@ -112,7 +112,7 @@ def diagonal_unitary_walsh(
     walsh_coeffs = fast_walsh_hadamard_transform(np.angle(diagonal))
 
     rotations: list[float] = []
-    target_masks: list[list[bool]] = []
+    target_indices: list[int] = []
     control_masks: list[list[bool]] = []
     for k, coeff in enumerate(walsh_coeffs):
         angle_rad = float(coeff) / size
@@ -126,16 +126,15 @@ def diagonal_unitary_walsh(
         target = support[-1]
         controls = set(support[:-1])
         rotations.append(-2.0 * angle_rad / np.pi)
-        target_masks.append([i == target for i in range(n)])
+        target_indices.append(target)
         control_masks.append([i in controls for i in range(n)])
 
     @guppy.comptime(unitary=True)
     @no_type_check
     def walsh_circuit(qs: array[qubit, n]) -> None:
-        for theta, targets, controls in zip(
-            rotations, target_masks, control_masks, strict=True
+        for theta, target, controls in zip(
+            rotations, target_indices, control_masks, strict=True
         ):
-            target = targets.index(True)
             for idx in range(n):
                 if controls[idx]:
                     cx(qs[idx], qs[target])
