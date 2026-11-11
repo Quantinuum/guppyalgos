@@ -458,6 +458,27 @@ from the surrounding modifier blocks:
 | `with control(controls):` | G → controlled-U → G† |
 | `with control(controls), dagger:` | G → controlled-U† → G† |
 
+This compute–apply–uncompute structure is common in quantum algorithms:
+basis changes surround Pauli rotations, state preparation surrounds SELECT
+in an LCU block encoding, and preparation surrounds a phase flip in a
+reflection.
+
+The pattern also composes recursively. A component function can call another
+conjugation box's `compose` method, so an outer box can contain conjugation
+boxes within its $G$ or $U$. For example, starting from a unitary $W_0$,
+
+$$
+W_{k+1}=G_k^{\dagger}W_kG_k
+$$
+
+defines nested conjugations. Expose each inner box through a
+`@guppy(unitary=True)` function to use it as the next box's $U$; it is also
+daggerable, so it can serve as $G$. All components must accept the same
+register shape. When controlling the outer box, its $G$ and $G^{\dagger}$
+remain unconditional, while control passes into $U$. If $U$ is itself a
+conjugation box, its own basis changes also remain unconditional and only
+its middle operation receives the control.
+
 ### A controlled Pauli gadget
 
 Take $P=Z_0X_1X_2X_3$. The following functions build its basis change and
