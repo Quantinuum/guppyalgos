@@ -95,7 +95,7 @@ def _parity_sequential_kernel[n_qs_qubits: nat](
 
 
 @guppy.unitary
-class parity_sequential[n_qs_qubits: nat]:
+class parity_sequential[n_qs_qubits: nat]:  # noqa: D101
     @guppy
     @no_type_check
     def __call__(q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]) -> None:
