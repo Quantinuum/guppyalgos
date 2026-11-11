@@ -6,7 +6,10 @@ from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import cz, h, measure_array, qubit, z
 
-from guppyalgos.utils import qarray, transversal
+from guppyalgos.primitives.gate_decompositions.cnx.cnu import MultiCntrlFunction
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 
 
 def parity_laqcc_total_qubits(n_input_qubits: int) -> int:
@@ -28,7 +31,45 @@ def parity_laqcc_total_qubits(n_input_qubits: int) -> int:
 
 @guppy
 @no_type_check
-def parity_sequential[n_qs_qubits: nat](
+def _parity_sequential_phase_kernel[n_qs_qubits: nat](
+    control: qubit, qs_inputs: array[qubit, n_qs_qubits]
+) -> None:
+    """Apply the CZ loop used between the parity target's Hadamards."""
+    for i in range(n_qs_qubits):
+        cz(control, qs_inputs[i])
+
+
+@guppy
+@no_type_check
+def _parity_sequential_cntrl_compose[n_qs_qubits: nat, n_controls: nat](
+    controls: array[qubit, n_controls], qs_inputs: array[qubit, n_qs_qubits]
+) -> None:
+    """Compute the combined control predicate once, then apply the CZ loop."""
+    operation = MultiCntrlFunction[n_controls, array[qubit, n_qs_qubits]](
+        _parity_sequential_phase_kernel[n_qs_qubits], cnx[n_controls]
+    )
+    operation.compose(controls, qs_inputs)
+
+
+@guppy.comptime
+def _parity_sequential_cntrl[n_qs_qubits: nat, k: nat](
+    q_target: qubit, qs_inputs: array[qubit, n_qs_qubits], controls: array[qubit, k]
+) -> None:
+    """Share the AND of external controls and the target between its Hadamards.
+
+    Comptime packing preserves the borrowed scalar-target API. The combined
+    k + 1 controls drive the CZ loop. When any external control is zero, the
+    loop acts as identity and the target's two Hadamards cancel.
+    """
+    h(q_target)
+    combined_controls = [*controls, q_target]
+    _parity_sequential_cntrl_compose(combined_controls, qs_inputs)
+    h(q_target)
+
+
+@guppy
+@no_type_check
+def _parity_sequential_kernel[n_qs_qubits: nat](
     q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]
 ) -> None:
     """XOR the parity of the input register into a target qubit.
@@ -49,9 +90,55 @@ def parity_sequential[n_qs_qubits: nat](
 
     """
     h(q_target)
-    for i in range(n_qs_qubits):
-        cz(q_target, qs_inputs[i])
+    _parity_sequential_phase_kernel(q_target, qs_inputs)
     h(q_target)
+
+
+@guppy.unitary
+class parity_sequential[n_qs_qubits: nat]:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]) -> None:
+        """XOR the parity of the input register into a target qubit.
+
+        This operation implements
+        ``|x_0, ..., x_n-1>|t> -> |x_0, ..., x_n-1>|t XOR x_0 XOR ... XOR x_n-1>``
+        using a sequence of controlled operations and no ancilla qubits.
+
+        Args:
+            q_target: Qubit into which the input parity is XORed.
+            qs_inputs: Input register. Its length determines the circuit size at
+                compile time.
+
+        Examples:
+            For inputs ``|1, 0, 1, 1>`` and target ``|0>``, the target becomes
+            ``|1>`` because ``0 XOR 1 XOR 0 XOR 1 XOR 1 = 1``. The four input
+            qubits are unchanged.
+
+        """
+        _parity_sequential_kernel(q_target, qs_inputs)
+
+    @guppy
+    @no_type_check
+    def daggered(q_target: qubit, qs_inputs: array[qubit, n_qs_qubits]) -> None:
+        """Apply the selected circuit mode."""
+        _parity_sequential_kernel(q_target, qs_inputs)
+
+    @guppy
+    @no_type_check
+    def controlled[k: nat](
+        q_target: qubit, qs_inputs: array[qubit, n_qs_qubits], controls: array[qubit, k]
+    ) -> None:
+        """Apply parity using one shared external-control predicate."""
+        _parity_sequential_cntrl(q_target, qs_inputs, controls)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[k: nat](
+        q_target: qubit, qs_inputs: array[qubit, n_qs_qubits], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        _parity_sequential_cntrl(q_target, qs_inputs, controls)
 
 
 @guppy

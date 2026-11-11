@@ -189,7 +189,7 @@ class ToffoliLadderLog:
 def _reflect_ladder(
     asc_inds: list[IndexTriple],
 ) -> list[IndexTriple]:
-    n_qubits = 1 + max(index for gate in asc_inds for index in gate)
+    n_qubits = 1 + max((index for gate in asc_inds for index in gate), default=0)
     return [
         (
             n_qubits - 1 - i,
@@ -216,7 +216,8 @@ def _reflect_labeled_ladder(
     asc_inds: list[LabeledIndexTriple],
 ) -> list[LabeledIndexTriple]:
     n_qubits = 1 + max(
-        index for gate in asc_inds for register, index in gate if register == 0
+        (index for gate in asc_inds for register, index in gate if register == 0),
+        default=0,
     )
     return [
         (

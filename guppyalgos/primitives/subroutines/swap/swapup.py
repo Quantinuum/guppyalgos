@@ -7,7 +7,7 @@ from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import qubit
 
-from guppyalgos.utils.guppy.gates import cswap_qubit, cswap_register
+from guppyalgos.primitives.utilities.gates import cswap_qubit, cswap_register
 
 
 def _swapup_linear_schedule(

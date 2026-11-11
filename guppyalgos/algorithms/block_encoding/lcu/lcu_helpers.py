@@ -15,7 +15,7 @@ from guppylang.std.angles import angle
 from guppylang.std.builtins import Function, array, nat
 from guppylang.std.quantum import h, qubit, s, sdg, toffoli, x
 
-from guppyalgos.utils import cphase
+from guppyalgos.primitives.utilities.gates import cphase
 from guppyalgos.algorithms.select import (
     build_cntrl_select_unary_from_data,
     build_select_unary_from_data,

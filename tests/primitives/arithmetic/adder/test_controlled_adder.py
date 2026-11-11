@@ -31,7 +31,9 @@ from guppyalgos.primitives.arithmetic import (
     cntrl_adder_ripple_cuccaro_mod_dagger,
     cntrl_adder_ripple_cuccaro_carry_out_dagger,
 )
-from guppyalgos.utils import qarray, int_to_bits, apply_bitstring
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,

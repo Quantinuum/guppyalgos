@@ -17,7 +17,7 @@ import zixy.qubit.pauli as zqp
 
 from guppyalgos.primitives.pauli.pauli_exp.pauli_exp_depth1 import pauli_exp_depth1
 from guppyalgos.utils import qarray
-from guppyalgos.utils.guppy.gates import transversal
+from guppyalgos.primitives.utilities.gates import transversal
 
 from guppyalgos.testing import assert_allclose_ignorephase
 from tests.primitives.pauli.pauli_exp.pauli_exp_helpers import pauli_exp_matrix

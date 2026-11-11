@@ -16,7 +16,9 @@ from guppyalgos.primitives.rotations import (
     qrom_identity,
 )
 from guppyalgos.algorithms.select import SelectRotator
-from guppyalgos.utils import ccswap, cswap, discard_nested_arrays, qarray
+from guppyalgos.primitives.utilities.gates import ccswap, cswap
+from guppyalgos.utils import qarray
+from guppyalgos.utils import discard_nested_arrays
 from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 

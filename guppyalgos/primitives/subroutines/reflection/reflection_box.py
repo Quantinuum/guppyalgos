@@ -1,35 +1,46 @@
 """Reflection box based on the CnZ implementation."""
 
+from __future__ import annotations
+
 from typing import no_type_check
 
 from guppylang.decorator import guppy
 from guppylang.std.builtins import Function, array, comptime, nat
-from guppylang.std.quantum import x, qubit
+from guppylang.std.quantum import qubit, x
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnz import cnz
-from guppyalgos.utils import transversal
+from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
 )
 
 
-@guppy.comptime
-def _assert_n_qubits_is_one_more_than_cntrls(
-    n_qubits: nat @ comptime, n_controls: nat @ comptime
+@guppy
+@no_type_check
+def reflect_zero[n_controls: nat](
+    controls: array[qubit, n_controls],
+    target: qubit,
+    cnx_box: Function[[array[qubit, n_controls], qubit], None],
 ) -> None:
-    if n_qubits != n_controls + 1:
-        raise ValueError(
-            f"""reflection_box requires n_qubits == n_controls + 1,
-            got {n_qubits} n_qubits and {n_controls} n_controls"""
-        )
+    """Apply I - 2|0...0><0...0| to separate controls and target.
+
+    Flip the sign only when all controls and the target are zero. With no
+    controls, this applies XZX = -Z to the target. The supplied controlled-X
+    implementation determines the decomposition and any ancilla requirements.
+    """
+    transversal(x, controls)
+    x(target)
+    cnz(controls, target, cnx_box)
+    x(target)
+    transversal(x, controls)
 
 
 @guppy
 @no_type_check
-def reflection_box[n_qubits: nat, n_controls: nat](
+def reflection_box[n_qubits: nat](
     qreg: array[qubit, n_qubits],
-    cnx_box: Function[[array[qubit, n_controls], qubit], None],
+    cnx_box: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None],  # ty: ignore[unsupported-operator]
 ) -> None:
     r"""Apply a Householder reflection about the all-zero state.
 
@@ -48,30 +59,24 @@ def reflection_box[n_qubits: nat, n_controls: nat](
     every control qubit is in state :math:`\lvert 0\rangle`.
 
     """
-    _assert_n_qubits_is_one_more_than_cntrls(n_qubits, n_controls)
-
     borrowed_qreg = _unsafe_array_borrow(qreg)
-    controls = array(borrowed_qreg.take(i) for i in range(n_controls))
-    target = borrowed_qreg.take(n_controls)
+    controls = array(borrowed_qreg.take(i) for i in range(comptime(n_qubits - 1)))
+    target = borrowed_qreg.take(n_qubits - 1)
 
-    transversal(x, controls)
-    x(target)
-    cnz(controls, target, cnx_box)
-    x(target)
-    transversal(x, controls)
+    reflect_zero(controls, target, cnx_box)
 
     i = 0
     for q in controls:
         borrowed_qreg.put(q, i)
         i += 1
-    borrowed_qreg.put(target, n_controls)
+    borrowed_qreg.put(target, n_qubits - 1)
 
     _unsafe_array_unborrow(qreg, borrowed_qreg)
 
 
 @guppy.struct
 @no_type_check
-class Reflection[n_qubits: nat, n_controls: nat]:
+class Reflection[n_qubits: nat]:
     r"""Guppy struct representing a reflection operator.
 
     The operator is
@@ -83,7 +88,7 @@ class Reflection[n_qubits: nat, n_controls: nat]:
     and is used in the qubitization walk operator :math:`W = R L`.
     """
 
-    cnx_method: Function[[array[qubit, n_controls], qubit], None]
+    cnx_method: Function[[array[qubit, comptime(n_qubits - 1)], qubit], None]  # ty: ignore[unsupported-operator]
 
     @guppy
     @no_type_check

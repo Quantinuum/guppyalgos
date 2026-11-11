@@ -24,7 +24,7 @@ from guppyalgos.primitives.rotations import (
     comparator_based_rz_cascade,
     n_comparator_based_rz_cascade_ancillas,
 )
-from guppyalgos.utils import transversal
+from guppyalgos.primitives.utilities.gates import transversal
 from guppylang.std.debug import state_result
 from selene_sim import Quest
 

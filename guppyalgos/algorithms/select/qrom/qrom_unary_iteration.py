@@ -18,7 +18,7 @@ from guppyalgos.algorithms.select import (
     select_unary_iteration,
     build_select_unary_from_data,
 )
-from guppyalgos.utils import transversal
+from guppyalgos.primitives.utilities.gates import transversal
 
 
 def qrom_unary_iteration[Data, TargetRegs, n_i_q: nat](
