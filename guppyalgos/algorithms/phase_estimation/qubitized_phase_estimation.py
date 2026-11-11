@@ -30,9 +30,11 @@ def qubitized_power_oracle[n_prep_q: nat, n_target_q: nat](
 ) -> None:
     """Apply a controlled qubitization walk repeatedly as requested by QPE.
 
-    Modifier migration is deferred: Guppy 1.1.1 cannot infer a ``Unitary``
-    callback protocol depending on generic register sizes. Concrete walk and
-    public struct integration remain deferred; no modifiers are advertised.
+    The runtime repetition loop does not support automatic dagger generation
+    in Guppy 1.2.0. Keep the forward-only callback contract until explicit
+    modifier paths and the concrete walk's capabilities are validated. Generic
+    ``Unitary`` callback inference itself now works for these register sizes;
+    public struct modifier migration remains a separate task.
     """
     for _ in range(power):
         cntrl_walk(control, regs.prep, regs.target)
