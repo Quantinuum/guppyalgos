@@ -17,7 +17,8 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.subroutines.parity import parity_laqcc
-from guppyalgos.utils import qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
 
 
 def fanout_measurement_compute_total_qubits(n_state_qubits: int) -> int:
@@ -134,7 +135,8 @@ def fanout_measurement_uncompute[n_state_qubits: nat](
         bit_a ^= bits[i]
     if bit_a:
         z(q_target)
-    transversal(reset, qs_copies)
+    for i in range(n_state_qubits):
+        reset(qs_copies[i])
 
 
 def fanout_measurement_parity_total_qubits(n_state_qubits: int) -> int:

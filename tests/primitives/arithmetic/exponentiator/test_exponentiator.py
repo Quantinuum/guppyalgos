@@ -9,7 +9,9 @@ from guppylang.std.builtins import array, output
 from guppylang.std.quantum import collect_measurements, discard_array, measure_array, h
 
 from guppyalgos.primitives.arithmetic import exponentiator_ripple_gidney_mod
-from guppyalgos.utils import int_to_bits, qarray, apply_bitstring
+from guppyalgos.primitives.utilities.gates import apply_bitstring
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 
 
 @pytest.mark.parametrize(

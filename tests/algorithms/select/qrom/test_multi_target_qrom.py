@@ -11,7 +11,8 @@ from selene_sim import Quest
 
 from guppyalgos.primitives.measurement import discard_nested_array
 from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
-from guppyalgos.utils import int_to_bits, qarray
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import assert_allclose_ignorephase
 
 

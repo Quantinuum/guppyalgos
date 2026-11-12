@@ -6,7 +6,7 @@ from guppylang import array, guppy, qubit
 from guppylang.std.builtins import nat
 from guppylang.std.quantum import cx, x, toffoli, discard
 
-from guppyalgos.utils import transversal
+from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,

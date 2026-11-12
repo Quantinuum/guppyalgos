@@ -48,7 +48,9 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_uncompute,
 )
 from guppyalgos.primitives.state_preparation import uniform_state
-from guppyalgos.utils import int_to_bits, qarray, transversal
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,

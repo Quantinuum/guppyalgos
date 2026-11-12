@@ -26,7 +26,8 @@ from guppyalgos.primitives.gate_decompositions.cnx.cnx_teleportation import (
     cnx_teleportation,
     _get_num_ancillas_cnx_teleportation,
 )
-from guppyalgos.utils import int_to_bits, qarray
+from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
@@ -107,13 +108,20 @@ def test_cnx(
     control_qubits = spec_qubit_dict["controls"]
     target_qubit = spec_qubit_dict["target"]
     control_bitstrings = [int_to_bits(i, n_controls) for i in range(2**n_controls)]
+
+    # get the global phase to check all branches have the same phase
+    non_work_state.specified_qubits = control_qubits
+    projected = project_state_onto_bitstring(non_work_state, [False] * n_controls)
+    projected.state.specified_qubits = target_qubit
+    global_phase = projected.state.state[0]
+
     for bitstring in control_bitstrings:
         non_work_state.specified_qubits = control_qubits
         projected = project_state_onto_bitstring(non_work_state, bitstring)
         np.testing.assert_allclose(projected.probability, 1 / 2**n_controls)
         projected.state.specified_qubits = target_qubit
-        target_sv = projected.state.get_single_state()
+        target_sv = projected.state.state
         if bitstring == [True] * n_controls:
-            np.testing.assert_allclose([0, 1], target_sv)
+            np.testing.assert_allclose(global_phase * np.array([0, 1]), target_sv)
         else:
-            np.testing.assert_allclose([1, 0], target_sv)
+            np.testing.assert_allclose(global_phase * np.array([1, 0]), target_sv)

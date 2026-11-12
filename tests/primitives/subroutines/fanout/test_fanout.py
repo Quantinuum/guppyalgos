@@ -12,11 +12,15 @@ their required target-register input state.
 """
 
 from collections.abc import Callable
+from itertools import product
 from typing import no_type_check
 
+import numpy as np
 import pytest
+from numpy.typing import NDArray
 from guppylang import guppy
-from guppylang.std.builtins import output
+from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.builtins import array, comptime, control, dagger, output
 from guppylang.std.quantum import (
     collect_measurements,
     h,
@@ -35,7 +39,15 @@ from guppyalgos.primitives.subroutines.fanout import (
     fanout_measurement_parity_total_qubits,
     fanout_measurement_uncompute,
 )
-from guppyalgos.utils import qarray, transversal
+from guppyalgos.primitives.subroutines.parity import parity_sequential
+from guppyalgos.primitives.utilities.gates import transversal
+from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
+from guppyalgos.utils import bits_to_int, qarray
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow_slice,
+    _unsafe_array_unborrow_slice,
+)
+
 
 _ZERO_BITS = [False, False, False, False, False, False]
 _ONE_BITS = [True, True, True, True, True, True]
@@ -267,3 +279,147 @@ def test_fanout_preserves_all_plus_state(
     )
     assert result["state"][0] == _ZERO_BITS
     assert result["control"][0] == 0
+
+
+def _fanout_output(target: bool, bits: list[bool]) -> tuple[bool, list[bool]]:
+    return target, [bit ^ target for bit in bits]
+
+
+def _parity_output(target: bool, bits: list[bool]) -> tuple[bool, list[bool]]:
+    return target ^ (sum(bits) % 2 == 1), bits
+
+
+def _expected_unitary(
+    expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
+    *,
+    controlled: bool,
+    n_controls: int = 1,
+    n_data: int = 2,
+) -> NDArray[np.complex128]:
+    """Build a permutation matrix from a primitive's output rule.
+
+    Bits are little endian: external controls, target, then data qubits.
+    Each column represents an input bitstring; its single entry of 1 selects
+    the corresponding output bitstring. All other amplitudes are zero.
+
+    With ``controlled=False``, apply the primitive for every external control
+    bitstring. With ``controlled=True``, apply it only when all external
+    controls are 1, using the identity otherwise. External controls are always
+    preserved. With no external controls, both cases apply the primitive.
+
+    Both primitives are self-adjoint, so forward and dagger share the
+    uncontrolled matrix; control and controlled dagger share the controlled
+    matrix. This helper describes their phase-free permutations only.
+    """
+    n_qubits = n_controls + 1 + n_data
+    unitary = np.zeros((2**n_qubits, 2**n_qubits), dtype=np.complex128)
+    for input_bits in product([False, True], repeat=n_qubits):
+        external_bits = list(input_bits[:n_controls])
+        input_target = input_bits[n_controls]
+        input_data = list(input_bits[n_controls + 1 :])
+        if controlled and not all(external_bits):
+            output_target, output_data = input_target, input_data
+        else:
+            output_target, output_data = expected_output(input_target, input_data)
+
+        input_index = bits_to_int(list(input_bits))
+        output_index = bits_to_int([*external_bits, output_target, *output_data])
+        unitary[output_index, input_index] = 1
+    return unitary
+
+
+@pytest.mark.parametrize(
+    ("operation", "expected_output"),
+    [
+        pytest.param(fanout_basic, _fanout_output, id="fanout-basic"),
+        pytest.param(parity_sequential, _parity_output, id="parity-sequential"),
+    ],
+)
+@pytest.mark.parametrize("mode", ["forward", "dagger", "control", "controlled_dagger"])
+def test_basic_modifiers(
+    operation: GuppyFunctionDefinition[[qubit, array[qubit, 2]], None],
+    expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
+    mode: str,
+) -> None:
+    """Check each primitive and modifier against its full permutation unitary."""
+
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, 4]) -> None:
+        """Adapt the primitive to get_unitary's single borrowed-array argument.
+
+        Temporarily split the array into the external control/target prefix
+        and the data register, then restore all qubits to the original array.
+        """
+        controls, data, suffix = _unsafe_array_borrow_slice(qs, 2, 2, 0)
+        if comptime(mode == "forward"):
+            operation(controls[1], data)
+        elif comptime(mode == "dagger"):
+            with dagger:
+                operation(controls[1], data)
+        elif comptime(mode == "control"):
+            with control(controls[0]):
+                operation(controls[1], data)
+        else:
+            with control(controls[0]), dagger:
+                operation(controls[1], data)
+        _unsafe_array_unborrow_slice(qs, controls, data, suffix)
+
+    expected = _expected_unitary(
+        expected_output, controlled=mode in ("control", "controlled_dagger")
+    )
+    n_extra = int(mode in ("control", "controlled_dagger"))
+    assert_allclose_ignorephase(
+        get_unitary(circuit, 4, endianness=Endianness.LITTLE, n_extra_qubits=n_extra),
+        expected,
+    )
+
+
+@pytest.mark.parametrize(
+    ("operation", "expected_output"),
+    [
+        pytest.param(fanout_basic, _fanout_output, id="fanout-basic"),
+        pytest.param(parity_sequential, _parity_output, id="parity-sequential"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("n_controls", "n_data"), [(1, 0), (2, 0), (2, 1), (2, 3), (3, 2)]
+)
+@pytest.mark.parametrize(
+    "daggered", [False, True], ids=["control", "controlled-dagger"]
+)
+def test_basic_multiple_controls(
+    operation: GuppyFunctionDefinition,
+    expected_output: Callable[[bool, list[bool]], tuple[bool, list[bool]]],
+    n_controls: int,
+    n_data: int,
+    daggered: bool,
+) -> None:
+    """Check shared-flag controls and clean work qubits against the full unitary."""
+    n_qubits = n_controls + 1 + n_data
+
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, n_qubits]) -> None:
+        controls, targets, suffix = _unsafe_array_borrow_slice(
+            qs, n_controls, comptime(1 + n_data), 0
+        )
+        intrinsic, data, empty = _unsafe_array_borrow_slice(targets, 1, n_data, 0)
+        with control(controls):
+            if comptime(daggered):
+                with dagger:
+                    operation(intrinsic[0], data)
+            else:
+                operation(intrinsic[0], data)
+        _unsafe_array_unborrow_slice(targets, intrinsic, data, empty)
+        _unsafe_array_unborrow_slice(qs, controls, targets, suffix)
+
+    expected = _expected_unitary(
+        expected_output, controlled=True, n_controls=n_controls, n_data=n_data
+    )
+    # The predicate includes the intrinsic control: one flag plus CNX ancillas.
+    n_extra = 1 + n_controls // 2
+    actual = get_unitary(
+        circuit, n_qubits, endianness=Endianness.LITTLE, n_extra_qubits=n_extra
+    )
+    assert_allclose_ignorephase(actual, expected)
