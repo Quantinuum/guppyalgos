@@ -157,15 +157,11 @@ def _ccry_cx_kernel(
         theta: The rotation angle.
 
     """
-    # Preserve the decomposition's fixed two repetitions.
-    ry(target, theta / 4)
-    cx(control2, target)
-    ry(target, -theta / 4)
-    cx(control1, target)
-    ry(target, theta / 4)
-    cx(control2, target)
-    ry(target, -theta / 4)
-    cx(control1, target)
+    for _ in range(2):
+        ry(target, theta / 4)
+        cx(control2, target)
+        ry(target, -theta / 4)
+        cx(control1, target)
 
 
 @guppy
