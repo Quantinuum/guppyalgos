@@ -6,7 +6,7 @@ from itertools import product
 from guppylang import guppy
 from collections.abc import Callable
 from guppylang.std.quantum import qubit, x, array, angle
-from guppylang.std.builtins import comptime, control, dagger
+from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_output
 from guppylang.defs import GuppyFunctionDefinition
 from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
@@ -16,7 +16,7 @@ from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
     ccry_toffoli,
     ccry_cx,
 )
-from guppyalgos.testing import get_statevector, get_unitary, assert_allclose_ignorephase
+from guppyalgos.testing import get_statevector, assert_unitary_modifiers
 
 
 from typing import no_type_check
@@ -193,65 +193,40 @@ def test_ccu_gate_are_self_adjoint(
     assert np.isclose(np.abs(result_state[ind]), 1.0)
 
 
-def ccry_unitary(theta: float):
-    """Return the exact 8x8 unitary matrix for the CCRY gate."""
-    U = np.eye(8, dtype=complex)
-
-    cos_half = np.cos(theta / 2)
-    sin_half = np.sin(theta / 2)
-    ry = np.array([[cos_half, -sin_half], [sin_half, cos_half]], dtype=complex)
-
-    U[6:8, 6:8] = ry
-
-    return U
-
-
 @pytest.mark.parametrize("ccry_fun", [ccry_toffoli, ccry_cx])
-def test_ccry_gate(
+@pytest.mark.parametrize("theta", [-0.3, 0.0, 0.25])
+def test_ccry_modifiers(
     ccry_fun: GuppyFunctionDefinition[[qubit, qubit, qubit, angle], None],
+    theta: float,
 ) -> None:
-    """Test CCRy gate with different decompositions and angles."""
-    thetas = np.arange(-10, 11) / 10
+    """Check every modifier against an independent CCRy matrix, including phases."""
 
-    for theta in thetas:
-
-        @guppy
-        @no_type_check
-        def apply_ccry(qs: array[qubit, 3]) -> None:
-            ccry_fun(qs[0], qs[1], qs[2], angle(comptime(theta)))  # noqa: B023
-
-        u_guppy = get_unitary(apply_ccry, 3)
-        u_exact = ccry_unitary(theta * np.pi)
-        assert_allclose_ignorephase(u_guppy, u_exact)
-
-
-def test_ccry_modifier_compilation() -> None:
-    """Compile public modes with runtime angles and two extra controls."""
-
-    @guppy
+    @guppy(unitary=True)
     @no_type_check
-    def program(qs: array[qubit, 3], controls: array[qubit, 2], theta: angle) -> None:
-        ccry_toffoli(qs[0], qs[1], qs[2], theta)
-        ccry_cx(qs[0], qs[1], qs[2], theta)
-        with dagger:
-            ccry_toffoli(qs[0], qs[1], qs[2], theta)
-            ccry_cx(qs[0], qs[1], qs[2], theta)
-        with control(controls):
-            ccry_toffoli(qs[0], qs[1], qs[2], theta)
-            ccry_cx(qs[0], qs[1], qs[2], theta)
-        with control(controls), dagger:
-            ccry_toffoli(qs[0], qs[1], qs[2], theta)
-            ccry_cx(qs[0], qs[1], qs[2], theta)
+    def apply_ccry(qs: array[qubit, 3]) -> None:
+        ccry_fun(qs[0], qs[1], qs[2], angle(theta))
 
-    # Guppy 1.1.1's default optimizer panics on this mixed-mode runtime-angle
-    # composition. Minimal optimization still lowers all generated modifiers.
-    program.with_minimal_opt().compile_function()
+    c = np.cos(theta * np.pi / 2)
+    s = np.sin(theta * np.pi / 2)
+    # Basis order: |control1, control2, target>. Only |11> rotates the target.
+    expected = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, c, -s],
+            [0, 0, 0, 0, 0, 0, s, c],
+        ],
+        dtype=np.complex128,
+    )
 
-    @guppy
-    @no_type_check
-    def combined(qs: array[qubit, 3], controls: array[qubit, 2], theta: angle) -> None:
-        with control(controls), dagger:
-            ccry_toffoli(qs[0], qs[1], qs[2], theta)
-            ccry_cx(qs[0], qs[1], qs[2], theta)
-
-    combined.compile_function()
+    # Added control uses an AND flag and a three-control CNX with one ancilla.
+    assert_unitary_modifiers(
+        apply_ccry,
+        3,
+        expected_unitary=expected,
+        n_extra_qubits=2,
+    )
