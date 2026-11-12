@@ -600,53 +600,27 @@ def swap() -> None:
     ...
 
 
-# Explicit gates for cswaps to avoid modifier lowering bugs
-# and struct-field borrowing bugs: https://github.com/Quantinuum/guppylang/issues/2466.
-# Plain calls also avoid unsupported modifiers inside comptime functions:
-# https://github.com/Quantinuum/guppylang/issues/2461.
-@guppy(daggerable=True)
+# wrapper for _cswap as direct `with control` not yet supported in guppy.comptime
+@guppy(unitary=True)
 @no_type_check
 def _cswap_qubit(c: qubit, a: qubit, b: qubit) -> None:
     """Apply a controlled swap without modifiers."""
-    cx(a, b)
-    toffoli(c, b, a)
-    cx(a, b)
+    with control(c):
+        swap_qubit(a, b)
 
 
-@guppy.comptime(daggerable=True)
-@no_type_check
-def _cswap_register_impl[n: nat](
-    c: qubit, a: array[qubit, n], b: array[qubit, n]
-) -> None:
-    """Apply controlled swaps register-wise without modifiers."""
-    for i in range(n):
-        _cswap_qubit(c, a[i], b[i])
-
-
-@guppy(daggerable=True)
+@guppy(unitary=True)
 @no_type_check
 def _cswap_register[n: nat](c: qubit, a: array[qubit, n], b: array[qubit, n]) -> None:
     """Apply daggerable controlled register swap."""
-    _cswap_register_impl(c, a, b)
+    with control(c):
+        swap_reg(a, b)
 
 
 @guppy.overload(_cswap_qubit, _cswap_register)
 def _cswap() -> None:
     """Apply controlled-swap workaround to qubits or registers."""
     ...
-
-
-@guppy
-@no_type_check
-def _ccswap[n: nat](
-    c0: qubit, c1: qubit, a: array[qubit, n], b: array[qubit, n]
-) -> None:
-    """Swap registers conditioned on both controls using a work qubit."""
-    work = qubit()
-    toffoli(c0, c1, work)
-    _cswap(work, a, b)
-    toffoli(c0, c1, work)
-    discard(work)
 
 
 @guppy

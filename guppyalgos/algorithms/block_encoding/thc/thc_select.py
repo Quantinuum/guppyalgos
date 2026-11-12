@@ -5,21 +5,20 @@ from __future__ import annotations
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import Function, array, nat
+from guppylang.std.builtins import Function, array, control, nat
 from guppylang.std.quantum import ch, cx, cz, discard, h, qubit, toffoli, x
 
-from guppyalgos.primitives.subroutines.equality import equality_test
+from guppyalgos.algorithms.select import SelectRotator
 from guppyalgos.primitives.gate_decompositions.cnx.ccu import ccz
 from guppyalgos.primitives.rotations import (
     QROMRotations,
     Rotator,
     qrom_identity,
 )
-from guppyalgos.algorithms.select import SelectRotator
-from guppyalgos.utils import qarray
-from guppyalgos.utils import discard_nested_arrays
+from guppyalgos.primitives.subroutines.equality import equality_test
+from guppyalgos.primitives.utilities.gates import swap
+from guppyalgos.utils import discard_nested_arrays, qarray
 from guppyalgos.utils.guppy.array import join_arrays, split_array
-from guppyalgos.primitives.utilities.gates import _ccswap, _cswap
 
 
 @guppy
@@ -181,12 +180,11 @@ class SelectTHCCntrl[
 
         # Swap the indices only in the i = 1, c = 0 subspace.
         x(prep_register.one_body_flag)
-        _ccswap(
-            prep_register.one_body_flag,
-            index_swap_control,
-            prep_register.first_index_qreg,
-            prep_register.second_index_qreg,
-        )
+        with control(prep_register.one_body_flag, index_swap_control):
+            swap(
+                prep_register.first_index_qreg,
+                prep_register.second_index_qreg,
+            )
         x(prep_register.one_body_flag)
 
         # PREPARE encodes coefficient magnitudes, so this controlled phase supplies
@@ -209,7 +207,8 @@ class SelectTHCCntrl[
             ],
         )
         first_select = SelectRotator(first_qrom_rotations, _cntrl_z)
-        _cswap(first_spin_swap, target_registers.spin_up, target_registers.spin_down)
+        with control(first_spin_swap):
+            swap(target_registers.spin_up, target_registers.spin_down)
         first_select.compose(
             combined_index_qreg,
             data_qregs,
@@ -228,7 +227,8 @@ class SelectTHCCntrl[
         self.cascade = first_select.qrom_rotations.rotation_box
 
         cx(first_spin_swap, second_spin_swap)
-        _cswap(second_spin_swap, target_registers.spin_up, target_registers.spin_down)
+        with control(second_spin_swap):
+            swap(target_registers.spin_up, target_registers.spin_down)
         cx(first_spin_swap, second_spin_swap)
 
         second_qrom_rotations = QROMRotations(
@@ -257,16 +257,16 @@ class SelectTHCCntrl[
         prep_register.one_body_flag = second_select_controls.take(1)
         second_select_controls.discard_all_taken()
         x(prep_register.one_body_flag)
-        _cswap(second_spin_swap, target_registers.spin_up, target_registers.spin_down)
+        with control(second_spin_swap):
+            swap(target_registers.spin_up, target_registers.spin_down)
 
         # Undo the index swap with the same open c control.
         x(prep_register.one_body_flag)
-        _ccswap(
-            prep_register.one_body_flag,
-            index_swap_control,
-            prep_register.first_index_qreg,
-            prep_register.second_index_qreg,
-        )
+        with control(prep_register.one_body_flag, index_swap_control):
+            swap(
+                prep_register.first_index_qreg,
+                prep_register.second_index_qreg,
+            )
         x(prep_register.one_body_flag)
         x(index_swap_control)
 
