@@ -1,7 +1,5 @@
 """General utils for guppyalgos."""
 
-from guppylang.std.mem import mem_swap
-
 from typing import no_type_check
 
 from guppylang import guppy
@@ -14,8 +12,8 @@ from guppylang.std.builtins import (
     dagger,
     frozenarray,
     nat,
-    Function,
 )
+from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import (
     crz,
     cx,
@@ -26,7 +24,9 @@ from guppylang.std.quantum import (
     x,
 )
 
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import (
+    CNXPartialAndLadder,
+)
 
 
 @guppy
@@ -100,11 +100,11 @@ class transversal1:  # noqa: D101
         if n_ctrl == 1:
             _transversal1_internal_control(op, qs, ignore_, False, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal1_internal_control(op, qs, ignore_, False, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _transversal1_internal_control(op, qs, ignore_, False, temp_control)
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
     @guppy
     @no_type_check
@@ -117,11 +117,11 @@ class transversal1:  # noqa: D101
         if n_ctrl == 1:
             _transversal1_internal_control(op, qs, ignore_, True, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal1_internal_control(op, qs, ignore_, True, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _transversal1_internal_control(op, qs, ignore_, True, temp_control)
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
 
 @guppy
@@ -191,11 +191,13 @@ class transversal1_start_end:  # noqa: D101
                 op, qs, start, end, False, ctrls[0]
             )
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal1_start_end_internal_control(op, qs, start, end, False, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _transversal1_start_end_internal_control(
+                op, qs, start, end, False, temp_control
+            )
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
     @guppy
     @no_type_check
@@ -209,11 +211,13 @@ class transversal1_start_end:  # noqa: D101
         if n_ctrl == 1:
             _transversal1_start_end_internal_control(op, qs, start, end, True, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal1_start_end_internal_control(op, qs, start, end, True, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _transversal1_start_end_internal_control(
+                op, qs, start, end, True, temp_control
+            )
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
 
 @guppy(unitary=True)
@@ -309,11 +313,11 @@ class transversal2:  # noqa: D101
         if n_ctrl == 1:
             _transversal2_internal_control(op, qs0, qs1, ignore_, False, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal2_internal_control(op, qs0, qs1, ignore_, False, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _transversal2_internal_control(op, qs0, qs1, ignore_, False, temp_control)
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
     @guppy
     @no_type_check
@@ -327,11 +331,11 @@ class transversal2:  # noqa: D101
         if n_ctrl == 1:
             _transversal2_internal_control(op, qs0, qs1, ignore_, True, ctrls[0])
         else:
-            work = qubit()
-            cnx(ctrls, work)
-            _transversal2_internal_control(op, qs0, qs1, ignore_, True, work)
-            cnx(ctrls, work)
-            discard(work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _transversal2_internal_control(op, qs0, qs1, ignore_, True, temp_control)
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
 
 @guppy
@@ -406,13 +410,13 @@ class traversal2_start_end:  # noqa: D101
                 op, qs0, qs1, start, end, False, ctrls[0]
             )
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
             _transversal2_start_end_internal_control(
-                op, qs0, qs1, start, end, False, work
+                op, qs0, qs1, start, end, False, temp_control
             )
-            cnx(ctrls, work)
-            discard(work)
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
     @guppy
     @no_type_check
@@ -429,13 +433,13 @@ class traversal2_start_end:  # noqa: D101
                 op, qs0, qs1, start, end, True, ctrls[0]
             )
         else:
-            work = qubit()
-            cnx(ctrls, work)
+            temp_control = qubit()
+            cnx_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
             _transversal2_start_end_internal_control(
-                op, qs0, qs1, start, end, True, work
+                op, qs0, qs1, start, end, True, temp_control
             )
-            cnx(ctrls, work)
-            discard(work)
+            CNXPartialAndLadder.uncompute(ctrls, cnx_ancilla, temp_control)
+            discard(temp_control)
 
 
 @guppy(unitary=True)
@@ -524,17 +528,16 @@ def _swap_qubit_controlled[n_ctrl: nat](
     a: qubit,
     b: qubit,
     ctrls: array[qubit, n_ctrl],
-    cnx_kernel: Function[[array[qubit, n_ctrl], qubit], None],
 ) -> None:
     cx(a, b)
     if n_ctrl == 1:
         toffoli(ctrls[0], b, a)
     else:
-        work = qubit()
-        cnx_kernel(ctrls, work)
-        toffoli(work, b, a)
-        cnx_kernel(ctrls, work)
-        discard(work)
+        temp_control = qubit()
+        work_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+        toffoli(temp_control, b, a)
+        CNXPartialAndLadder.uncompute(ctrls, work_ancilla, temp_control)
+        discard(temp_control)
     cx(a, b)
 
 
@@ -563,14 +566,14 @@ class swap_qubit:  # noqa: D101
     def controlled[n_ctrl: nat](  # noqa: D102
         a: qubit, b: qubit, ctrls: array[qubit, n_ctrl]
     ) -> None:
-        _swap_qubit_controlled(a, b, ctrls, cnx[n_ctrl])
+        _swap_qubit_controlled(a, b, ctrls)
 
     @guppy
     @no_type_check
     def ctrl_daggered[n_ctrl: nat](  # noqa: D102
         a: qubit, b: qubit, ctrls: array[qubit, n_ctrl]
     ) -> None:
-        _swap_qubit_controlled(a, b, ctrls, cnx[n_ctrl])
+        _swap_qubit_controlled(a, b, ctrls)
 
 
 @guppy(unitary=True)
