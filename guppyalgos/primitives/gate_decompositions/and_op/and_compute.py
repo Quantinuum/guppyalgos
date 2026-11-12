@@ -29,8 +29,6 @@ class temp_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
         $\ket{0}$. The custom dagger uses the measurement-based cleanup from
         Fig. 4 of https://arxiv.org/abs/1805.03662 and returns the target to zero.
 
-        Under ``control``, the target holds the AND of both inputs and all added
-        controls. Each added control uses one clean work qubit and four T gates.
         The dagger requires the target to hold the corresponding AND; it is
         promised cleanup, not an inverse on arbitrary target states.
         """
