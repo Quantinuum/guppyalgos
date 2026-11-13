@@ -7,8 +7,10 @@ from typing import no_type_check
 import numpy as np
 import pytest
 from guppylang import guppy
-from guppylang.std.debug import state_result
-from guppylang.std.quantum import discard_array
+from guppylang.std.builtins import control, dagger
+from guppylang.std.debug import state_output
+from guppylang.std.quantum import discard_array, h
+from selene_sim import Quest
 
 from guppyalgos.primitives.state_preparation.phase_gradient import (
     Convention,
@@ -18,6 +20,7 @@ from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
+    get_total_state_on_only_specified_registers,
     switch_endianness,
 )
 
@@ -91,9 +94,64 @@ def test_phase_gradient_statevector(
     def main() -> None:
         qs = qarray(n_qubits)
         prep(qs)
-        state_result("result_state", qs)
+        state_output("result_state", qs)
         discard_array(qs)
 
     simulated = switch_endianness(get_statevector(main, n_qubits))
     expected = expected_fn(n_qubits)
     assert_allclose_ignorephase(simulated, expected)
+
+
+def test_phase_gradient_controlled_relative_phase() -> None:
+    """Controlled preparation retains the phase relative to the idle branch."""
+    prepare = phase_gradient(1)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        controls = qarray(1)
+        targets = qarray(1)
+        h(controls[0])
+        with control(controls[0]):
+            prepare(targets)
+        state_output("controls", controls)
+        state_output("targets", targets)
+        discard_array(controls)
+        discard_array(targets)
+
+    expected_target = np.array([-1j, 1j], dtype=np.complex128) / np.sqrt(2)
+    expected = np.array(
+        [
+            1 / np.sqrt(2),
+            expected_target[0] / np.sqrt(2),
+            0.0,
+            expected_target[1] / np.sqrt(2),
+        ],
+        dtype=np.complex128,
+    )
+    result = main.emulator(2).run()
+    states = Quest.extract_states_dict(result.results[0].entries)
+    actual, _ = get_total_state_on_only_specified_registers(
+        states, ["controls", "targets"]
+    )
+    np.testing.assert_allclose(actual.state, expected, atol=1e-8)
+
+
+def test_phase_gradient_daggered_roundtrip() -> None:
+    """The daggered phase-gradient circuit unprepares its state."""
+    prepare = phase_gradient(2)
+
+    @guppy
+    @no_type_check
+    def main() -> None:
+        qs = qarray(2)
+        prepare(qs)
+        with dagger:
+            prepare(qs)
+        state_output("result_state", qs)
+        discard_array(qs)
+
+    actual = switch_endianness(get_statevector(main, 2))
+    expected = np.zeros(4, dtype=np.complex128)
+    expected[0] = 1.0
+    np.testing.assert_allclose(actual, expected, atol=1e-8)
