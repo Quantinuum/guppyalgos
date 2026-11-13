@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.3.0](https://github.com/Quantinuum/guppyalgos/compare/v0.2.0...v0.3.0) (2026-11-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* Modify phase gate, merging it with cphase ([#167](https://github.com/Quantinuum/guppyalgos/issues/167))
+* migrate phase primitives to unitary modifiers ([#119](https://github.com/Quantinuum/guppyalgos/issues/119))
+* migrate half-adder inverse calls to dagger ([#121](https://github.com/Quantinuum/guppyalgos/issues/121))
+* use guppylang built-in tan for ComparatorBasedRz ([#159](https://github.com/Quantinuum/guppyalgos/issues/159))
+* Add unitary modifiers to transversal ([#137](https://github.com/Quantinuum/guppyalgos/issues/137))
+* reflection type level arithmetic ([#152](https://github.com/Quantinuum/guppyalgos/issues/152))
+
+### Features
+
+* add modifiers to basic fanout and parity ([#132](https://github.com/Quantinuum/guppyalgos/issues/132)) ([6f27fb0](https://github.com/Quantinuum/guppyalgos/commit/6f27fb04fc0f196a0d5bc964de83a4e0cab25af1))
+* add parameterized multi-controlled function composition ([#110](https://github.com/Quantinuum/guppyalgos/issues/110)) ([ad11380](https://github.com/Quantinuum/guppyalgos/commit/ad11380c865e8fa86cf4f53f664497d6d2cf32e9))
+* Add unitary modifiers to transversal ([#137](https://github.com/Quantinuum/guppyalgos/issues/137)) ([f941ec1](https://github.com/Quantinuum/guppyalgos/commit/f941ec1f2b74352f8441a44b70b85b34c29281b4))
+* migrate half-adder inverse calls to dagger ([#121](https://github.com/Quantinuum/guppyalgos/issues/121)) ([158a5e5](https://github.com/Quantinuum/guppyalgos/commit/158a5e50a00f66584884347c72f7e1e2aabca8b4))
+* migrate phase primitives to unitary modifiers ([#119](https://github.com/Quantinuum/guppyalgos/issues/119)) ([1ddc121](https://github.com/Quantinuum/guppyalgos/commit/1ddc12130b16a78294d3894eb4b27ce40de1bada))
+* Modify phase gate, merging it with cphase ([#167](https://github.com/Quantinuum/guppyalgos/issues/167)) ([793f5ed](https://github.com/Quantinuum/guppyalgos/commit/793f5edf229038da933641fb0ff00e658c34b220))
+* partial toffoli ladder cnx ([#158](https://github.com/Quantinuum/guppyalgos/issues/158)) ([ac3852d](https://github.com/Quantinuum/guppyalgos/commit/ac3852d7a960ab69c71cf76766e7a165b1e21f8e))
+
+
+### Bug Fixes
+
+* remove the relative phase of the controlled Cuccaro carry-out dagger at n=1 ([#97](https://github.com/Quantinuum/guppyalgos/issues/97)) ([ef34480](https://github.com/Quantinuum/guppyalgos/commit/ef344803f0772e7c4ecbb76ce905ed9136f460b7))
+* support descending Toffoli ladders on 1 qubit ([#123](https://github.com/Quantinuum/guppyalgos/issues/123)) ([3798877](https://github.com/Quantinuum/guppyalgos/commit/3798877a8474047216a913852d5af7cbd3a9c04a))
+
+
+### Code Refactoring
+
+* reflection type level arithmetic ([#152](https://github.com/Quantinuum/guppyalgos/issues/152)) ([6d0ef48](https://github.com/Quantinuum/guppyalgos/commit/6d0ef4888b39fa0b3d2c34431680f60fde1cd43d))
+* use guppylang built-in tan for ComparatorBasedRz ([#159](https://github.com/Quantinuum/guppyalgos/issues/159)) ([c2bf4e7](https://github.com/Quantinuum/guppyalgos/commit/c2bf4e7f540e12e89040d2e50baa416091f3de3b))
+
 ## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
