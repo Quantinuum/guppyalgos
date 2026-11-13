@@ -436,6 +436,225 @@ def apply_lcu[PrepRegs, TargetRegs](
 The repository uses this pattern for compositions including LCU block
 encodings, qubitization, QSVT, reflections, and rotation strategies.
 
+## Conjugation boxes
+
+`ConjugationBox` stores two functions, $G$ and $U$, acting on the same
+register. $G$ must be daggerable and $U$ unitary. Calling `box.compose(qs)`
+executes **G → U → G†**. Since matrices act right to left, the resulting
+operation and its adjoint are
+
+$$
+W=G^{\dagger}UG,
+\qquad W^{\dagger}=G^{\dagger}U^{\dagger}G.
+$$
+
+`compose` is an inner `@guppy.unitary` class. Guppy chooses its implementation
+from the surrounding modifier blocks:
+
+| Call context | Execution order |
+| --- | --- |
+| Ordinary call | G → U → G† |
+| `with dagger:` | G → U† → G† |
+| `with control(controls):` | G → controlled-U → G† |
+| `with control(controls), dagger:` | G → controlled-U† → G† |
+
+This compute–apply–uncompute structure is common in quantum algorithms:
+basis changes surround Pauli rotations, state preparation surrounds SELECT
+in an LCU block encoding, and preparation surrounds a phase flip in a
+reflection.
+
+### A controlled Pauli gadget
+
+Take $P=Z_0X_1X_2X_3$. The following functions build its basis change and
+rotation, then demonstrate all four ways to call the box. Guppy rotation
+angles are in half-turns: `angle(0.25)` corresponds to $\theta=\pi/4$ radians
+in the equations and circuit below.
+
+```{code-cell} ipython3
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array, control, dagger
+from guppylang.std.quantum import cx, h, qubit, rz
+from guppyalgos.primitives.subroutines.conjugation import ConjugationBox
+
+@guppy(daggerable=True)
+def basis_change(qs: array[qubit, 4]) -> None:
+    h(qs[3])
+    h(qs[2])
+    h(qs[1])
+    cx(qs[3], qs[2])
+    cx(qs[2], qs[1])
+    cx(qs[1], qs[0])
+
+@guppy(unitary=True)
+def rotation(qs: array[qubit, 4]) -> None:
+    rz(qs[0], angle(0.25))
+
+@guppy
+def circuit(qs: array[qubit, 4], controls: array[qubit, 1]) -> None:
+    box = ConjugationBox(basis_change, rotation)
+    box.compose(qs)  # G, U, G†
+    with control(controls):
+        box.compose(qs)  # G, controlled-U, G†
+    with dagger:
+        box.compose(qs)  # G, U†, G†
+    with control(controls), dagger:
+        box.compose(qs)  # G, controlled-U†, G†
+
+circuit.check()
+```
+
+The first blue box implements $G$ in two stages:
+
+- Hadamards on $q_1$, $q_2$, and $q_3$ change the X factors into Z factors.
+- The CNOT ladder collects their parity onto $q_0$.
+
+Consequently, $G^{\dagger}Z_0G=P$. Choosing $U=R_z(\theta)$ on $q_0$ gives
+
+$$
+W(\theta)=G^{\dagger}R_z(\theta)G
+=e^{-i\theta Z_0X_1X_2X_3/2}.
+$$
+
+Only the central rotation receives the external control $c$. The purple box
+is $\mathrm{C}(U)=\mathrm{C}R_z(\theta)$, with target $q_0$; the matching
+blue boxes apply $G$ and $G^{\dagger}$ unconditionally. Together they implement
+
+$$
+\mathrm{C}(W)=(I_c\otimes G^{\dagger})\,\mathrm{C}(U)\,(I_c\otimes G).
+$$
+
+- $c=0$: the rotation is skipped, so $G^{\dagger}G$ cancels to identity.
+- $c=1$: the complete Pauli gadget $W(\theta)$ is applied.
+- Controlled dagger replaces the central rotation with
+  $\mathrm{C}R_z(-\theta)$, giving $\mathrm{C}(W^{\dagger})$.
+
+```{tikz}
+:alt: A controlled four-qubit Pauli gadget for Z0 X1 X2 X3. Matching blue boxes enclose G and G dagger, each containing Hadamard basis changes and a CNOT parity ladder. A purple box encloses the middle controlled Rz rotation; the external control c acts only on this rotation.
+
+\begin{tikzcd}[column sep=0.38cm,row sep=0.35cm]
+\lstick{$c$}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \ctrl{4}\gategroup[wires=5,steps=1,style={rounded corners,draw=magenta!60!black,fill=magenta!5,inner xsep=5pt,inner ysep=7pt},background,label style={label position=below,anchor=north,yshift=-5pt}]{$\mathrm{C}(U)$}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw \\
+\lstick{$q_3$}
+  & \gate{H}\gategroup[wires=4,steps=4,style={rounded corners,draw=cyan!60!black,fill=cyan!5,inner xsep=5pt,inner ysep=7pt},background,label style={label position=below,anchor=north,yshift=-5pt}]{$G$}
+  & \ctrl{1}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw\gategroup[wires=4,steps=4,style={rounded corners,draw=cyan!60!black,fill=cyan!5,inner xsep=5pt,inner ysep=7pt},background,label style={label position=below,anchor=north,yshift=-5pt}]{$G^{\dagger}$}
+  & \qw
+  & \ctrl{1}
+  & \gate{H}
+  & \qw \\
+\lstick{$q_2$}
+  & \gate{H}
+  & \targ{}
+  & \ctrl{1}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+  & \ctrl{1}
+  & \targ{}
+  & \gate{H}
+  & \qw \\
+\lstick{$q_1$}
+  & \gate{H}
+  & \qw
+  & \targ{}
+  & \ctrl{1}
+  & \qw
+  & \qw
+  & \qw
+  & \ctrl{1}
+  & \targ{}
+  & \qw
+  & \gate{H}
+  & \qw \\
+\lstick{$q_0$}
+  & \qw
+  & \qw
+  & \qw
+  & \targ{}
+  & \qw
+  & \gate{R_z(\theta)}
+  & \qw
+  & \targ{}
+  & \qw
+  & \qw
+  & \qw
+  & \qw
+\end{tikzcd}
+```
+
+
+See the {doc}`conjugation-box walkthrough
+<examples/core_concepts/conjugation_box>` for the four modifier modes of an XYZ
+Pauli gadget and a two-term LCU block encoding with Ry preparation.
+
+### Nested conjugation boxes
+
+Conjugation boxes can be nested by wrapping an inner box's `compose` call in
+a Guppy function. Pass that function as the outer box's $U$, rather than
+passing the inner struct itself. Mark the wrapper `@guppy(unitary=True)` so
+it supports both dagger and control; all components share the same register
+shape.
+
+For example, the inner box below implements
+$W_1=H R_z(\pi/4)H=R_x(\pi/4)$. The outer box conjugates this by
+$G_1=R_y(\pi/8)$, giving $W_2=G_1^{\dagger}W_1G_1$:
+
+```{code-cell} ipython3
+from guppylang.std.quantum import ry
+
+@guppy(daggerable=True)
+def inner_basis(qs: array[qubit, 1]) -> None:
+    h(qs[0])
+
+@guppy(unitary=True)
+def inner_rotation(qs: array[qubit, 1]) -> None:
+    rz(qs[0], angle(0.25))
+
+@guppy(unitary=True)
+def inner_conjugation(qs: array[qubit, 1]) -> None:
+    inner = ConjugationBox(inner_basis, inner_rotation)
+    inner.compose(qs)
+
+@guppy(daggerable=True)
+def outer_basis(qs: array[qubit, 1]) -> None:
+    ry(qs[0], angle(0.125))
+
+@guppy(unitary=True)
+def nested_conjugation(qs: array[qubit, 1]) -> None:
+    outer = ConjugationBox(outer_basis, inner_conjugation)
+    outer.compose(qs)
+
+nested_conjugation.check()
+```
+
+Repeat this wrapping pattern to build further levels,
+$W_{k+1}=G_k^{\dagger}W_kG_k$. A unitary wrapper can also serve as an outer
+box's $G$, since unitary functions are daggerable.
+
+When controlling `nested_conjugation`, the outer $R_y$ basis change and its
+adjoint run unconditionally. Control passes through `inner_conjugation` to
+the inner box: its Hadamards also run unconditionally, and only the central
+$R_z$ receives the control. Dagger replaces that rotation by its adjoint.
+
 ## Protocols for interchangeable structs
 
 A protocol defines the methods a component must provide without requiring a
