@@ -488,9 +488,69 @@ def transversal() -> None:
 
 @guppy
 @no_type_check
-def apply_phase(q: qubit, theta: angle) -> None:
-    """Apply a phase rotation to a qubit."""
-    rz(q, theta)
+def _cphase(control: qubit, target: qubit, theta: angle) -> None:
+    """Apply a controlled phase rotation (CU1)."""
+    rz(control, theta / 2)
+    crz(control, target, theta)
+
+
+@guppy.unitary
+class apply_phase:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(q: qubit, theta: angle) -> None:
+        r"""Apply a phase gate.
+
+        Up to a global phase:
+        .. math::
+
+            \\begin{pmatrix}
+            1 & 0 \\\\
+            0 & e^{i\\theta}
+            \\end{pmatrix}
+        """
+        rz(q, theta)
+
+    @guppy
+    @no_type_check
+    def daggered(q: qubit, theta: angle) -> None:
+        """Phase gate dagger."""
+        with dagger:
+            rz(q, theta)
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat](q: qubit, theta: angle, ctrls: array[qubit, n]) -> None:
+        """Apply controlled phase gate.
+
+        Not just equal to controlled Rz as global phase in __call__ gets converted to
+        a relative phase.
+        """
+        if n == 1:
+            _cphase(ctrls[0], q, theta)
+        else:
+            temp_control = qubit()
+            work_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _cphase(temp_control, q, theta)
+            CNXPartialAndLadder.uncompute(ctrls, work_ancilla, temp_control)
+            discard(temp_control)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat](q: qubit, theta: angle, ctrls: array[qubit, n]) -> None:
+        """Apply control-daggered phase gate.
+
+        Not just equal to controlled Rz as global phase gets converted to
+        a relative phase.
+        """
+        if n == 1:
+            _cphase(ctrls[0], q, -theta)
+        else:
+            temp_control = qubit()
+            work_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _cphase(temp_control, q, -theta)
+            CNXPartialAndLadder.uncompute(ctrls, work_ancilla, temp_control)
+            discard(temp_control)
 
 
 @guppy

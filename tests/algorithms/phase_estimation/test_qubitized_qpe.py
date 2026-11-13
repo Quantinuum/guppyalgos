@@ -9,7 +9,7 @@ from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.emulator import EmulatorResult
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, output
+from guppylang.std.builtins import array, output, dagger
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
@@ -45,8 +45,6 @@ from guppyalgos.utils import (
     phase_distance_mod_2,
     phase_to_energy_qubitized_qpe,
 )
-
-dagger = object()
 
 
 def _phase_distribution(
