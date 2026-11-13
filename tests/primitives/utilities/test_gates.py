@@ -27,7 +27,7 @@ from pytket.circuit import Circuit
 from selene_sim import Quest
 
 from guppyalgos.primitives.utilities import t_state
-from guppyalgos.primitives.utilities.gates import ccswap, transversal, apply_phase
+from guppyalgos.primitives.utilities.gates import swap, transversal, apply_phase
 from guppyalgos.testing import (
     Endianness,
     assert_allclose_ignorephase,
@@ -51,7 +51,8 @@ def test_ccswap_qubits() -> None:
         x(control_0)
         x(control_1)
         x(target_0)
-        ccswap(control_0, control_1, target_0, target_1)
+        with control(control_0, control_1):
+            swap(target_0, target_1)
 
         output("target_0", measure(target_0).read())
         output("target_1", measure(target_1).read())
@@ -78,7 +79,8 @@ def test_ccswap_registers() -> None:
         x(control_1)
         x(target_0[0])
         x(target_1[1])
-        ccswap(control_0, control_1, target_0, target_1)
+        with control(control_0, control_1):
+            swap(target_0, target_1)
 
         output("target_0", collect_measurements(measure_array(target_0)))
         output("target_1", collect_measurements(measure_array(target_1)))
