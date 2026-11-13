@@ -63,3 +63,21 @@ def ham_sim_trotter[n_state_q: nat](
             trotter_step(state_qreg, time_step)
 
     return ham_sim_fn
+
+
+def cntrl_ham_sim_trotter[n_state_q: nat](
+    cntrl_trotter_step: GuppyFunctionDefinition[
+        [qubit, array[qubit, n_state_q], float], None
+    ],
+    n_steps: int,
+    time_step: float,
+    n_state_qubits: int,
+) -> GuppyFunctionDefinition[[qubit, array[qubit, n_state_q]], None]:
+    """Build a controlled full Hamiltonian simulation using Trotter steps."""
+
+    @guppy
+    def cntrl_ham_sim_fn(ctrl: qubit, state_qreg: array[qubit, n_state_qubits]) -> None:
+        for _ in range(n_steps):
+            cntrl_trotter_step(ctrl, state_qreg, time_step)
+
+    return cntrl_ham_sim_fn
