@@ -3,11 +3,11 @@
 from typing import no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, nat, control
 from guppylang.std.quantum import qubit, h
 from guppylang.std.mem import mem_swap
 from guppylang.std.angles import pi
-from guppyalgos.primitives.utilities.gates import cphase
+from guppyalgos.primitives.utilities.gates import apply_phase
 
 
 @guppy
@@ -26,7 +26,8 @@ def qft[n_qft: nat](qs: array[qubit, n_qft]) -> None:
         h(qs[i])
         for j in range(i):
             angle = pi / 2 ** (i - j)
-            cphase(qs[j], qs[i], angle)
+            with control(qs[j]):
+                apply_phase(qs[i], angle)
     for i in range(n_qft // 2):
         mem_swap(qs[i], qs[n_qft - i - 1])
 
@@ -48,5 +49,6 @@ def iqft[n_iqft: nat](qs: array[qubit, n_iqft]) -> None:
 
     for i in range(n_iqft):
         for j in range(i):
-            cphase(qs[j], qs[i], -pi / 2 ** (i - j))
+            with control(qs[j]):
+                apply_phase(qs[i], -pi / 2 ** (i - j))
         h(qs[i])
