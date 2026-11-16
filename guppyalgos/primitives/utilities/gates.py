@@ -578,10 +578,10 @@ def __apply_bitstring_frozen_control_kernel[n: nat, n_ctrl: nat](
             __apply_bitstring_frozen_kernel(reg, bit_array)
     else:
         work = qubit()
-        cnx(controls, work)
+        work_ancilla = CNXPartialAndLadder.compute(controls, work)
         with control(work):
             __apply_bitstring_frozen_kernel(reg, bit_array)
-        cnx(controls, work)
+        CNXPartialAndLadder.uncompute(controls, work_ancilla, work)
         discard(work)
 
 
@@ -642,10 +642,10 @@ def __apply_bitstring_arr_control_kernel[n: nat, n_ctrl: nat](
             __apply_bitstring_arr_kernel(reg, bit_array)
     else:
         work = qubit()
-        cnx(controls, work)
+        work_ancilla = CNXPartialAndLadder.compute(controls, work)
         with control(work):
             __apply_bitstring_arr_kernel(reg, bit_array)
-        cnx(controls, work)
+        CNXPartialAndLadder.uncompute(controls, work_ancilla, work)
         discard(work)
 
 
