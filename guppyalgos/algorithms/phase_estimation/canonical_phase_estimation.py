@@ -7,10 +7,6 @@ from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.subroutines.qft import iqft, qft
 
-dagger = object()
-control = object()
-power = object()
-
 
 @guppy
 @no_type_check
