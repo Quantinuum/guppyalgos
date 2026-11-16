@@ -16,6 +16,7 @@ from guppylang.std.quantum import (
     t,
     tdg,
 )
+from guppyalgos.utils import qarray
 
 
 @guppy.unitary
@@ -90,7 +91,7 @@ def _controlled_temp_and[n: nat](
             temp_and(q0, q1, target_q)
         return
 
-    work = array(qubit() for _ in range(n))
+    work = qarray(n)
     temp_and(controls[0], q0, work[0])
     for i in range(1, n):
         temp_and(controls[i], work[i - 1], work[i])
