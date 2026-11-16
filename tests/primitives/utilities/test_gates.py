@@ -1,5 +1,7 @@
 """Tests for circ utils."""
 
+from guppyalgos.utils.guppy.array import split_array, join_arrays
+
 from typing import no_type_check
 
 import numpy as np
@@ -24,9 +26,15 @@ from guppylang.std.quantum import (
 from pytket.circuit import Circuit
 from selene_sim import Quest
 
-from guppyalgos.primitives.utilities.gates import ccswap, cphase, transversal
-from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
-from guppyalgos.utils import qarray
+from guppyalgos.primitives.utilities import t_state
+from guppyalgos.primitives.utilities.gates import ccswap, transversal, apply_phase
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+    get_unitary,
+)
+from guppyalgos.utils import qarray, _unsafe_array_borrow, _unsafe_array_unborrow
 
 
 def test_ccswap_qubits() -> None:
@@ -103,7 +111,8 @@ def test_cphase(theta: float) -> None:
     def main(state_qreg: array[qubit, 2]) -> None:
         """Guppy program to implement a controlled phase rotation."""
         gtheta = angle(theta)
-        cphase(state_qreg[1], state_qreg[0], gtheta)
+        with control(state_qreg[1]):
+            apply_phase(state_qreg[0], gtheta)
 
     guppy_u = get_unitary(main, 2, endianness=Endianness.BIG)
 
@@ -114,6 +123,30 @@ def test_cphase(theta: float) -> None:
 
     assert_allclose_ignorephase(circ1.get_unitary(), guppy_u)
     assert_allclose_ignorephase(circ2.get_unitary(), guppy_u)
+
+
+@pytest.mark.parametrize("theta", [-0.25, 0.33, 0.75])
+@no_type_check
+def test_cphase_multicontrol(theta: float) -> None:
+    """Test the multicontrolled cphase function produces the correct unitary."""
+    phases = np.ones(2 ** (4 + 1), dtype=np.complex128)
+    phases[-1] = np.exp(1j * theta * np.pi)
+    expected_cphase_unitary = np.diag(phases)
+
+    @guppy
+    def main(state_qreg: array[qubit, 5]) -> None:
+        """Guppy program to implement a controlled phase rotation."""
+        owned_state = _unsafe_array_borrow(state_qreg)
+        controls, target_arr = split_array(owned_state, 4, 1)
+        gtheta = angle(theta)
+        with control(controls):
+            apply_phase(target_arr[0], gtheta)
+        owned_state = join_arrays(controls, target_arr, 5)
+        _unsafe_array_unborrow(state_qreg, owned_state)
+
+    guppy_u = get_unitary(main, 5, endianness=Endianness.BIG, n_extra_qubits=3)
+
+    assert_allclose_ignorephase(expected_cphase_unitary, guppy_u)
 
 
 @pytest.mark.parametrize("n_ctrl", [1, 2, 3])
@@ -196,3 +229,16 @@ def test_controlled_transversal_shared_work_qubit(n_ctrl: int) -> None:
         state = Quest.extract_states_dict(res.results[0].entries)["out"].state
         # |0..0> also shows the shared work qubit was uncomputed
         assert abs(state[0]) == pytest.approx(1)
+
+
+def test_t_state_modifiers() -> None:
+    """Check H followed by T and its modifiers on arbitrary inputs."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def operation(qs: array[qubit, 1]) -> None:
+        t_state(qs[0])
+
+    hadamard = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    expected = np.diag([1, np.exp(0.25j * np.pi)]) @ hadamard
+    assert_unitary_modifiers(operation, 1, expected_unitary=expected)

@@ -6,7 +6,7 @@ import pytest
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, nat, dagger
 from guppylang.std.quantum import qubit
 from pytest_lazy_fixtures import lf as lazy_fixture
 
@@ -27,8 +27,6 @@ from guppyalgos.testing import (
     chebyshev_power_matrix,
     get_unitary_projected,
 )
-
-dagger = object()
 
 
 def _build_qubitization[n_prep_q: nat, n_state_q: nat, n_control_q: nat](
