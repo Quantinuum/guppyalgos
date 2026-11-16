@@ -19,7 +19,7 @@ import numpy as np
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, comptime
+from guppylang.std.builtins import array
 from guppylang.std.quantum import cx, qubit, rz
 
 
@@ -112,7 +112,7 @@ def diagonal_unitary_walsh(
     walsh_coeffs = fast_walsh_hadamard_transform(np.angle(diagonal))
 
     rotations: list[float] = []
-    target_masks: list[list[bool]] = []
+    target_indices: list[int] = []
     control_masks: list[list[bool]] = []
     for k, coeff in enumerate(walsh_coeffs):
         angle_rad = float(coeff) / size
@@ -126,29 +126,21 @@ def diagonal_unitary_walsh(
         target = support[-1]
         controls = set(support[:-1])
         rotations.append(-2.0 * angle_rad / np.pi)
-        target_masks.append([i == target for i in range(n)])
+        target_indices.append(target)
         control_masks.append([i in controls for i in range(n)])
 
-    @guppy
+    @guppy.comptime(unitary=True)
     @no_type_check
-    def walsh_circuit(qs: array[qubit, comptime(n)]) -> None:
-        n_data = comptime(n)
-        n_terms = comptime(len(rotations))
-        term_angles = comptime(rotations)
-        term_targets = comptime(target_masks)
-        term_controls = comptime(control_masks)
-        for term_idx in range(n_terms):
-            for target_idx in range(n_data):
-                if term_targets[term_idx][target_idx]:
-                    # Standard parity-gadget implementation: compute selected
-                    # Z-parity onto target via CX ladder, apply one Rz, then
-                    # uncompute with the inverse ladder.
-                    for control_idx in range(n_data):
-                        if term_controls[term_idx][control_idx]:
-                            cx(qs[control_idx], qs[target_idx])
-                    rz(qs[target_idx], angle(term_angles[term_idx]))
-                    for control_idx in range(n_data):
-                        if term_controls[term_idx][control_idx]:
-                            cx(qs[control_idx], qs[target_idx])
+    def walsh_circuit(qs: array[qubit, n]) -> None:
+        for theta, target, controls in zip(
+            rotations, target_indices, control_masks, strict=True
+        ):
+            for idx in range(n):
+                if controls[idx]:
+                    cx(qs[idx], qs[target])
+            rz(qs[target], angle(theta))
+            for idx in range(n):
+                if controls[idx]:
+                    cx(qs[idx], qs[target])
 
     return walsh_circuit

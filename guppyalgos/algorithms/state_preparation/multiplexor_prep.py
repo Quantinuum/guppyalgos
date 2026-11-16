@@ -198,7 +198,7 @@ def multiplexor_prep[n: nat](
     synthesis_state = padded_state.reshape((2,) * n_qubits).transpose().reshape(-1)
     layers = _state_preparation_layers(synthesis_state)
 
-    @guppy.comptime(daggerable=True)
+    @guppy.comptime(unitary=True)
     @no_type_check
     def multiplexor_prep_fn(qs: array[qubit, n_qubits]) -> None:
         for target, y_commands, z_commands in layers:
