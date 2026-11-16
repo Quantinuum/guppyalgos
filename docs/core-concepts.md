@@ -463,6 +463,27 @@ basis changes surround Pauli rotations, state preparation surrounds SELECT
 in an LCU block encoding, and preparation surrounds a phase flip in a
 reflection.
 
+### Shared register type
+
+The component types are generic functions with these bounds:
+
+```python
+G: Daggerable[[Regs], None]
+U: Unitary[[Regs], None]
+```
+
+Both functions must accept the same `Regs` type and return `None`. `Regs` can
+be an array, tuple, or struct bundling several registers. This shared
+signature can be restrictive when G and U naturally act on different
+registers or subsets of qubits. In that case:
+
+- Wrap each component in a function accepting the same register bundle,
+  forwarding only the registers it needs. Preserve the daggerable capability
+  for G and the unitary capability for U. The functions need not operate on
+  every qubit in the bundle.
+- Alternatively, copy the conjugation-box pattern into a struct tailored to
+  your register layout, with explicit arguments and wiring for each component.
+
 ### A controlled Pauli gadget
 
 Take $P=Z_0X_1X_2X_3$. The following functions build its basis change and
