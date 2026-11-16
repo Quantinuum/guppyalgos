@@ -81,7 +81,7 @@ def phase_gradient[n_pg: nat](
 
     """
 
-    @guppy.comptime
+    @guppy.comptime(unitary=True)
     @no_type_check
     def phase_gradient_fn(qs: array[qubit, n_qubits]) -> None:
         for k in range(n_qubits):
