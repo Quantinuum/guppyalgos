@@ -1,7 +1,7 @@
 """Classical and Guppy utility functions."""
 
 from .guppy.array import discard_nested_arrays
-from .guppy.math import floor, get_bit, tan
+from .guppy.math import floor, get_bit
 from .guppy.qarray import qarray
 from .guppy.unsafe_borrow import _unsafe_array_borrow, _unsafe_array_unborrow
 from .python.analysis import (
@@ -68,7 +68,6 @@ __all__ = [
     "phase_to_energy_qubitized_qpe",
     "qarray",
     "qsp_phase_reflection",
-    "tan",
     "trotter_step_matrix",
     "trotterized_eigenphases",
 ]

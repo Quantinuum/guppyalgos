@@ -17,6 +17,7 @@ from guppylang.std.builtins import (
     some,
 )
 from guppylang.std.lang import Drop
+from guppylang.std.math import tan
 from guppylang.std.option import Option
 from guppylang.std.quantum import (
     cx,
@@ -34,7 +35,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_uncompute,
 )
 from guppyalgos.utils import qarray
-from guppyalgos.utils.guppy.math import floor, get_bit, tan
+from guppyalgos.utils.guppy.math import floor, get_bit
 
 
 @guppy.protocol
