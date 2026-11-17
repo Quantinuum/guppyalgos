@@ -112,7 +112,7 @@ def _controlled_temp_and[n: nat](
 temp_and_compute = temp_and
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def temp_and_uncompute(q_0: qubit, q_1: qubit, target_q: qubit) -> None:
     """Uncompute the AND using measurement and return the target to zero."""
