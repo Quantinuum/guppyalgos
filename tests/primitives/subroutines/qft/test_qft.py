@@ -254,7 +254,8 @@ def test_qft_three_controls_preserve_coherence(daggered: bool) -> None:
         .with_shots(2)
         .run()
     )
-
+    # Replay both measurement outcomes in separate shots. This end-to-end coverage could
+    # instead be exercised in the CNX tests.
     for shot in result.results:
         states = Quest.extract_states_dict(shot.entries)
         actual = _statevector_with_zeroed_ancilla(states["result_state"])
