@@ -1,126 +1,92 @@
-"""Tests for temporary AND operations using different implementations."""
+"""Tests for indexed AND unitaries and their modifiers."""
 
 import pytest
 
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.decorator import guppy
+from guppylang.std.builtins import output
 from guppylang.std.quantum import (
+    collect_measurements,
+    measure,
     measure_array,
     qubit,
     toffoli,
     x,
-    measure,
-    collect_measurements,
-)
-
-from guppyalgos.utils import int_to_bits
-
-
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
 )
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_uncomp_index,
-    temp_and_comp_index,
+    index_and,
+    temp_and,
+    temp_and_index,
 )
-
-from guppylang.defs import GuppyFunctionDefinition
-from guppyalgos.utils import qarray
+from guppyalgos.utils import int_to_bits, qarray
 
 from typing import no_type_check
 
 
-@pytest.mark.parametrize("comp_and_op", [toffoli, temp_and_compute])
+@pytest.mark.parametrize("and_operation", [toffoli, temp_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
-def test_index_temp_and_comp(
-    i: int,
-    comp_and_op: GuppyFunctionDefinition,
-) -> None:
-    """Test index_temp_and_comp with different implementations.
-
-    Temporary AND which only acts on an incoming |0> target state loops
-    over the incoming input bits possibilities and applies the AND operation.
-    Which flips the target to |1> if both inputs are the incoming binary
-    index.
-
-    Args:
-        i (int): Integer index to determine input bits.
-        comp_and_op (GuppyFunctionDefinition): The AND computation operation
-
-    """
+def test_index_and(i: int, and_operation: GuppyFunctionDefinition) -> None:
+    """Compute an AND when both controls match the requested index."""
     binary_index = int_to_bits(i, 2)
 
     @guppy
     @no_type_check
     def main() -> None:
-        idx = binary_index
         index_qreg = qarray(2)
+        target = qubit()
 
         for bit in range(2):
-            if idx[bit]:
+            if binary_index[bit]:
                 x(index_qreg[bit])
 
-        target = temp_and_comp_index(
-            index_qreg[0], idx[0], index_qreg[1], idx[1], comp_and_op
+        index_and(
+            target,
+            index_qreg[0],
+            binary_index[0],
+            index_qreg[1],
+            binary_index[1],
+            and_operation,
         )
 
         output("index", collect_measurements(measure_array(index_qreg)))
         output("target", measure(target).read())
 
-    total_qubits = 3
-    my_shots = main.emulator(n_qubits=total_qubits).with_seed(42).with_shots(1).run()
-    result = [binary_index[0], binary_index[1], 1]
-    meas_index = my_shots.collated_shots()[0]["index"][0]
-    meas_target = my_shots.collated_shots()[0]["target"]
-    assert isinstance(meas_index, list)
-    assert isinstance(meas_target, list)
-    measure_array = [*meas_index, *meas_target]
-    assert measure_array == result
+    result = main.emulator(n_qubits=3).with_seed(451).run()
+    shot = result.collated_shots()[0]
+    assert shot["index"][0] == binary_index
+    assert shot["target"][0] == 1
 
 
-@pytest.mark.parametrize("comp_and_op", [toffoli, temp_and_uncompute])
+@pytest.mark.parametrize("and_operation", [toffoli, temp_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
-def test_index_uncompute_temp_and(
-    i: int,
-    comp_and_op: GuppyFunctionDefinition,
-) -> None:
-    """Test index_temp_and_uncomp with different implementations.
-
-    Temporary AND which acts on an incoming |1> target state loops
-    over the incoming input bits possibilities and applies the AND operation.
-    Which flips the target to |0> if both inputs are the incoming binary
-    index.
-
-    Args:
-        i (int): Integer index to determine input bits.
-        comp_and_op (GuppyFunctionDefinition): The AND uncomputation operation
-            to be tested. This can be either the toffoli or the uncompute_temp_and
-            function.
-
-    """
+def test_temp_and_index(i: int, and_operation: GuppyFunctionDefinition) -> None:
+    """Compute a temporary AND when both controls match the requested index."""
     binary_index = int_to_bits(i, 2)
 
     @guppy
     @no_type_check
     def main() -> None:
-        idx = binary_index
         index_qreg = qarray(2)
         target = qubit()
-        x(target)
 
         for bit in range(2):
-            if idx[bit]:
+            if binary_index[bit]:
                 x(index_qreg[bit])
 
-        temp_and_uncomp_index(
-            target, index_qreg[0], idx[0], index_qreg[1], idx[1], comp_and_op
+        temp_and_index(
+            target,
+            index_qreg[0],
+            binary_index[0],
+            index_qreg[1],
+            binary_index[1],
+            and_operation,
         )
 
         output("index", collect_measurements(measure_array(index_qreg)))
+        output("target", measure(target).read())
 
-    total_qubits = 3
-    my_shots = main.emulator(n_qubits=total_qubits).with_seed(42).with_shots(1).run()
-    result = [binary_index[0], binary_index[1]]
-    meas_index = my_shots.collated_shots()[0]["index"][0]
-    assert meas_index == result
+    result = main.emulator(n_qubits=3).with_seed(451).run()
+    shot = result.collated_shots()[0]
+    assert shot["index"][0] == binary_index
+    assert shot["target"][0] == 1
