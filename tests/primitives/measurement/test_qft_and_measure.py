@@ -4,10 +4,10 @@ import pytest
 import numpy as np
 from typing import no_type_check
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, result
+from guppylang.std.builtins import array, dagger, result
 
 from guppyalgos.primitives.measurement import iqft_and_measure, qft_and_measure
-from guppyalgos.primitives.subroutines.qft import iqft, qft
+from guppyalgos.primitives.subroutines.qft import qft
 from guppyalgos.primitives.utilities.gates import apply_bitstring
 from guppyalgos.utils import qarray
 from guppyalgos.utils import int_to_bits, bits_to_int
@@ -26,7 +26,8 @@ def test_qft_and_measure_basis_state(n_qubits: int) -> None:
         qs = qarray(n_qubits)
         apply_bitstring(qs, k_bits)
 
-        iqft(qs)
+        with dagger:
+            qft(qs)
         bits = qft_and_measure(qs)
 
         for i in range(n_qubits):
@@ -115,7 +116,8 @@ def test_qft_measurement_channel(inverse: bool) -> None:
         def reference() -> None:
             qs = qarray(n_qubits)
             prepare_nonbasis_state(qs)
-            iqft(qs)
+            with dagger:
+                qft(qs)
             state_output("result_state", qs)
             discard_array(qs)
 

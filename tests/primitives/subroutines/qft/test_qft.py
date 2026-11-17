@@ -1,33 +1,33 @@
-"""QFT ladder tests."""
+"""QFT tests."""
 
 import pytest
 import numpy as np
 from typing import no_type_check
+
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array
-from guppylang.std.quantum import qubit
-from selene_sim import Quest
-
-
+from guppylang.std.builtins import array, control, dagger
 from guppylang.std.debug import state_output
-
+from guppylang.std.quantum import qubit, x
 from numpy.typing import NDArray
 
-from guppyalgos.primitives.subroutines.qft import qft, iqft
-from guppylang.std.quantum import x
-from guppylang.std.quantum import (
-    h,
-    discard_array,
-)
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
+from guppyalgos.primitives.subroutines.qft import qft
 from guppyalgos.testing import (
-    assert_allclose_ignorephase,
-    get_statevector,
     Endianness,
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+    get_statevector,
+    get_unitary,
     get_unitary_assumed_phase,
     switch_endianness,
 )
 from guppyalgos.utils import qarray
+from guppyalgos.utils.guppy.array import join_arrays, split_array
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow,
+    _unsafe_array_unborrow,
+)
+from guppylang.std.quantum import discard_array, h
 
 
 def qft_unitary_algebra(n_qubits: int) -> NDArray[np.complex128]:
@@ -46,13 +46,12 @@ def qft_unitary_algebra(n_qubits: int) -> NDArray[np.complex128]:
 @pytest.mark.parametrize("n_qubits", [1, 3, 4])
 @no_type_check
 def test_qft_unitary(n_qubits: int) -> None:
-    """Test the QFT unitary matrix generation."""
+    """Test QFT and its public modifiers against the QFT unitary matrix."""
     qft_arr = qft_unitary_algebra(n_qubits)
 
-    # Verify unitarity: U * U† = I
+    # Verify unitarity of the independent reference matrix.
     identity = np.eye(2**n_qubits)
     product = np.dot(qft_arr, qft_arr.conj().T)
-
     assert_allclose_ignorephase(product, identity)
 
     if n_qubits == 1:
@@ -66,34 +65,31 @@ def test_qft_unitary(n_qubits: int) -> None:
         )
         assert_allclose_ignorephase(guppy_u, qft_arr.conj())
 
-    @guppy
-    def main2(state_qreg: array[qubit, n_qubits]) -> None:
-        iqft(state_qreg)
+    @guppy(unitary=True)
+    def circuit(qs: array[qubit, n_qubits]) -> None:
+        qft(qs)
 
-    guppy_iQFT = get_unitary_assumed_phase(
-        main2, n_qubits, endianness=Endianness.LITTLE
+    assert_unitary_modifiers(
+        circuit,
+        n_qubits,
+        expected_unitary=qft_arr,
+        endianness=Endianness.LITTLE,
+        n_extra_qubits=0 if n_qubits == 1 else 1,
     )
-    assert_allclose_ignorephase(guppy_iQFT, qft_arr.conj())
-
-    @guppy
-    def main3(state_qreg: array[qubit, n_qubits]) -> None:
-        qft(state_qreg)
-
-    guppy_QFT = get_unitary_assumed_phase(main3, n_qubits, endianness=Endianness.LITTLE)
-    assert_allclose_ignorephase(guppy_QFT, qft_arr)
 
 
 @pytest.mark.parametrize("n_qubits", [1, 3, 4])
 @no_type_check
-def test_iqft_sv(n_qubits: int) -> None:
-    """Test the IQFT U by transforming a uniform superposition to |0>."""
+def test_daggered_qft_sv(n_qubits: int) -> None:
+    """Test ``with dagger`` transforms a uniform superposition to |0>."""
     uniform_state_prep = uniform_state(2**n_qubits)
 
     @guppy
     def main() -> None:
         qs = qarray(n_qubits)
         uniform_state_prep(qs)
-        iqft(qs)
+        with dagger:
+            qft(qs)
         state_output("result_state", qs)
         discard_array(qs)
 
@@ -118,21 +114,6 @@ def test_qft_sv(n_qubits: int) -> None:
     expected_state = np.array([1 / (2 ** (n_qubits / 2))] * (2**n_qubits))
     simulated_state = get_statevector(main2, n_qubits)
     assert_allclose_ignorephase(simulated_state, expected_state)
-
-
-@pytest.mark.parametrize("n_qubits", [1, 3, 4])
-@no_type_check
-def test_qft_roundtrip_unitary(n_qubits: int) -> None:
-    """Test QFT iQFT produces identity."""
-
-    @guppy
-    def main(state_qreg: array[qubit, n_qubits]) -> None:
-        qft(state_qreg)
-        iqft(state_qreg)
-
-    U = get_unitary_assumed_phase(main, n_qubits, endianness=Endianness.LITTLE)
-    identity = np.eye(2**n_qubits)
-    assert_allclose_ignorephase(U, identity)
 
 
 @pytest.mark.parametrize("n_qubits", [3, 4])
@@ -166,43 +147,53 @@ def test_qft_basis_state(n_qubits: int, k: int) -> None:
     assert_allclose_ignorephase(simulated, expected)
 
 
-@pytest.mark.parametrize("n_qubits", [3, 4])
+def _multi_controlled_qft_unitary(
+    n_controls: int, n_targets: int
+) -> NDArray[np.complex128]:
+    """Return QFT controlled by the all-one control-register state."""
+    control_size = 2**n_controls
+    target_size = 2**n_targets
+    control_on = np.zeros((control_size, control_size), dtype=np.complex128)
+    control_on[-1, -1] = 1
+    identity = np.eye(target_size, dtype=np.complex128)
+    return np.kron(identity, np.eye(control_size) - control_on) + np.kron(
+        qft_unitary_algebra(n_targets), control_on
+    )
+
+
+@pytest.mark.parametrize("n_controls", [2, 3])
+@pytest.mark.parametrize("daggered", [False, True])
 @no_type_check
-def test_random_state_roundtrip(n_qubits: int) -> None:
-    """Check QFT|iQFT recovers Psi."""
-    from pytket import Circuit
-    from pytket.circuit import StatePreparationBox
-    from pytket.passes import DecomposeBoxes
-
-    N = 2**n_qubits
-
-    # Prepare a random normalized complex vector
-    rng = np.random.default_rng(123)
-    psi = rng.normal(size=N) + 1j * rng.normal(size=N)
-    psi = psi / np.linalg.norm(psi)
-
-    # ---- Build circuit for the random state ----
-    circ = Circuit(n_qubits)
-    prep_box = StatePreparationBox(psi)
-    circ.add_state_preparation_box(prep_box, list(range(n_qubits)))
-    DecomposeBoxes().apply(circ)
-    sp_func = guppy.load_pytket("rand_state_prep", circ)
-    assert np.allclose(psi, circ.get_statevector())
+def test_qft_multiple_controls(n_controls: int, daggered: bool) -> None:
+    """Check multi-control works for QFT and its dagger."""
+    n_targets = 2
+    n_qubits = n_controls + n_targets
 
     @guppy
-    def main() -> None:
-        qs = qarray(n_qubits)
-        sp_func(qs)
-        qft(qs)
-        iqft(qs)
-        state_output("result_state", qs)
-        discard_array(qs)
+    @no_type_check
+    def circuit(qs: array[qubit, n_qubits]) -> None:
+        controls, targets = split_array(_unsafe_array_borrow(qs), n_controls, n_targets)
+        with control(controls):
+            if daggered:
+                with dagger:
+                    qft(targets)
+            else:
+                qft(targets)
+        _unsafe_array_unborrow(qs, join_arrays(controls, targets, n_qubits))
 
-    res = main.emulator(n_qubits).run()
-    states = Quest.extract_states_dict(res.results[0].entries)
-    simulated = states["result_state"].get_single_state()
-    # TODO: get_statevector fails here due to selene qubit label issues
-    # simulated = get_statevector(main, n_qubits)
-    assert_allclose_ignorephase(simulated, psi)
-    # TODO: it would be nice if this also preserved global phase
-    # assert(np.allclose(simulated, psi))
+    actual = get_unitary(
+        circuit,
+        n_qubits,
+        endianness=Endianness.LITTLE,
+        # The custom control path uses one conjunction flag and its CNX workspace;
+        # each QFT phase additionally combines that flag with its intrinsic control.
+        n_extra_qubits=n_controls,
+    )
+    assert_allclose_ignorephase(
+        actual,
+        (
+            _multi_controlled_qft_unitary(n_controls, n_targets).conj().T
+            if daggered
+            else _multi_controlled_qft_unitary(n_controls, n_targets)
+        ),
+    )
