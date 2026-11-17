@@ -9,6 +9,7 @@ from guppylang.std.builtins import array, control, dagger
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import qubit, x
 from numpy.typing import NDArray
+from selene_sim import QuantumReplay, Quest
 
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.primitives.subroutines.qft import qft
@@ -20,6 +21,7 @@ from guppyalgos.testing import (
     get_unitary,
     get_unitary_assumed_phase,
     switch_endianness,
+    _statevector_with_zeroed_ancilla,
 )
 from guppyalgos.utils import qarray
 from guppyalgos.utils.guppy.array import join_arrays, split_array
@@ -197,3 +199,63 @@ def test_qft_multiple_controls(n_controls: int, daggered: bool) -> None:
             else _multi_controlled_qft_unitary(n_controls, n_targets)
         ),
     )
+
+
+@pytest.mark.parametrize("daggered", [False, True])
+@no_type_check
+def test_qft_three_controls_preserve_coherence(daggered: bool) -> None:
+    """Check three-controlled QFT preserves off/on control coherence."""
+    n_controls, n_targets = 3, 2
+    n_qubits = n_controls + n_targets
+
+    @guppy
+    @no_type_check
+    def circuit() -> None:
+        controls = qarray(n_controls)
+        targets = qarray(n_targets)
+
+        # Prepare (|000> + |111>) / sqrt(2).
+        h(controls[0])
+        with control(controls[0]):
+            x(controls[1])
+            x(controls[2])
+
+        # |01> distinguishes forward QFT from its dagger.
+        x(targets[0])
+
+        with control(controls):
+            if daggered:
+                with dagger:
+                    qft(targets)
+            else:
+                qft(targets)
+
+        # Join only to output the complete logical state.
+        result = join_arrays(controls, targets, n_qubits)
+        state_output("result_state", result)
+        discard_array(result)
+
+    initial = np.zeros(2**n_qubits, dtype=np.complex128)
+    initial[[0b01000, 0b01111]] = 1 / np.sqrt(2)
+
+    controlled_qft = _multi_controlled_qft_unitary(n_controls, n_targets)
+    expected = (
+        controlled_qft.conj().T @ initial if daggered else controlled_qft @ initial
+    )
+
+    replay = QuantumReplay(
+        simulator=Quest(random_seed=17),
+        resume_with_measurement=True,
+        measurements=[[False], [True]],
+    )
+    result = (
+        circuit.emulator(n_qubits + n_controls)
+        .with_simulator(replay)
+        .with_shots(2)
+        .run()
+    )
+
+    for shot in result.results:
+        states = Quest.extract_states_dict(shot.entries)
+        actual = _statevector_with_zeroed_ancilla(states["result_state"])
+        assert_allclose_ignorephase(actual, expected)
