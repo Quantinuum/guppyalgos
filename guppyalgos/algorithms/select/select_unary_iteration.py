@@ -6,7 +6,7 @@ from typing import no_type_check
 
 from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import Function, array, nat
+from guppylang.std.builtins import Function, Unitary, array, nat
 from guppylang.std.quantum import cx, qubit, reset, x, discard_array
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
@@ -73,7 +73,7 @@ def msb_diff_depths(bools: list[list[bool]]) -> list[int]:
 @guppy
 @no_type_check
 def compute_cascade[n_i_q: nat, n_w_q: nat](
-    comp_and_op: Callable[[qubit, qubit, qubit], None],
+    comp_and_op: Unitary[[qubit, qubit, qubit], None],
     max_cascade_depth: int,
     msb_diff_depth: int,
     bools: array[bool, n_i_q],
@@ -182,7 +182,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     bools: array[bool, n_i_q],
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    uncomp_and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute a little-endian unary cascade from qubit 0 toward a high index.
 
@@ -273,8 +273,8 @@ def select_unary_iteration[
     TargetRegs,
     n_index_el: nat,
     n_index_qubits: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
 ](
     controlled_ops: array[
         Callable[[qubit, TargetRegs], None],
@@ -420,8 +420,8 @@ def cntrl_select_unary_iteration[
     TargetRegs,
     n_index_qubits: nat,
     n_index_elements: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
 ](
     controlled_ops: array[
         Callable[[qubit, TargetRegs], None],
@@ -526,7 +526,7 @@ def cntrl_select_unary_iteration[
 @guppy
 @no_type_check
 def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
-    comp_and_op: Callable[[qubit, qubit, qubit], None],
+    comp_and_op: Unitary[[qubit, qubit, qubit], None],
     max_cascade_depth: int,
     msb_diff_depth: int,
     bools: array[bool, n_i_q],
@@ -636,7 +636,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     control_q: qubit,
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    uncomp_and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute a controlled little-endian cascade away from index qubit 0.
 
