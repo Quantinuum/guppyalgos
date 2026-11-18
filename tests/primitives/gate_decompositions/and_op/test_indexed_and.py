@@ -29,7 +29,11 @@ from typing import no_type_check
 
 @pytest.mark.parametrize("index", [0, 1, 2, 3])
 def test_indexed_toffoli_modifiers(index: int) -> None:
-    """Compare every modifier against the indexed Toffoli matrix."""
+    """Compare the Toffoli-backed wrapper with an independent indexed matrix.
+
+    For each index, check all input states in the forward, dagger, controlled,
+    and controlled-dagger modes, including inactive controls and relative phases.
+    """
     bits = int_to_bits(index, 2)
     first_bit, second_bit = bits
 
@@ -50,7 +54,13 @@ def test_indexed_toffoli_modifiers(index: int) -> None:
 @pytest.mark.parametrize(("index", "n_controls"), [(0, 1), (1, 2), (2, 2), (3, 1)])
 @pytest.mark.parametrize("inverse", [False, True])
 def test_indexed_and_coherent(index: int, n_controls: int, inverse: bool) -> None:
-    """Check the promised-input isometry and measurement cleanup coherently."""
+    """Compare the controlled temporary AND with an independent Toffoli circuit.
+
+    Entangled inputs and controls check the promised-input action and its dagger
+    for all index patterns, including relative phases and control coherence.
+    Multiple shots exercise measurement-based cleanup. Measurements verify that
+    the inputs, controls, references, target, and reference workspace return to zero.
+    """
     first_bit, second_bit = int_to_bits(index, 2)
     n_references = n_controls + 2
 
