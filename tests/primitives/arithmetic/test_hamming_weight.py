@@ -17,8 +17,8 @@ from guppylang.std.quantum import (
 from selene_sim import Quest
 
 from guppyalgos.primitives.arithmetic.hamming_weight import (
-    hamming_weight_func,
-    hamming_weight_func_inv,
+    hamming_weight,
+    hamming_weight_uncompute,
     num_hamming_weight_bits,
 )
 from guppyalgos.primitives.utilities.gates import transversal
@@ -43,7 +43,6 @@ from guppyalgos.testing import assert_allclose_ignorephase, switch_endianness
 )
 def test_hamming_weight(n: int, init_bits: list[bool]):
     """Checks that the hamming weight computed is as expected."""
-    ham = hamming_weight_func(n)
     n_ham_bits = num_hamming_weight_bits(n)
     expected_hamming_weight = sum(init_bits)
 
@@ -55,7 +54,7 @@ def test_hamming_weight(n: int, init_bits: list[bool]):
         for i in range(n):
             if init_bits[i]:
                 x(m[i])
-        h, j = ham(m)
+        h, j = hamming_weight(m)
         m.discard_all_taken()
         state_output("hamm", h)
         output("meas", collect_measurements(measure_array(h)))
@@ -81,8 +80,6 @@ def test_hamming_weight(n: int, init_bits: list[bool]):
 @pytest.mark.parametrize("n", [3, 4, 5, 6])
 def test_hamming_weight_inverse(n: int) -> None:
     """Checks that ham_inv acts as inverse for uniform superposition."""
-    ham = hamming_weight_func(n)
-    ham_inv = hamming_weight_func_inv(n)
 
     @guppy
     @no_type_check
@@ -90,8 +87,8 @@ def test_hamming_weight_inverse(n: int) -> None:
         """Comp and uncomp hamming weight on uniform state."""
         main_reg = qarray(n)
         transversal(h, main_reg)
-        ham_reg, junk_reg = ham(main_reg)
-        ham_inv(main_reg, ham_reg, junk_reg)
+        ham_reg, junk_reg = hamming_weight(main_reg)
+        hamming_weight_uncompute(main_reg, ham_reg, junk_reg)
         transversal(h, main_reg)
         state_output("main", main_reg)
         discard_array(main_reg)

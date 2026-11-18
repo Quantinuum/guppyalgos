@@ -20,7 +20,6 @@ from guppyalgos.testing import assert_allclose_ignorephase
 @pytest.mark.parametrize(("n", "theta"), [(3, 0.1), (2, 0.5), (4, 0.25), (5, 1.0)])
 def test_hamming_weight_phasing(n: int, theta: float) -> None:
     """Test hamming weight phasing produces the same state as parallel rotations."""
-    hwp = hamming_weight_phase(n)
 
     @guppy
     @no_type_check
@@ -37,7 +36,7 @@ def test_hamming_weight_phasing(n: int, theta: float) -> None:
     def hamming_weight_phased() -> None:
         qs = qarray(n)
         transversal(h, qs)
-        hwp(qs, angle(theta))
+        hamming_weight_phase(qs, angle(theta))
         state_output("out", qs)
         discard_array(qs)
 
