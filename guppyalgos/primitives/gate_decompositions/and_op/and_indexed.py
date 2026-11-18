@@ -107,6 +107,3 @@ class temp_and_indexed:  # noqa: D101 -- Guppy requires the docstring on __call_
             x(control_q0)
         if not control_1_ind:
             x(control_q1)
-
-
-temp_and_index = temp_and_indexed

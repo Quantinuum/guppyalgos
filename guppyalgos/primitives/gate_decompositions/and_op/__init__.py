@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-from .and_indexed import temp_and_indexed, temp_and_index
+from .and_indexed import temp_and_indexed
 from guppyalgos.primitives.utilities.t_state import t_state
 
 _and = import_module(".and", __name__)
@@ -14,7 +14,6 @@ __all__ = [
     "t_state",
     "temp_and",
     "temp_and_compute",
-    "temp_and_index",
     "temp_and_indexed",
     "temp_and_uncompute",
 ]
