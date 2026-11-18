@@ -15,7 +15,7 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    index_and,
+    temp_and_indexed,
     temp_and,
 )
 from guppyalgos.utils import int_to_bits, qarray
@@ -42,7 +42,7 @@ def test_indexed_and(
             if binary_index[bit]:
                 x(index_qreg[bit])
 
-        index_and(
+        temp_and_indexed(
             target,
             index_qreg[0],
             binary_index[0],
@@ -75,7 +75,9 @@ def test_indexed_and_daggered(
         x(target)
 
         with dagger:
-            index_and(target, index_qreg[0], False, index_qreg[1], True, and_operation)
+            temp_and_indexed(
+                target, index_qreg[0], False, index_qreg[1], True, and_operation
+            )
 
         output("index", collect_measurements(measure_array(index_qreg)))
         output("target", measure(target).read())
@@ -105,7 +107,9 @@ def test_indexed_and_controlled(
         target = qubit()
 
         with control(controls):
-            index_and(target, index_qreg[0], False, index_qreg[1], True, and_operation)
+            temp_and_indexed(
+                target, index_qreg[0], False, index_qreg[1], True, and_operation
+            )
 
         output("index", collect_measurements(measure_array(index_qreg)))
         output("controls", collect_measurements(measure_array(controls)))
@@ -133,7 +137,9 @@ def test_indexed_and_controlled_daggered(
         x(target)
 
         with control(controls), dagger:
-            index_and(target, index_qreg[0], False, index_qreg[1], True, and_operation)
+            temp_and_indexed(
+                target, index_qreg[0], False, index_qreg[1], True, and_operation
+            )
 
         output("index", collect_measurements(measure_array(index_qreg)))
         output("controls", collect_measurements(measure_array(controls)))

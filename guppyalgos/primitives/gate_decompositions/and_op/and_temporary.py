@@ -1,4 +1,4 @@
-"""Indexed AND operation with custom modifiers."""
+"""Indexed temporary AND operation with custom modifiers."""
 
 from typing import no_type_check
 
@@ -8,7 +8,7 @@ from guppylang.std.quantum import qubit, x
 
 
 @guppy.unitary
-class index_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
+class temp_and_indexed:  # noqa: D101 -- Guppy requires the docstring on __call__.
     @guppy
     @no_type_check
     def __call__(
@@ -109,4 +109,4 @@ class index_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
             x(control_q1)
 
 
-temp_and_index = index_and
+temp_and_index = temp_and_indexed
