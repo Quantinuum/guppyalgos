@@ -1,26 +1,27 @@
 """Multicontrolled x gate based on teleportation."""
 
 from math import ceil, log2
+from typing import no_type_check
 
 from guppylang.decorator import guppy
 from guppylang.std.builtins import array, comptime, nat, owned
 from guppylang.std.quantum import (
+    collect_measurements,
     cx,
+    cz,
     h,
+    measure_array,
     qubit,
     toffoli,
     x,
-    measure_array,
-    cz,
-    collect_measurements,
 )
 
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import unitary_modify_cnx
 from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.utils import qarray
 
-from typing import no_type_check
 
-
+@unitary_modify_cnx
 @guppy
 @no_type_check
 def cnx_teleportation[n_controls: nat](
