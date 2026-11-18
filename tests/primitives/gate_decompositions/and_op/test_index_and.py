@@ -18,7 +18,7 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_indexed,
+    indexed_and,
     temp_and,
 )
 from guppyalgos.testing import assert_unitary_modifiers
@@ -36,7 +36,7 @@ def test_indexed_toffoli_modifiers(index: int) -> None:
     @guppy(unitary=True)
     @no_type_check
     def operation(qs: array[qubit, 3]) -> None:
-        temp_and_indexed(qs[2], qs[0], first_bit, qs[1], second_bit, toffoli)
+        indexed_and(qs[2], qs[0], first_bit, qs[1], second_bit, toffoli)
 
     expected = np.eye(8)
     matching = 4 * int(bits[0]) + 2 * int(bits[1])
@@ -49,7 +49,7 @@ def test_indexed_toffoli_modifiers(index: int) -> None:
 
 @pytest.mark.parametrize(("index", "n_controls"), [(0, 1), (1, 2), (2, 2), (3, 1)])
 @pytest.mark.parametrize("inverse", [False, True])
-def test_indexed_temp_and_coherent(index: int, n_controls: int, inverse: bool) -> None:
+def test_indexed_and_coherent(index: int, n_controls: int, inverse: bool) -> None:
     """Check the promised-input isometry and measurement cleanup coherently."""
     first_bit, second_bit = int_to_bits(index, 2)
     n_references = n_controls + 2
@@ -60,9 +60,7 @@ def test_indexed_temp_and_coherent(index: int, n_controls: int, inverse: bool) -
         inputs: array[qubit, 2], target: qubit, controls: array[qubit, n_controls]
     ) -> None:
         with control(controls):
-            temp_and_indexed(
-                target, inputs[0], first_bit, inputs[1], second_bit, temp_and
-            )
+            indexed_and(target, inputs[0], first_bit, inputs[1], second_bit, temp_and)
 
     @guppy
     @no_type_check
@@ -153,7 +151,7 @@ def test_indexed_and(
             if binary_index[bit]:
                 x(index_qreg[bit])
 
-        temp_and_indexed(
+        indexed_and(
             target,
             index_qreg[0],
             binary_index[0],
@@ -186,7 +184,7 @@ def test_indexed_and_daggered(
         x(target)
 
         with dagger:
-            temp_and_indexed(
+            indexed_and(
                 target, index_qreg[0], False, index_qreg[1], True, and_operation
             )
 
@@ -218,7 +216,7 @@ def test_indexed_and_controlled(
         target = qubit()
 
         with control(controls):
-            temp_and_indexed(
+            indexed_and(
                 target, index_qreg[0], False, index_qreg[1], True, and_operation
             )
 
@@ -255,7 +253,7 @@ def test_indexed_and_controlled_daggered(
             x(target)
 
         with control(controls), dagger:
-            temp_and_indexed(
+            indexed_and(
                 target, index_qreg[0], False, index_qreg[1], True, and_operation
             )
 

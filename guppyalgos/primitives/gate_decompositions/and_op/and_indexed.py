@@ -1,4 +1,4 @@
-"""Indexed temporary AND."""
+"""Indexed AND operation."""
 
 from typing import no_type_check
 
@@ -8,7 +8,7 @@ from guppylang.std.quantum import qubit, x
 
 
 @guppy.unitary
-class temp_and_indexed:  # noqa: D101 -- Guppy requires the docstring on __call__.
+class indexed_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
     @guppy
     @no_type_check
     def __call__(
