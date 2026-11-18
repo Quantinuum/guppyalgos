@@ -34,7 +34,10 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - name: Install TeX dependencies
-        run: sudo apt-get update && sudo apt-get install -y texlive-latex-extra texlive-pictures pdf2svg
+        # Avoid optional Java, font and conversion packages in the TeX install.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-latex-extra texlive-pictures pdf2svg
       - name: Verify Quantikz is available
         run: kpsewhich tikzlibraryquantikz2.code.tex
       - run: uv sync --all-extras
