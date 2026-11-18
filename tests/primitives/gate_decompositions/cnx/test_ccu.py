@@ -9,6 +9,13 @@ from guppylang.std.quantum import qubit, x, array, angle
 from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_output
 from guppylang.defs import GuppyFunctionDefinition
+from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
+    ccry_cx,
+    ccry_toffoli,
+    ccx,
+    ccy,
+    ccz,
+)
 from guppyalgos.primitives.gate_decompositions.cnx.ccu_rel_phase import (
     ccu_phase_correction,
     ccz_rel_phase,
@@ -251,6 +258,6 @@ def test_ccu_phase_correction_modifiers() -> None:
     @no_type_check
     def operation(qs: array[qubit, 2]) -> None:
         ccu_phase_correction(qs[0], qs[1])
+
     expected = np.diag(np.array([1, 1, 1, 1j]))
-    assert_unitary_modifiers(operation, 2, expected_unitary=expected)
     assert_unitary_modifiers(operation, 2, expected_unitary=expected)
