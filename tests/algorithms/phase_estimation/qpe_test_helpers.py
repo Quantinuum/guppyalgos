@@ -8,7 +8,7 @@ import numpy as np
 from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle, pi
-from guppylang.std.builtins import array, nat, output
+from guppylang.std.builtins import array, dagger, nat, output
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
@@ -21,7 +21,7 @@ from guppylang.std.quantum import (
 from numpy.typing import NDArray
 
 from guppyalgos.algorithms.phase_estimation import iqpe, qpe
-from guppyalgos.primitives.subroutines.qft import iqft, qft
+from guppyalgos.primitives.subroutines.qft import qft
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.utils import dominant_measured_phase as utils_dominant_measured_phase
 from guppyalgos.utils import qarray
@@ -167,7 +167,8 @@ def make_simple_qpe_program[n_state: nat](
         state_output("qpe_register", phase_reg)
         qft(phase_reg)
         state_output("kickback_register", phase_reg)
-        iqft(phase_reg)
+        with dagger:
+            qft(phase_reg)
         output("qpe_bitstring", collect_measurements(measure_array(phase_reg)))
         discard_array(unitary_regs.system)
 
@@ -296,7 +297,8 @@ def make_trotter_qpe_diagnostic_program[n_state: nat](
         state_output("qpe_register", phase_reg)
         qft(phase_reg)
         state_output("kickback_register", phase_reg)
-        iqft(phase_reg)
+        with dagger:
+            qft(phase_reg)
         discard_array(phase_reg)
         discard_array(state_reg)
 

@@ -11,4 +11,5 @@ types, and composition of interchangeable Guppy components.
 /examples/core_concepts/transversal
 /examples/core_concepts/statevector_testing
 /examples/core_concepts/abstract_construction
+/examples/core_concepts/conjugation_box
 ```

@@ -1,5 +1,5 @@
 """Initialization for the QFT module."""
 
-from .qft import iqft, qft
+from .qft import qft
 
-__all__ = ["iqft", "qft"]
+__all__ = ["qft"]

@@ -13,6 +13,7 @@ from guppylang.std.builtins import (
     frozenarray,
     nat,
 )
+from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import (
     crz,
     cx,
@@ -487,14 +488,74 @@ def transversal() -> None:
 
 @guppy
 @no_type_check
-def apply_phase(q: qubit, theta: angle) -> None:
-    """Apply a phase rotation to a qubit."""
-    rz(q, theta)
+def _cphase(control: qubit, target: qubit, theta: angle) -> None:
+    """Apply a controlled phase rotation (CU1)."""
+    rz(control, theta / 2)
+    crz(control, target, theta)
 
 
-@guppy
+@guppy.unitary
+class apply_phase:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(q: qubit, theta: angle) -> None:
+        r"""Apply a phase gate.
+
+        Up to a global phase:
+        .. math::
+
+            \\begin{pmatrix}
+            1 & 0 \\\\
+            0 & e^{i\\theta}
+            \\end{pmatrix}
+        """
+        rz(q, theta)
+
+    @guppy
+    @no_type_check
+    def daggered(q: qubit, theta: angle) -> None:
+        """Phase gate dagger."""
+        with dagger:
+            rz(q, theta)
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat](q: qubit, theta: angle, ctrls: array[qubit, n]) -> None:
+        """Apply controlled phase gate.
+
+        Not just equal to controlled Rz as global phase in __call__ gets converted to
+        a relative phase.
+        """
+        if n == 1:
+            _cphase(ctrls[0], q, theta)
+        else:
+            temp_control = qubit()
+            work_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _cphase(temp_control, q, theta)
+            CNXPartialAndLadder.uncompute(ctrls, work_ancilla, temp_control)
+            discard(temp_control)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat](q: qubit, theta: angle, ctrls: array[qubit, n]) -> None:
+        """Apply control-daggered phase gate.
+
+        Not just equal to controlled Rz as global phase gets converted to
+        a relative phase.
+        """
+        if n == 1:
+            _cphase(ctrls[0], q, -theta)
+        else:
+            temp_control = qubit()
+            work_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+            _cphase(temp_control, q, -theta)
+            CNXPartialAndLadder.uncompute(ctrls, work_ancilla, temp_control)
+            discard(temp_control)
+
+
+@guppy(controllable=True)
 @no_type_check
-def _apply_bitstring_frozen[n: nat](
+def __apply_bitstring_frozen_kernel[n: nat](
     reg: array[qubit, n], bit_array: frozenarray[bool, n]
 ) -> None:
     """Apply bit flips to a reg according to bit_array."""
@@ -505,13 +566,121 @@ def _apply_bitstring_frozen[n: nat](
 
 @guppy
 @no_type_check
-def _apply_bitstring_arr[n: nat](
+def __apply_bitstring_frozen_control_kernel[n: nat, n_ctrl: nat](
+    reg: array[qubit, n],
+    bit_array: frozenarray[bool, n],
+    controls: array[qubit, n_ctrl],
+) -> None:
+    """Apply bitstring controlled on register, for multicontrol use a flag bit."""
+    if n_ctrl == 0:
+        pass
+    if n_ctrl == 1:
+        with control(controls[0]):
+            __apply_bitstring_frozen_kernel(reg, bit_array)
+    else:
+        work = qubit()
+        work_ancilla = CNXPartialAndLadder.compute(controls, work)
+        with control(work):
+            __apply_bitstring_frozen_kernel(reg, bit_array)
+        CNXPartialAndLadder.uncompute(controls, work_ancilla, work)
+        discard(work)
+
+
+@guppy.unitary
+class _apply_bitstring_frozen[n: nat]:
+    # Apply the circuit with dagger and external-control support.
+
+    @guppy
+    @no_type_check
+    def __call__(reg: array[qubit, n], bit_array: frozenarray[bool, n]) -> None:
+        """Apply bit flips to a reg according to bit_array."""
+        __apply_bitstring_frozen_kernel(reg, bit_array)
+
+    @guppy
+    @no_type_check
+    def daggered(reg: array[qubit, n], bit_array: frozenarray[bool, n]) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_frozen_kernel(reg, bit_array)
+
+    @guppy
+    @no_type_check
+    def controlled[k: nat](
+        reg: array[qubit, n], bit_array: frozenarray[bool, n], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_frozen_control_kernel(reg, bit_array, controls)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[k: nat](
+        reg: array[qubit, n], bit_array: frozenarray[bool, n], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_frozen_control_kernel(reg, bit_array, controls)
+
+
+@guppy(controllable=True)
+@no_type_check
+def __apply_bitstring_arr_kernel[n: nat](
     reg: array[qubit, n], bit_array: array[bool, n]
 ) -> None:
     """Apply bit flips to a reg according to bit_array."""
     for i in range(n):
         if bit_array[i]:
             x(reg[i])
+
+
+@guppy
+@no_type_check
+def __apply_bitstring_arr_control_kernel[n: nat, n_ctrl: nat](
+    reg: array[qubit, n], bit_array: array[bool, n], controls: array[qubit, n_ctrl]
+) -> None:
+    """Apply bitstring controlled on register, for multicontrol use a flag bit."""
+    if n_ctrl == 0:
+        pass
+    if n_ctrl == 1:
+        with control(controls[0]):
+            __apply_bitstring_arr_kernel(reg, bit_array)
+    else:
+        work = qubit()
+        work_ancilla = CNXPartialAndLadder.compute(controls, work)
+        with control(work):
+            __apply_bitstring_arr_kernel(reg, bit_array)
+        CNXPartialAndLadder.uncompute(controls, work_ancilla, work)
+        discard(work)
+
+
+@guppy.unitary
+class _apply_bitstring_arr[n: nat]:
+    # Apply the circuit with dagger and external-control support.
+
+    @guppy(controllable=True)
+    @no_type_check
+    def __call__(reg: array[qubit, n], bit_array: array[bool, n]) -> None:
+        """Apply bit flips to a reg according to bit_array."""
+        __apply_bitstring_arr_kernel(reg, bit_array)
+
+    @guppy
+    @no_type_check
+    def daggered(reg: array[qubit, n], bit_array: array[bool, n]) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_arr_kernel(reg, bit_array)
+
+    @guppy
+    @no_type_check
+    def controlled[k: nat](
+        reg: array[qubit, n], bit_array: array[bool, n], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_arr_control_kernel(reg, bit_array, controls)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[k: nat](
+        reg: array[qubit, n], bit_array: array[bool, n], controls: array[qubit, k]
+    ) -> None:
+        """Apply the selected circuit mode."""
+        __apply_bitstring_arr_control_kernel(reg, bit_array, controls)
 
 
 @guppy.overload(_apply_bitstring_arr, _apply_bitstring_frozen)
@@ -521,94 +690,107 @@ def apply_bitstring() -> None:
     ...
 
 
-@guppy(daggerable=True)
+@guppy
 @no_type_check
-def cswap_qubit(
-    c: qubit,
-    t1: qubit,
-    t2: qubit,
+def _swap_qubit_controlled[n_ctrl: nat](
+    a: qubit,
+    b: qubit,
+    ctrls: array[qubit, n_ctrl],
 ) -> None:
-    """Control swap two qubits."""
-    cx(t1, t2)
-    toffoli(c, t2, t1)
-    cx(t1, t2)
+    cx(a, b)
+    if n_ctrl == 1:
+        toffoli(ctrls[0], b, a)
+    else:
+        temp_control = qubit()
+        work_ancilla = CNXPartialAndLadder.compute(ctrls, temp_control)
+        toffoli(temp_control, b, a)
+        CNXPartialAndLadder.uncompute(ctrls, work_ancilla, temp_control)
+        discard(temp_control)
+    cx(a, b)
 
 
-@guppy.comptime(daggerable=True)
+@guppy.unitary
+class swap_qubit:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(a: qubit, b: qubit) -> None:
+        """Swap two qubits.
+
+        The unmodified version just exchanges labels of the qubits at the computational
+        level, but when controlled this performs a cswap gate.
+
+        Note that even the non-modified version may have a non-trivial cost depending
+        on the QEC code compiled to.
+        """
+        mem_swap(a, b)
+
+    @guppy
+    @no_type_check
+    def daggered(a: qubit, b: qubit) -> None:  # noqa: D102
+        swap_qubit(a, b)
+
+    @guppy
+    @no_type_check
+    def controlled[n_ctrl: nat](  # noqa: D102
+        a: qubit, b: qubit, ctrls: array[qubit, n_ctrl]
+    ) -> None:
+        _swap_qubit_controlled(a, b, ctrls)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n_ctrl: nat](  # noqa: D102
+        a: qubit, b: qubit, ctrls: array[qubit, n_ctrl]
+    ) -> None:
+        _swap_qubit_controlled(a, b, ctrls)
+
+
+@guppy(unitary=True)
 @no_type_check
-def _cswap_register[n: nat](
-    c: qubit, t1_reg: array[qubit, n], t2_reg: array[qubit, n]
-) -> None:
-    for i in range(n):
-        cx(t1_reg[i], t2_reg[i])
-        toffoli(c, t2_reg[i], t1_reg[i])
-        cx(t1_reg[i], t2_reg[i])
+def swap_reg[n: nat](a: array[qubit, n], b: array[qubit, n]) -> None:
+    """Swap two registers.
+
+    The unmodified version just exchanges labels of the qubits at the computational
+    level, but when controlled this performs cswap gates.
+
+    Note that even the non-modified version may have a non-trivial cost depending
+    on the QEC code compiled to.
+    """
+    transversal(swap_qubit, a, b)
 
 
-@guppy(daggerable=True)
-@no_type_check
-def cswap_register[n: nat](
-    c: qubit, t1_reg: array[qubit, n], t2_reg: array[qubit, n]
-) -> None:
-    """Control swap two registers."""
-    _cswap_register(c, t1_reg, t2_reg)
+@guppy.overload(swap_qubit, swap_reg)
+def swap() -> None:
+    """Swap qubits or registers.
 
+    The unmodified version just exchanges labels of the qubits at the computational
+    level, but when controlled this performs cswap gates.
 
-@guppy.overload(cswap_qubit, cswap_register)
-@no_type_check
-def cswap() -> None:
-    """Apply a control swap between qubits or equal size registers.
-
-    Either:
-        cswap(control_bit, qubit_a, qubit_b)
-    Or:
-        cswap(control_bit, a_reg, b_reg)
+    Note that even the non-modified version may have a non-trivial cost depending
+    on the QEC code compiled to.
     """
     ...
 
 
-@guppy
+# wrapper for _cswap as direct `with control` not yet supported in guppy.comptime
+@guppy(unitary=True)
 @no_type_check
-def ccswap_qubit(
-    c0: qubit,
-    c1: qubit,
-    t1: qubit,
-    t2: qubit,
-) -> None:
-    """Double-control swap two qubits using an internal work qubit."""
-    work = qubit()
-    toffoli(c0, c1, work)
-    cswap(work, t1, t2)
-    toffoli(c0, c1, work)
-    discard(work)
+def _cswap_qubit(c: qubit, a: qubit, b: qubit) -> None:
+    """Apply a controlled swap without modifiers."""
+    with control(c):
+        swap_qubit(a, b)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
-def ccswap_register[n: nat](
-    c0: qubit,
-    c1: qubit,
-    t1_reg: array[qubit, n],
-    t2_reg: array[qubit, n],
-) -> None:
-    """Double-control swap two equal-size registers using an internal work qubit."""
-    work = qubit()
-    toffoli(c0, c1, work)
-    cswap(work, t1_reg, t2_reg)
-    toffoli(c0, c1, work)
-    discard(work)
+def _cswap_register[n: nat](c: qubit, a: array[qubit, n], b: array[qubit, n]) -> None:
+    """Apply daggerable controlled register swap."""
+    with control(c):
+        swap_reg(a, b)
 
 
-@guppy.overload(ccswap_qubit, ccswap_register)
-@no_type_check
-def ccswap() -> None:
-    """Apply a double-control swap between qubits or equal size registers.
-
-    Either:
-        ccswap(control_bit_0, control_bit_1, qubit_a, qubit_b)
-    Or:
-        ccswap(control_bit_0, control_bit_1, a_reg, b_reg)
-    """
+@guppy.overload(_cswap_qubit, _cswap_register)
+def _cswap() -> None:
+    """Apply controlled-swap workaround to qubits or registers."""
     ...
 
 
