@@ -16,7 +16,7 @@ authors = [
 ]
 
 dependencies = [
-    "guppylang>=1.2",
+    "guppylang>=1.2.1",
     "pandas",
     "numpy",
     "scipy",
