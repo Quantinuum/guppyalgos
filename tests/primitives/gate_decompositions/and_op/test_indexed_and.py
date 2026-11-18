@@ -60,9 +60,7 @@ def test_indexed_and_coherent(index: int, n_controls: int, inverse: bool) -> Non
         inputs: array[qubit, 2], target: qubit, controls: array[qubit, n_controls]
     ) -> None:
         with control(controls):
-            indexed_and(
-                target, inputs[0], first_bit, inputs[1], second_bit, temp_and
-            )
+            indexed_and(target, inputs[0], first_bit, inputs[1], second_bit, temp_and)
 
     @guppy
     @no_type_check
