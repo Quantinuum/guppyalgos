@@ -2,10 +2,10 @@
 
 from typing import no_type_check
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, nat, Function
+from guppylang.std.builtins import array, dagger, nat, Function
 from guppylang.std.quantum import qubit
 
-from guppyalgos.primitives.subroutines.qft import iqft, qft
+from guppyalgos.primitives.subroutines.qft import qft
 
 
 @guppy
@@ -35,7 +35,8 @@ def qpe[
     """
     for n_index in range(n_q_a):
         power_oracle(phase_reg[n_index], unitary_regs, 2**n_index)
-    iqft(phase_reg)
+    with dagger:
+        qft(phase_reg)
 
 
 @guppy
