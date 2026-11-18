@@ -15,7 +15,6 @@ from guppyalgos.algorithms.select.select_unary_iteration import (
 )
 from guppyalgos.primitives.gate_decompositions.and_op import (
     index_and,
-    temp_and_index,
 )
 from guppyalgos.utils import qarray
 from guppyalgos.utils import int_to_bits
@@ -198,7 +197,7 @@ def _geq_const_compute[
         # when L[physical_index] == 0.
         if not threshold_bits[physical_index]:
             term_q = qubit()
-            temp_and_index(
+            index_and(
                 term_q,
                 index_qreg[most_significant_index],
                 True,
@@ -208,7 +207,7 @@ def _geq_const_compute[
             )
             cx(term_q, target_q)
             with dagger:
-                temp_and_index(
+                index_and(
                     term_q,
                     index_qreg[most_significant_index],
                     True,
@@ -236,7 +235,7 @@ def _geq_const_compute[
         # when L[physical_index] == 0.
         if not threshold_bits[physical_index]:
             term_q = qubit()
-            temp_and_index(
+            index_and(
                 term_q,
                 work_qreg[previous_work_index],
                 True,
@@ -246,7 +245,7 @@ def _geq_const_compute[
             )
             cx(term_q, target_q)
             with dagger:
-                temp_and_index(
+                index_and(
                     term_q,
                     work_qreg[previous_work_index],
                     True,

@@ -1,16 +1,14 @@
-"""Temporary indexed AND operation with a custom dagger."""
+"""Indexed AND operation with custom modifiers."""
 
 from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import Unitary, array, control, dagger, nat
-from guppylang.std.quantum import qubit
-
-from guppyalgos.primitives.gate_decompositions.and_op.utils import index_and
+from guppylang.std.quantum import qubit, x
 
 
 @guppy.unitary
-class temp_and_index:  # noqa: D101 -- Guppy requires the docstring on __call__.
+class index_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
     @guppy
     @no_type_check
     def __call__(
@@ -21,25 +19,26 @@ class temp_and_index:  # noqa: D101 -- Guppy requires the docstring on __call__.
         control_1_ind: bool,
         and_operation: Unitary[[qubit, qubit, qubit], None],
     ) -> None:
-        r"""Compute an indexed AND into a clean, borrowed target qubit.
+        """Apply an AND operation with controls matching the given indicators.
 
         Args:
-            target_q: Clean target qubit storing the result.
+            target_q: Target qubit storing the result.
             control_q0: First control qubit.
             control_0_ind: Required value of the first control.
             control_q1: Second control qubit.
             control_1_ind: Required value of the second control.
-            and_operation: AND unitary with its corresponding uncompute modifier.
+            and_operation: AND unitary, including its dagger and control modifiers.
 
         """
-        index_and(
-            target_q,
-            control_q0,
-            control_0_ind,
-            control_q1,
-            control_1_ind,
-            and_operation,
-        )
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
+        and_operation(control_q0, control_q1, target_q)
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
 
     @guppy
     @no_type_check
@@ -51,16 +50,17 @@ class temp_and_index:  # noqa: D101 -- Guppy requires the docstring on __call__.
         control_1_ind: bool,
         and_operation: Unitary[[qubit, qubit, qubit], None],
     ) -> None:
-        """Uncompute the indexed AND and return the borrowed target to zero."""
+        """Apply the AND's dagger with the same indexed controls."""
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
         with dagger:
-            index_and(
-                target_q,
-                control_q0,
-                control_0_ind,
-                control_q1,
-                control_1_ind,
-                and_operation,
-            )
+            and_operation(control_q0, control_q1, target_q)
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
 
     @guppy
     @no_type_check
@@ -73,16 +73,17 @@ class temp_and_index:  # noqa: D101 -- Guppy requires the docstring on __call__.
         and_operation: Unitary[[qubit, qubit, qubit], None],
         controls: array[qubit, n],
     ) -> None:
-        """Compute the indexed AND conditioned on additional controls."""
+        """Apply the indexed AND conditioned on all additional controls."""
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
         with control(controls):
-            index_and(
-                target_q,
-                control_q0,
-                control_0_ind,
-                control_q1,
-                control_1_ind,
-                and_operation,
-            )
+            and_operation(control_q0, control_q1, target_q)
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
 
     @guppy
     @no_type_check
@@ -95,13 +96,17 @@ class temp_and_index:  # noqa: D101 -- Guppy requires the docstring on __call__.
         and_operation: Unitary[[qubit, qubit, qubit], None],
         controls: array[qubit, n],
     ) -> None:
-        """Uncompute the controlled indexed AND and return its target to zero."""
+        """Apply the indexed AND's dagger with additional controls."""
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
         with control(controls), dagger:
-            index_and(
-                target_q,
-                control_q0,
-                control_0_ind,
-                control_q1,
-                control_1_ind,
-                and_operation,
-            )
+            and_operation(control_q0, control_q1, target_q)
+        if not control_0_ind:
+            x(control_q0)
+        if not control_1_ind:
+            x(control_q1)
+
+
+temp_and_index = index_and

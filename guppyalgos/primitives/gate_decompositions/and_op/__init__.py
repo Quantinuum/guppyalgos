@@ -2,8 +2,7 @@
 
 from importlib import import_module
 
-from .utils import index_and
-from .and_temporary import temp_and_index
+from .and_temporary import index_and, temp_and_index
 from guppyalgos.primitives.utilities.t_state import t_state
 
 _and = import_module(".and", __name__)

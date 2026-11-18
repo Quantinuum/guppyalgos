@@ -17,20 +17,17 @@ from guppylang.std.quantum import (
 from guppyalgos.primitives.gate_decompositions.and_op import (
     index_and,
     temp_and,
-    temp_and_index,
 )
 from guppyalgos.utils import int_to_bits, qarray
 
 from typing import no_type_check
 
 
-@pytest.mark.parametrize("indexed_and", [index_and, temp_and_index])
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
 def test_indexed_and(
     i: int,
     and_operation: GuppyFunctionDefinition,
-    indexed_and: GuppyFunctionDefinition,
 ) -> None:
     """Compute an AND when both controls match the requested index."""
     binary_index = int_to_bits(i, 2)
@@ -45,7 +42,7 @@ def test_indexed_and(
             if binary_index[bit]:
                 x(index_qreg[bit])
 
-        indexed_and(
+        index_and(
             target,
             index_qreg[0],
             binary_index[0],
@@ -63,10 +60,8 @@ def test_indexed_and(
     assert shot["target"][0] == 1
 
 
-@pytest.mark.parametrize("indexed_and", [index_and, temp_and_index])
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
 def test_indexed_and_daggered(
-    indexed_and: GuppyFunctionDefinition,
     and_operation: GuppyFunctionDefinition,
 ) -> None:
     """Uncompute a matching indexed AND with its custom dagger."""
@@ -80,9 +75,7 @@ def test_indexed_and_daggered(
         x(target)
 
         with dagger:
-            indexed_and(
-                target, index_qreg[0], False, index_qreg[1], True, and_operation
-            )
+            index_and(target, index_qreg[0], False, index_qreg[1], True, and_operation)
 
         output("index", collect_measurements(measure_array(index_qreg)))
         output("target", measure(target).read())
@@ -94,11 +87,9 @@ def test_indexed_and_daggered(
 
 
 @pytest.mark.parametrize("enabled", [False, True])
-@pytest.mark.parametrize("indexed_and", [index_and, temp_and_index])
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
 def test_indexed_and_controlled(
     enabled: bool,
-    indexed_and: GuppyFunctionDefinition,
     and_operation: GuppyFunctionDefinition,
 ) -> None:
     """Apply an indexed AND only when its additional control is enabled."""
@@ -114,9 +105,7 @@ def test_indexed_and_controlled(
         target = qubit()
 
         with control(controls):
-            indexed_and(
-                target, index_qreg[0], False, index_qreg[1], True, and_operation
-            )
+            index_and(target, index_qreg[0], False, index_qreg[1], True, and_operation)
 
         output("index", collect_measurements(measure_array(index_qreg)))
         output("controls", collect_measurements(measure_array(controls)))
@@ -127,10 +116,8 @@ def test_indexed_and_controlled(
     assert shot["target"][0] == int(enabled)
 
 
-@pytest.mark.parametrize("indexed_and", [index_and, temp_and_index])
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
 def test_indexed_and_controlled_daggered(
-    indexed_and: GuppyFunctionDefinition,
     and_operation: GuppyFunctionDefinition,
 ) -> None:
     """Uncompute a matching indexed AND with its controlled custom dagger."""
@@ -146,9 +133,7 @@ def test_indexed_and_controlled_daggered(
         x(target)
 
         with control(controls), dagger:
-            indexed_and(
-                target, index_qreg[0], False, index_qreg[1], True, and_operation
-            )
+            index_and(target, index_qreg[0], False, index_qreg[1], True, and_operation)
 
         output("index", collect_measurements(measure_array(index_qreg)))
         output("controls", collect_measurements(measure_array(controls)))
