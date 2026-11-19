@@ -21,6 +21,7 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
     pattern_controlled_and,
     temp_and,
 )
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.testing import assert_unitary_modifiers
 from guppyalgos.utils import int_to_bits, qarray
 
@@ -56,12 +57,12 @@ def test_indexed_toffoli_modifiers(index: int) -> None:
 def test_pattern_controlled_and_coherent(
     index: int, n_controls: int, inverse: bool
 ) -> None:
-    """Compare the controlled temporary AND with an independent Toffoli circuit.
+    """Compare the controlled temporary AND with an independent CNX circuit.
 
     Entangled inputs and controls check the promised-input action and its dagger
     for all index patterns, including relative phases and control coherence.
     Multiple shots exercise measurement-based cleanup. Measurements verify that
-    the inputs, controls, references, target, and reference workspace return to zero.
+    the inputs, controls, references, and target return to zero.
     """
     first_bit, second_bit = int_to_bits(index, 2)
     n_references = n_controls + 2
@@ -79,70 +80,63 @@ def test_pattern_controlled_and_coherent(
     @guppy
     @no_type_check
     def reference(
-        inputs: array[qubit, 2],
+        all_controls: array[qubit, n_references],
         target: qubit,
-        controls: array[qubit, n_controls],
-        work: array[qubit, n_controls],
     ) -> None:
         if not first_bit:
-            x(inputs[0])
+            x(all_controls[n_controls])
         if not second_bit:
-            x(inputs[1])
-        toffoli(controls[0], inputs[0], work[0])
-        for i in range(1, n_controls):
-            toffoli(controls[i], work[i - 1], work[i])
-        toffoli(work[n_controls - 1], inputs[1], target)
-        for i in range(n_controls - 1, 0, -1):
-            toffoli(controls[i], work[i - 1], work[i])
-        toffoli(controls[0], inputs[0], work[0])
+            x(all_controls[n_controls + 1])
+        cnx(all_controls, target)
         if not first_bit:
-            x(inputs[0])
+            x(all_controls[n_controls])
         if not second_bit:
-            x(inputs[1])
+            x(all_controls[n_controls + 1])
 
     @guppy
     @no_type_check
     def main() -> None:
-        controls = qarray(n_controls)
-        inputs = qarray(2)
+        all_controls = qarray(n_references)
         references = qarray(n_references)
-        work = qarray(n_controls)
         target = qubit()
 
-        for i in range(n_controls):
-            h(controls[i])
-            cx(controls[i], references[i])
-        for i in range(2):
-            h(inputs[i])
-            cx(inputs[i], references[n_controls + i])
+        for i in range(n_references):
+            h(all_controls[i])
+            cx(all_controls[i], references[i])
 
         if inverse:
-            reference(inputs, target, controls, work)
+            reference(all_controls, target)
+
+        controls = array(all_controls.take(i) for i in range(n_controls))
+        inputs = array(all_controls.take(n_controls + i) for i in range(2))
+        if inverse:
             with dagger:
                 operation(inputs, target, controls)
         else:
             operation(inputs, target, controls)
-            reference(inputs, target, controls, work)
+        i = 0
+        for control_qubit in controls:
+            all_controls.put(control_qubit, i)
+            i += 1
+        for input_qubit in inputs:
+            all_controls.put(input_qubit, i)
+            i += 1
 
-        for i in range(n_controls):
-            cx(controls[i], references[i])
-            h(controls[i])
-        for i in range(2):
-            cx(inputs[i], references[n_controls + i])
-            h(inputs[i])
+        if not inverse:
+            reference(all_controls, target)
 
-        output("controls", collect_measurements(measure_array(controls)))
-        output("inputs", collect_measurements(measure_array(inputs)))
+        for i in range(n_references):
+            cx(all_controls[i], references[i])
+            h(all_controls[i])
+
+        output("controls", collect_measurements(measure_array(all_controls)))
         output("references", collect_measurements(measure_array(references)))
-        output("work", collect_measurements(measure_array(work)))
         output("target", measure(target).read())
 
     shots = main.emulator(4 * n_controls + 5).with_shots(32).run()
     for shot in shots.collated_shots():
-        assert shot["controls"][0] == [False] * n_controls
-        assert shot["inputs"][0] == [False] * 2
+        assert shot["controls"][0] == [False] * (n_controls + 2)
         assert shot["references"][0] == [False] * (n_controls + 2)
-        assert shot["work"][0] == [False] * n_controls
         assert shot["target"][0] == 0
 
 
