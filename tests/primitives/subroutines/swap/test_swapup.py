@@ -392,6 +392,7 @@ def _run_swapup_linear_register_statevector():
 
 
 # SwapUp behavior tests
+@pytest.mark.symbolic_alternative
 def test_swapup_linear_qubit_matches_classical_schedule_non_power_of_two() -> None:
     """Check qubit SwapUp on basis states for each valid index of six state qubits.
 
@@ -410,6 +411,7 @@ def test_swapup_linear_qubit_matches_classical_schedule_non_power_of_two() -> No
         )
 
 
+@pytest.mark.symbolic_alternative
 def test_swapup_linear_qubit_statevector_branches_match_uncntrl_swaps() -> None:
     """Check all eight coherent qubit SwapUp branches against uncontrolled swaps.
 
@@ -443,6 +445,7 @@ def test_swapup_linear_qubit_statevector_branches_match_uncntrl_swaps() -> None:
 
 
 @pytest.mark.parametrize("index_value", [3, 4])
+@pytest.mark.symbolic_alternative
 def test_swapup_linear_register_moves_width_three_selected_register_to_zero(
     index_value: int,
 ) -> None:

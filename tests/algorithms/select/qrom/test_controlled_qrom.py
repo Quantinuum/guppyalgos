@@ -104,6 +104,7 @@ def cntrl_qrom_unary_iteration_test(
     "n_index_elements",
     [2**3, 2**4],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_qrom_unary_iteration_single_targ_toffoli(
     n_index_elements: int,
 ) -> None:
@@ -117,6 +118,7 @@ def test_cntrl_qrom_unary_iteration_single_targ_toffoli(
     "n_index_elements",
     [2**3, 2**4],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_qrom_unary_iteration_single_targ_google(
     n_index_elements: int,
 ) -> None:
@@ -136,6 +138,7 @@ def test_cntrl_qrom_unary_iteration_single_targ_google(
     "n_index_elements",
     [6, 13],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_qrom_unary_iteration_single_targ_google_shorter(
     n_index_elements: int,
 ) -> None:
@@ -206,6 +209,7 @@ def cntrl_qrom_unary_iteration_test_statevector(
 
 
 @pytest.mark.parametrize(("n_index_qubits"), [3, 4])
+@pytest.mark.symbolic_alternative
 def test_cntrl_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
     """Test controlled unary iteration applied to a uniform superposition.
 
@@ -300,6 +304,7 @@ def cntrl_qrom_unary_iteration_test_statevector_zero(
 
 
 @pytest.mark.parametrize(("n_index_qubits"), [3, 4])
+@pytest.mark.symbolic_alternative
 def test_cntrl_qrom_unary_iteration_statevector_zero(n_index_qubits: int) -> None:
     """Test that when the control is |0>, the QROM does not act.
 
@@ -358,6 +363,7 @@ def test_cntrl_qrom_unary_iteration_statevector_zero(n_index_qubits: int) -> Non
         (temp_and_compute, temp_and_uncompute),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_qrom_inversion(
     n_index_qubits: int,
     compute_and: GuppyFunctionDefinition[[qubit, qubit, qubit], None],

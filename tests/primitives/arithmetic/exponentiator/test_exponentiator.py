@@ -24,6 +24,7 @@ from guppyalgos.utils import int_to_bits
         (2, 4, 5, 2, 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_exponentiator_ripple_gidney_mod(
     n_exponent: int, n_output: int, base: int, exponent: int, initial: int
 ):
@@ -61,6 +62,7 @@ def test_exponentiator_ripple_gidney_mod(
 @pytest.mark.parametrize(
     ("n_exponent", "n_output", "base"), [(3, 2, 3), (3, 3, 3), (5, 3, 5)]
 )
+@pytest.mark.symbolic_alternative
 def test_exponentiator_ripple_gidney_mod_superposition(
     n_exponent: int, n_output: int, base: int
 ) -> None:

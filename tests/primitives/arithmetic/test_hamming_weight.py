@@ -41,6 +41,7 @@ from guppyalgos.testing import assert_allclose_ignorephase, switch_endianness
         (6, [True, False, True, False, False, False]),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_hamming_weight(n: int, init_bits: list[bool]):
     """Checks that the hamming weight computed is as expected."""
     ham = hamming_weight_func(n)
@@ -79,6 +80,7 @@ def test_hamming_weight(n: int, init_bits: list[bool]):
 
 
 @pytest.mark.parametrize("n", [3, 4, 5, 6])
+@pytest.mark.symbolic_alternative
 def test_hamming_weight_inverse(n: int) -> None:
     """Checks that ham_inv acts as inverse for uniform superposition."""
     ham = hamming_weight_func(n)

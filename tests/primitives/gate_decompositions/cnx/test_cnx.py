@@ -65,18 +65,35 @@ def cnx_cca_logdepth_dirty_wrapper[n_controls: nat](
 @pytest.mark.parametrize(
     "cnx_method",
     [
-        CnxMethod(cnx, lambda n_controls: (n_controls - 2) // 2 + (n_controls - 2) % 2),
-        CnxMethod(cnx_toffoli_ladder, lambda n_controls: max(0, n_controls - 2)),
-        CnxMethod(cnx_single_ancilla, lambda _: 1),
+        pytest.param(
+            CnxMethod(
+                cnx, lambda n_controls: (n_controls - 2) // 2 + (n_controls - 2) % 2
+            ),
+            marks=pytest.mark.symbolic_alternative,
+        ),
+        pytest.param(
+            CnxMethod(cnx_toffoli_ladder, lambda n_controls: max(0, n_controls - 2)),
+            marks=pytest.mark.symbolic_alternative,
+        ),
+        pytest.param(
+            CnxMethod(cnx_single_ancilla, lambda _: 1),
+            marks=pytest.mark.symbolic_alternative,
+        ),
         CnxMethod(
             cnx_teleportation,
             lambda n_controls: _get_num_ancillas_cnx_teleportation(n_controls),
         ),
-        CnxMethod(
-            cnx_cca_logdepth,
-            lambda n_controls: 1 if n_controls < 6 else 2,
+        pytest.param(
+            CnxMethod(
+                cnx_cca_logdepth,
+                lambda n_controls: 1 if n_controls < 6 else 2,
+            ),
+            marks=pytest.mark.symbolic_alternative,
         ),
-        CnxMethod(cnx_cca_logdepth_dirty_wrapper, lambda _: 2),
+        pytest.param(
+            CnxMethod(cnx_cca_logdepth_dirty_wrapper, lambda _: 2),
+            marks=pytest.mark.symbolic_alternative,
+        ),
     ],
 )
 @pytest.mark.parametrize("n_qubits", [2, 3, 4, 5, 6, 7, 8, 9, 10])
