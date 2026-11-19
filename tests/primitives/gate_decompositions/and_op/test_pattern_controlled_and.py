@@ -6,9 +6,12 @@ import pytest
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.decorator import guppy
 from guppylang.std.builtins import array, control, dagger, output
+from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
     cx,
+    discard,
+    discard_array,
     h,
     measure,
     measure_array,
@@ -16,13 +19,17 @@ from guppylang.std.quantum import (
     toffoli,
     x,
 )
+from selene_sim import Quest
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     pattern_controlled_and,
     temp_and,
 )
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
-from guppyalgos.testing import assert_unitary_modifiers
+from guppyalgos.testing import (
+    assert_unitary_modifiers,
+    get_total_state_on_only_specified_registers,
+)
 from guppyalgos.utils import int_to_bits, qarray
 
 from typing import no_type_check
@@ -61,7 +68,7 @@ def test_pattern_controlled_and_coherent(
 
     Entangled inputs and controls check the promised-input action and its dagger
     for all index patterns, including relative phases and control coherence.
-    Multiple shots exercise measurement-based cleanup. Measurements verify that
+    Multiple runs exercise measurement-based cleanup. Statevectors verify that
     the inputs, controls, references, and target return to zero.
     """
     first_bit, second_bit = int_to_bits(index, 2)
@@ -129,15 +136,22 @@ def test_pattern_controlled_and_coherent(
             cx(all_controls[i], references[i])
             h(all_controls[i])
 
-        output("controls", collect_measurements(measure_array(all_controls)))
-        output("references", collect_measurements(measure_array(references)))
-        output("target", measure(target).read())
+        state_output("controls", all_controls)
+        state_output("references", references)
+        state_output("target", target)
+        discard_array(all_controls)
+        discard_array(references)
+        discard(target)
 
     shots = main.emulator(4 * n_controls + 5).with_shots(32).run()
-    for shot in shots.collated_shots():
-        assert shot["controls"][0] == [False] * (n_controls + 2)
-        assert shot["references"][0] == [False] * (n_controls + 2)
-        assert shot["target"][0] == 0
+    expected = np.zeros(2 ** (2 * n_references + 1))
+    expected[0] = 1
+    for shot in shots.results:
+        states = Quest.extract_states_dict(shot.entries)
+        state, _ = get_total_state_on_only_specified_registers(
+            states, ["controls", "references", "target"]
+        )
+        np.testing.assert_allclose(np.abs(state.state), expected, atol=1e-8)
 
 
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
