@@ -18,7 +18,7 @@ from guppylang.std.quantum import (
 )
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    indexed_and,
+    pattern_controlled_and,
     temp_and,
 )
 from guppyalgos.testing import assert_unitary_modifiers
@@ -40,7 +40,7 @@ def test_indexed_toffoli_modifiers(index: int) -> None:
     @guppy(unitary=True)
     @no_type_check
     def operation(qs: array[qubit, 3]) -> None:
-        indexed_and(qs[2], qs[0], first_bit, qs[1], second_bit, toffoli)
+        pattern_controlled_and(qs[2], qs[0], first_bit, qs[1], second_bit, toffoli)
 
     expected = np.eye(8)
     matching = 4 * int(bits[0]) + 2 * int(bits[1])
@@ -53,7 +53,9 @@ def test_indexed_toffoli_modifiers(index: int) -> None:
 
 @pytest.mark.parametrize(("index", "n_controls"), [(0, 1), (1, 2), (2, 2), (3, 1)])
 @pytest.mark.parametrize("inverse", [False, True])
-def test_indexed_and_coherent(index: int, n_controls: int, inverse: bool) -> None:
+def test_pattern_controlled_and_coherent(
+    index: int, n_controls: int, inverse: bool
+) -> None:
     """Compare the controlled temporary AND with an independent Toffoli circuit.
 
     Entangled inputs and controls check the promised-input action and its dagger
@@ -70,7 +72,9 @@ def test_indexed_and_coherent(index: int, n_controls: int, inverse: bool) -> Non
         inputs: array[qubit, 2], target: qubit, controls: array[qubit, n_controls]
     ) -> None:
         with control(controls):
-            indexed_and(target, inputs[0], first_bit, inputs[1], second_bit, temp_and)
+            pattern_controlled_and(
+                target, inputs[0], first_bit, inputs[1], second_bit, temp_and
+            )
 
     @guppy
     @no_type_check
@@ -144,7 +148,7 @@ def test_indexed_and_coherent(index: int, n_controls: int, inverse: bool) -> Non
 
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
 @pytest.mark.parametrize("i", [0, 1, 2, 3])
-def test_indexed_and(
+def test_pattern_controlled_and(
     i: int,
     and_operation: GuppyFunctionDefinition,
 ) -> None:
@@ -161,7 +165,7 @@ def test_indexed_and(
             if binary_index[bit]:
                 x(index_qreg[bit])
 
-        indexed_and(
+        pattern_controlled_and(
             target,
             index_qreg[0],
             binary_index[0],
@@ -180,7 +184,7 @@ def test_indexed_and(
 
 
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
-def test_indexed_and_daggered(
+def test_pattern_controlled_and_daggered(
     and_operation: GuppyFunctionDefinition,
 ) -> None:
     """Uncompute a matching indexed AND with its custom dagger."""
@@ -194,7 +198,7 @@ def test_indexed_and_daggered(
         x(target)
 
         with dagger:
-            indexed_and(
+            pattern_controlled_and(
                 target, index_qreg[0], False, index_qreg[1], True, and_operation
             )
 
@@ -209,7 +213,7 @@ def test_indexed_and_daggered(
 
 @pytest.mark.parametrize("enabled", [False, True])
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
-def test_indexed_and_controlled(
+def test_pattern_controlled_and_controlled(
     enabled: bool,
     and_operation: GuppyFunctionDefinition,
 ) -> None:
@@ -226,7 +230,7 @@ def test_indexed_and_controlled(
         target = qubit()
 
         with control(controls):
-            indexed_and(
+            pattern_controlled_and(
                 target, index_qreg[0], False, index_qreg[1], True, and_operation
             )
 
@@ -243,7 +247,7 @@ def test_indexed_and_controlled(
 
 @pytest.mark.parametrize("enabled", [False, True])
 @pytest.mark.parametrize("and_operation", [toffoli, temp_and])
-def test_indexed_and_controlled_daggered(
+def test_pattern_controlled_and_controlled_daggered(
     enabled: bool,
     and_operation: GuppyFunctionDefinition,
 ) -> None:
@@ -263,7 +267,7 @@ def test_indexed_and_controlled_daggered(
             x(target)
 
         with control(controls), dagger:
-            indexed_and(
+            pattern_controlled_and(
                 target, index_qreg[0], False, index_qreg[1], True, and_operation
             )
 

@@ -8,7 +8,7 @@ from guppylang.std.quantum import qubit, x
 
 
 @guppy.unitary
-class indexed_and:
+class pattern_controlled_and:
     """Apply an AND operation with controls matching the given indicators.
 
     Args:

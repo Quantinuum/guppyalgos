@@ -14,7 +14,7 @@ from guppyalgos.algorithms.select.select_unary_iteration import (
     uncompute_cascade,
 )
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    indexed_and,
+    pattern_controlled_and,
 )
 from guppyalgos.utils import qarray
 from guppyalgos.utils import int_to_bits
@@ -197,7 +197,7 @@ def _geq_const_compute[
         # when L[physical_index] == 0.
         if not threshold_bits[physical_index]:
             term_q = qubit()
-            indexed_and(
+            pattern_controlled_and(
                 term_q,
                 index_qreg[most_significant_index],
                 True,
@@ -207,7 +207,7 @@ def _geq_const_compute[
             )
             cx(term_q, target_q)
             with dagger:
-                indexed_and(
+                pattern_controlled_and(
                     term_q,
                     index_qreg[most_significant_index],
                     True,
@@ -218,7 +218,7 @@ def _geq_const_compute[
             discard(term_q)
 
         # Equality of the two most-significant bits.
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             index_qreg[most_significant_index],
             True,
@@ -235,7 +235,7 @@ def _geq_const_compute[
         # when L[physical_index] == 0.
         if not threshold_bits[physical_index]:
             term_q = qubit()
-            indexed_and(
+            pattern_controlled_and(
                 term_q,
                 work_qreg[previous_work_index],
                 True,
@@ -245,7 +245,7 @@ def _geq_const_compute[
             )
             cx(term_q, target_q)
             with dagger:
-                indexed_and(
+                pattern_controlled_and(
                     term_q,
                     work_qreg[previous_work_index],
                     True,
@@ -256,7 +256,7 @@ def _geq_const_compute[
             discard(term_q)
 
         # Extend prefix equality toward the least-significant bit.
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -295,7 +295,7 @@ def _geq_const_uncompute[
     work_index = most_significant_index - comparison_depth
 
     if comparison_depth == 1:
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             index_qreg[most_significant_index],
             True,
@@ -305,7 +305,7 @@ def _geq_const_uncompute[
         )
     else:
         previous_work_index = work_index + 1
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,

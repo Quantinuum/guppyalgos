@@ -10,7 +10,7 @@ from guppylang.std.builtins import Function, Unitary, array, nat
 from guppylang.std.quantum import cx, qubit, reset, x, discard_array
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    indexed_and,
+    pattern_controlled_and,
     temp_and_compute,
     temp_and_uncompute,
 )
@@ -106,7 +106,7 @@ def compute_cascade[n_i_q: nat, n_w_q: nat](
     next_cascade_depth = msb_diff_depth + 1
     work_index = max_cascade_depth - next_cascade_depth
     if msb_diff_depth == 0:
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             index_qreg[max_cascade_depth],
             bools[max_cascade_depth],
@@ -117,7 +117,7 @@ def compute_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = max_cascade_depth - next_cascade_depth
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -207,7 +207,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     most_significant_index = len(index_qreg) - 1
     work_index = most_significant_index - current_cascade_depth
     if current_cascade_depth == 1:
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             index_qreg[most_significant_index],
             bools[most_significant_index],
@@ -218,7 +218,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = most_significant_index - current_cascade_depth
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -561,7 +561,7 @@ def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     work_index = max_cascade_depth - next_cascade_depth
     if msb_diff_depth == 0:
         most_significant_index = len(index_qreg) - 1
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             control_q,
             True,
@@ -573,7 +573,7 @@ def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = len(index_qreg) - next_cascade_depth
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -664,7 +664,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     work_index = len(index_qreg) - current_cascade_depth
     if current_cascade_depth == 1:
         most_significant_index = len(index_qreg) - 1
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             control_q,
             True,
@@ -675,7 +675,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = len(index_qreg) - current_cascade_depth
-        indexed_and(
+        pattern_controlled_and(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
