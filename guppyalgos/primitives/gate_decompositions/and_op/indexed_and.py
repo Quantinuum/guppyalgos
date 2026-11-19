@@ -8,7 +8,19 @@ from guppylang.std.quantum import qubit, x
 
 
 @guppy.unitary
-class indexed_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
+class indexed_and:
+    """Apply an AND operation with controls matching the given indicators.
+
+    Args:
+        target_q: Target qubit storing the result.
+        control_q0: First control qubit.
+        control_0_ind: Required value of the first control.
+        control_q1: Second control qubit.
+        control_1_ind: Required value of the second control.
+        and_operation: AND unitary, including its dagger and control modifiers.
+
+    """
+
     @guppy
     @no_type_check
     def __call__(
@@ -19,17 +31,7 @@ class indexed_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
         control_1_ind: bool,
         and_operation: Unitary[[qubit, qubit, qubit], None],
     ) -> None:
-        """Apply an AND operation with controls matching the given indicators.
-
-        Args:
-            target_q: Target qubit storing the result.
-            control_q0: First control qubit.
-            control_0_ind: Required value of the first control.
-            control_q1: Second control qubit.
-            control_1_ind: Required value of the second control.
-            and_operation: AND unitary, including its dagger and control modifiers.
-
-        """
+        """Apply an AND operation with controls matching the given indicators."""
         if not control_0_ind:
             x(control_q0)
         if not control_1_ind:
