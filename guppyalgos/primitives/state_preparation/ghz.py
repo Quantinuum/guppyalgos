@@ -25,7 +25,7 @@ def ghz_state[n: nat](
     ladder, while retaining log depth.
 
     GHZ state on n-qubits is given by:
-    $\ket{GHZ} = (\ket{0 ... 0} + \ket{1 ... 1}) / √2$
+    $\ket{GHZ} = (\ket{0 ... 0} + \ket{1 ... 1}) / \sqrt{2}$
 
     Args:
         q (array[qubit, n]): Array of qubits to prepare the GHZ state on.
