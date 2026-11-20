@@ -39,6 +39,7 @@ dev-dependencies = [
     "pytest-lazy-fixtures",
     "sphinx==9.1.1",
     "pytest-xdist",
+    "dd>=0.6.0",
     "sphinx-math-dollar>=1.2.1",
     "sphinx-autodoc-typehints>=3.13.2",
     "furo>=2024.8.6",
@@ -70,6 +71,9 @@ Changelog = "https://github.com/Quantinuum/guppyalgos/blob/main/CHANGELOG.md"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+markers = [
+    "symbolic_alternative: tests/symbolic checks the same function on every input",
+]
 
 [tool.ruff]
 lint.select = ["E", "F", "B", "RUF", "PT", "UP", "C4", "D", "T10"]

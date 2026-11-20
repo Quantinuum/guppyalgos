@@ -48,6 +48,7 @@ def test_shifted_controlled_adder_rejects_out_of_range_shift(
 
 
 @pytest.mark.parametrize(("n", "a", "b"), [(2, 1, 1), (2, 2, 3), (3, 3, 2), (4, 5, 7)])
+@pytest.mark.symbolic_alternative
 def test_multiplier_ripple_gidney_mod[n: nat](n: int, a: int, b: int) -> None:
     """Checks that the multiplier correctly computes a * b modulo 2**n."""
     a_bits = int_to_bits(a, n)
@@ -80,6 +81,7 @@ def test_multiplier_ripple_gidney_mod[n: nat](n: int, a: int, b: int) -> None:
 
 @pytest.mark.parametrize(("n", "a", "b"), [(2, 1, 1), (2, 2, 3), (3, 3, 2), (4, 5, 7)])
 @pytest.mark.parametrize("ctrl_active", [False, True])
+@pytest.mark.symbolic_alternative
 def test_cntrl_multiplier_ripple_gidney_mod[n: nat](
     n: int,
     a: int,
@@ -126,6 +128,7 @@ def test_cntrl_multiplier_ripple_gidney_mod[n: nat](
 
 
 @pytest.mark.parametrize(("n", "a", "b"), [(2, 1, 1), (2, 2, 3), (3, 3, 2), (4, 5, 7)])
+@pytest.mark.symbolic_alternative
 def test_multiplier_ripple_gidney_mod_superposition[n: nat](
     n: int,
     a: int,
@@ -172,6 +175,7 @@ def test_multiplier_ripple_gidney_mod_superposition[n: nat](
 
 
 @pytest.mark.parametrize("n", [2, 3, 4])
+@pytest.mark.symbolic_alternative
 def test_multiplier_ripple_gidney_mod_full_superposition[n: nat](n: int) -> None:
     """Check that the multiplier preserves a uniform superposition on all registers."""
 
@@ -207,6 +211,7 @@ def test_multiplier_ripple_gidney_mod_full_superposition[n: nat](n: int) -> None
 
 
 @pytest.mark.parametrize(("n", "a", "b"), [(2, 2, 1), (3, 3, 3), (4, 5, 7)])
+@pytest.mark.symbolic_alternative
 def test_in_place_multiplier_ripple_gidney_mod[n: nat](
     n: int,
     a: int,
@@ -232,6 +237,7 @@ def test_in_place_multiplier_ripple_gidney_mod[n: nat](
 
 
 @pytest.mark.parametrize(("n", "b"), [(2, 3), (3, 5), (4, 7)])
+@pytest.mark.symbolic_alternative
 def test_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
     n: int,
     b: int,
@@ -258,6 +264,7 @@ def test_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
 
 @pytest.mark.parametrize(("n", "a", "b"), [(1, 1, 3), (2, 2, 1), (3, 3, 3), (4, 5, 7)])
 @pytest.mark.parametrize("ctrl_active", [False, True])
+@pytest.mark.symbolic_alternative
 def test_cntrl_in_place_multiplier_ripple_gidney_mod[n: nat](
     n: int,
     a: int,
@@ -289,6 +296,7 @@ def test_cntrl_in_place_multiplier_ripple_gidney_mod[n: nat](
 
 
 @pytest.mark.parametrize(("n", "b"), [(1, 3), (2, 3), (3, 5), (4, 7)])
+@pytest.mark.symbolic_alternative
 def test_cntrl_in_place_multiplier_ripple_gidney_mod_superposition[n: nat](
     n: int,
     b: int,

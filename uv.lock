@@ -135,6 +135,15 @@ wheels = [
 ]
 
 [[package]]
+name = "astutils"
+version = "0.0.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ply" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/d9/86e4053d44baa2b648596a443e2bcf5b8e1d30a9669b14bfacc5307fbc2f/astutils-0.0.6.tar.gz", hash = "sha256:e9a6f31b243ecfc3c7c84dd2f145cf5de83e475b650d2a6b781cfa713ad15427", size = 9333, upload-time = "2024-04-15T17:25:19.294Z" }
+
+[[package]]
 name = "async-lru"
 version = "2.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -455,6 +464,22 @@ wheels = [
 ]
 
 [[package]]
+name = "dd"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "astutils" },
+    { name = "networkx" },
+    { name = "ply" },
+    { name = "setuptools" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/18/b2/57a2d7151e7e904092e0411f79e8dadfc3ae143679236a9dec88f4667f8a/dd-0.6.0.tar.gz", hash = "sha256:4baadadc9b2ebf6136a5b84dc51a43cec5fe91203286cd377e1e093358cdffcd", size = 1059332, upload-time = "2023-12-16T13:31:27.708Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/f3/46a27002757637b09a94dff4c623fff32a6a0521bd3e90a51a75e7fda341/dd-0.6.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c6467c987f2aacb08d61b941c1c2fe136a157e6d7d69d05e2f8e502c6afa7f21", size = 4330718, upload-time = "2024-12-01T14:36:24.97Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/81/f08b633c94a2fa804e2b564900eb4abf8d6bbaa89ab711174079903f9182/dd-0.6.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bb46d9f633641927d266d098d507a5759644469ea416862f83781511cd6ca14d", size = 4229721, upload-time = "2024-12-01T15:13:05.108Z" },
+]
+
+[[package]]
 name = "debugpy"
 version = "1.8.22"
 source = { registry = "https://pypi.org/simple" }
@@ -638,6 +663,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev-dependencies = [
+    { name = "dd" },
     { name = "furo" },
     { name = "ipykernel" },
     { name = "jupyter" },
@@ -666,6 +692,7 @@ numba = [
 
 [package.metadata]
 requires-dist = [
+    { name = "dd", marker = "extra == 'dev-dependencies'", specifier = ">=0.6.0" },
     { name = "furo", marker = "extra == 'dev-dependencies'", specifier = ">=2024.8.6" },
     { name = "guppylang", specifier = ">=1.2.1" },
     { name = "ipykernel", marker = "extra == 'dev-dependencies'", specifier = ">=7.3.0" },
@@ -2136,6 +2163,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/bf/db/7fc19e6f2dc92a966
 wheels = [
     { url = "https://files.pythonhosted.org/packages/40/9e/2b38731e0fc536806f16490e1a12d7f0dc2a1235aa8cc07bcc75416a7daa/pluggy-1.7.0-py3-none-any.whl", hash = "sha256:7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec", size = 27082, upload-time = "2026-10-15T09:50:56.808Z" },
 ]
+
+[[package]]
+name = "ply"
+version = "3.10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/3d/1f9ca69192025046f02a02ffc61bfbac2731aab06325a218370fd93e18df/ply-3.10.tar.gz", hash = "sha256:96e94af7dd7031d8d6dd6e2a8e0de593b511c211a86e28a9c9621c275ac8bacb", size = 150926, upload-time = "2017-01-31T18:38:34.244Z" }
 
 [[package]]
 name = "prek"

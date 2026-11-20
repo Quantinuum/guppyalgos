@@ -3,6 +3,7 @@
 from typing import no_type_check
 
 import numpy as np
+import pytest
 from guppylang import guppy
 from guppylang.std.builtins import array
 from guppylang.std.debug import state_output
@@ -16,6 +17,7 @@ from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import assert_allclose_ignorephase
 
 
+@pytest.mark.symbolic_alternative
 def test_qrom_unary_iteration_two_target_registers() -> None:
     """Check QROM fanout into two target registers."""
     n_index_qubits = 2
