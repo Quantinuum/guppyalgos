@@ -17,7 +17,7 @@ Add a row to `CASES` in `test_symbolic.py`: `(component, shapes, spec, sizes, ze
 - `sizes`: the values of `n` to check. For example, most tests use the constant `SIZES`, or `SMALL_SIZES` when the test is slow. Leave out the sizes the function doesn't support, as `SIZES[1:]` does for n = 1.
 - `zero`: the arguments that start in |0> instead of holding any input, such as a clean carry. They are named `a`, `b`, `c` and `d` by position.
 - `ancillas`: the most qubits the function holds at once besides its arguments, as a number or a function of `n`. Use `None` to skip this check.
-- `modifiers`: optional, `False` by default. Use `True` to also check the component under `control` and `dagger`, at the 3 smallest sizes and without the ancilla count.
+- `modifiers`: optional, `False` by default. Use `True` to also check the component under `control` and `dagger`, at its smallest, middle and largest sizes and without the ancilla count.
 
 A function with these argument shapes and no return value goes directly into a row. Other functions need a wrapper in `test_symbolic.py`, for example for:
 

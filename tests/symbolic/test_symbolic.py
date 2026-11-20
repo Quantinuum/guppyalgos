@@ -823,7 +823,7 @@ def cases():
             for mode, mode_spec in specs.items():
                 wrappers = {
                     n: wrap(component(n) if factory else component, n, shape, mode)
-                    for n in sizes[:3]
+                    for n in sorted({sizes[0], sizes[len(sizes) // 2], sizes[-1]})
                 }
                 yield pytest.param(wrappers, mode_spec, zero, None, id=f"{name}-{mode}")
 
