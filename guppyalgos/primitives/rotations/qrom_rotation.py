@@ -7,7 +7,7 @@ from guppylang import guppy
 from guppylang.std.builtins import Function
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def qrom_identity[IndexRegs, TargetRegs](
     index_regs: IndexRegs,
