@@ -9,7 +9,7 @@ The verifier can check Guppy functions that:
 
 ## Adding a test
 
-Add a row to `CASES` in `test_symbolic.py`: `(component, shapes, spec, sizes, zero, ancillas)`.
+Add a row to `CASES` in `test_symbolic.py`: `(component, shapes, spec, sizes, zero, ancillas, modifiers)`.
 
 - `component`: the guppy function to test, with at most 4 arguments. For more, write a test that calls `verify` directly, like `test_cnx_ladder_logdepth`.
 - `shapes`: one entry per argument. `"q"` is a qubit, `"n"` an array of `n` qubits, and `"i"` an index register for `n` items. For other types, give a tuple of Guppy types with `{n}` for the size, such as `("n", "array[qubit, comptime({n} + 1)]", "array[qubit, 4]")` for arrays of `n`, `n + 1` and 4 qubits. For a size that Python computes, an entry can also be a function of `n` that returns the type, such as `lambda n: f"array[qubit, {n.bit_length()}]"` for an array of `n.bit_length()` qubits.
@@ -17,6 +17,7 @@ Add a row to `CASES` in `test_symbolic.py`: `(component, shapes, spec, sizes, ze
 - `sizes`: the values of `n` to check. For example, most tests use the constant `SIZES`, or `SMALL_SIZES` when the test is slow. Leave out the sizes the function doesn't support, as `SIZES[1:]` does for n = 1.
 - `zero`: the arguments that start in |0> instead of holding any input, such as a clean carry. They are named `a`, `b`, `c` and `d` by position.
 - `ancillas`: the most qubits the function holds at once besides its arguments, as a number or a function of `n`. Use `None` to skip this check.
+- `modifiers`: optional, `False` by default. Use `True` to also check the component under `control` and `dagger`, at the 3 smallest sizes and without the ancilla count.
 
 A function with these argument shapes and no return value goes directly into a row. Other functions need a wrapper in `test_symbolic.py`, for example for:
 

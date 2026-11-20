@@ -2,6 +2,8 @@
 
 import gc
 import inspect
+import linecache
+import textwrap
 from contextlib import nullcontext
 from functools import partial
 from typing import no_type_check
@@ -268,7 +270,7 @@ def equality[n: nat](lhs: array[qubit, n], rhs: array[qubit, n], flag: qubit) ->
     equality_test(cnx_single_ancilla[n], lhs, rhs, flag)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccswap_qubits(c0: qubit, c1: qubit, a: qubit, b: qubit) -> None:
     """Swap two qubits under two controls."""
@@ -276,7 +278,7 @@ def ccswap_qubits(c0: qubit, c1: qubit, a: qubit, b: qubit) -> None:
         swap(a, b)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccswap_registers[n: nat](
     c0: qubit, c1: qubit, a: array[qubit, n], b: array[qubit, n]
@@ -314,7 +316,7 @@ def method(struct, name):
 def daggered_cx_ladder(n):
     """Return the dagger of the log depth CX ladder."""
 
-    @guppy
+    @guppy(unitary=True)
     @no_type_check
     def f(q: array[qubit, n]) -> None:
         with dagger:
@@ -426,7 +428,7 @@ def guarded_accumulator_ancillas(n):
     return accumulator_ancillas(n) + 1
 
 
-# (component, shapes, spec, sizes, zero, ancillas), as README.md explains
+# (component, shapes, spec, sizes, zero, ancillas, modifiers), as README.md explains
 CASES: list[tuple] = [
     (half_adder, "qqq", half_add, [1], (), 0),
     (daggered_half_adder, "qqq", half_add_inverse, [1], (), 0),
@@ -663,7 +665,7 @@ CASES: list[tuple] = [
     ),
     (cnx_cca_logdepth_dirty, "nqqq", multi_controlled_x_dirty, SIZES, (), 0),
     (equality, "nnq", equal, SIZES, (), lambda n: int(n >= 3)),
-    (fanout_basic, "qn", fanout, SIZES, (), 0),
+    (fanout_basic, "qn", fanout, SIZES, (), 0, True),
     (fanout_log, "qn", fanout, SIZES, (), 0),
     (fanout_from_mask, "qn", masked_fanout, SIZES, (), None),
     (ccx_v_chain, "nnq", toffoli_v_chain, SIZES, (), 0),
@@ -685,8 +687,8 @@ CASES: list[tuple] = [
         (),
         None,
     ),
-    (ccswap_qubits, "qqqq", swap_if_both, [1], (), 1),
-    (ccswap_registers, "qqnn", swap_if_both, SIZES[1:], (), 1),
+    (ccswap_qubits, "qqqq", swap_if_both, [1], (), 1, True),
+    (ccswap_registers, "qqnn", swap_if_both, SIZES[1:], (), 1, True),
 ]
 CASES += [  # the unary iterations, with each pair of AND ops
     case
@@ -746,7 +748,7 @@ CASES += [
     for variant, options in VARIANTS.items()
 ]
 CASES += [  # the custom modifiers of the CX ladder
-    (daggered_cx_ladder, "n", partial(cx_ladder, dagger=True), SIZES, (), 0),
+    (daggered_cx_ladder, "n", partial(cx_ladder, dagger=True), SIZES, (), 0, True),
     (controlled_cx_ladder, "qn", with_control(cx_ladder), SIZES, (), 0),
     (
         controlled_daggered_cx_ladder,
@@ -762,8 +764,25 @@ CASES += [  # the custom modifiers of the CX ladder
 # the machinery that turns each row of CASES into tests
 
 
-def wrap(f, n, shape):
-    """Wrap ``f`` at size ``n``, with the argument types given by ``shape``."""
+BODIES = {  # what the wrapper runs in each mode
+    None: "f({args})",
+    "controlled": """\
+with control(ctrl):
+    f({args})""",
+    "daggered": """\
+f({args})
+with dagger:
+    f({args})""",
+    "ctrl_daggered": """\
+with control(ctrl):
+    f({args})
+    with dagger:
+        f({args})""",
+}
+
+
+def wrap(f, n, shape, mode=None):
+    """Wrap ``f`` at size ``n`` in a function that runs ``BODIES[mode]``."""
     shapes = {
         "q": "qubit",
         "n": f"array[qubit, {n}]",
@@ -773,41 +792,40 @@ def wrap(f, n, shape):
         guppy.type_alias("Arg", s(n) if callable(s) else shapes.get(s, s).format(n=n))
         for s in shape
     ]
-    if len(types) == 1:
-        (ta,) = types
-
-        def wrapped(a: ta) -> None:
-            f(a)
-    elif len(types) == 2:
-        ta, tb = types
-
-        def wrapped(a: ta, b: tb) -> None:
-            f(a, b)
-    elif len(types) == 3:
-        ta, tb, tc = types
-
-        def wrapped(a: ta, b: tb, c: tc) -> None:
-            f(a, b, c)
-    else:
-        ta, tb, tc, td = types
-
-        def wrapped(a: ta, b: tb, c: tc, d: td) -> None:
-            f(a, b, c, d)
-
-    # a name of its own, to tell the sizes apart in a module that holds several
-    wrapped.__qualname__ = f"wrapped_{n}"
-    return guppy(wrapped)
+    names = "abcd"[: len(types)]
+    body = textwrap.indent(BODIES[mode].format(args=", ".join(names)), "    ")
+    params = ["ctrl: qubit"] * ("ctrl" in body) + [f"{x}: t{x}" for x in names]
+    source = f"@guppy\ndef wrapped_{n}({', '.join(params)}) -> None:\n{body}\n"
+    file = f"<wrapped {hash(source)}>"
+    linecache.cache[file] = (len(source), None, source.splitlines(True), file)
+    namespace = (
+        globals() | {"f": f} | {f"t{x}": t for x, t in zip(names, types, strict=True)}
+    )
+    exec(compile(source, file, "exec"), namespace)
+    return namespace[f"wrapped_{n}"]
 
 
 def cases():
     """Yield each component with its wrappers by size."""
-    for component, shape, spec, sizes, zero, ancillas in CASES:
+    for component, shape, spec, sizes, zero, ancillas, *modifiers in CASES:
         factory = inspect.isfunction(component)
         name = component.__name__ if factory else component.wrapped.name
         wrappers = {
             n: wrap(component(n) if factory else component, n, shape) for n in sizes
         }
         yield pytest.param(wrappers, spec, zero, ancillas, id=name)
+        if any(modifiers):
+            specs = {
+                "controlled": with_control(spec),
+                "daggered": same,
+                "ctrl_daggered": same,
+            }
+            for mode, mode_spec in specs.items():
+                wrappers = {
+                    n: wrap(component(n) if factory else component, n, shape, mode)
+                    for n in sizes[:3]
+                }
+                yield pytest.param(wrappers, mode_spec, zero, None, id=f"{name}-{mode}")
 
 
 @pytest.mark.parametrize(("wrappers", "spec", "zero", "ancillas"), list(cases()))
