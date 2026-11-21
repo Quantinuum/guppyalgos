@@ -30,6 +30,7 @@ from .rotation_helper import (
 )
 from .register_incremented_givens_rotation import GivensRotationRegisterIncremented
 from .register_incremented_rotation import RotationRegisterIncremented
+from .multiplexed_rotation import multiplexed_rotation
 
 __all__ = [
     "ComparatorBasedRz",
@@ -51,6 +52,7 @@ __all__ = [
     "dummy_theta_resource_state",
     "givens_rotation",
     "givens_with_custom_rz",
+    "multiplexed_rotation",
     "n_comparator_based_rz_cascade_ancillas",
     "n_constant_comparator_cascade_ancillas",
     "qrom_identity",
