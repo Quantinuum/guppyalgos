@@ -55,6 +55,7 @@ ADDITION_CASES = (
         (subtractor_ripple_gidney_carry_out, lambda n: n - 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_subtraction_carry_out[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -113,6 +114,7 @@ def test_subtraction_carry_out[n: nat](
         (subtractor_ripple_gidney_mod, lambda n: n - 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_subtraction_mod[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -174,6 +176,7 @@ def test_subtraction_mod[n: nat](
         ),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_subtraction_carry_out[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -257,6 +260,7 @@ def test_cntrl_subtraction_carry_out[n: nat](
         ),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_subtraction_mod[n: nat](
     n: int,
     cases: list[tuple[int, int]],

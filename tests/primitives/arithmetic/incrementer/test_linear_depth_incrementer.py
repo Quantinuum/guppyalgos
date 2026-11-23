@@ -3,6 +3,7 @@
 from collections import Counter
 from typing import no_type_check
 
+import pytest
 from guppylang import guppy
 from guppylang.std.builtins import array, control, dagger, output
 from guppylang.std.quantum import measure, measure_array, qubit, x, collect_measurements
@@ -21,6 +22,7 @@ def _output_string(value: int, num_bits: int) -> str:
     return "".join("1" if bit else "0" for bit in bits)
 
 
+@pytest.mark.symbolic_alternative
 def test_linear_depth_incrementer_two_bits() -> None:
     """Increment a 2-bit little-endian register."""
 
@@ -46,6 +48,7 @@ def test_linear_depth_incrementer_two_bits() -> None:
         assert emulator_result.collated_counts() == Counter({(("out", expected),): 10})
 
 
+@pytest.mark.symbolic_alternative
 def test_linear_depth_incrementer_five_bits() -> None:
     """Increment a 5-bit little-endian register."""
 
@@ -103,6 +106,7 @@ def test_linear_depth_incrementer_bounded_width() -> None:
         assert emulator_result.collated_counts() == Counter({(("out", expected),): 10})
 
 
+@pytest.mark.symbolic_alternative
 def test_cntrl_linear_depth_incrementer() -> None:
     """Increment only when the control qubit is set."""
 
@@ -180,6 +184,7 @@ def test_cntrl_linear_depth_incrementer_bounded_width() -> None:
             )
 
 
+@pytest.mark.symbolic_alternative
 def test_linear_depth_incrementer_dagger_two_bits() -> None:
     """Decrement a 2-bit little-endian register."""
 
@@ -206,6 +211,7 @@ def test_linear_depth_incrementer_dagger_two_bits() -> None:
         assert emulator_result.collated_counts() == Counter({(("out", expected),): 10})
 
 
+@pytest.mark.symbolic_alternative
 def test_linear_depth_incrementer_dagger_five_bits() -> None:
     """Decrement a 5-bit little-endian register."""
 
@@ -258,6 +264,7 @@ def test_linear_depth_incrementer_dagger_bounded_width() -> None:
         assert emulator_result.collated_counts() == Counter({(("out", expected),): 10})
 
 
+@pytest.mark.symbolic_alternative
 def test_controlled_linear_depth_incrementer_dagger() -> None:
     """Decrement only when the control qubit is set."""
 

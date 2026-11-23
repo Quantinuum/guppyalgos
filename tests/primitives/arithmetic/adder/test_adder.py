@@ -56,6 +56,7 @@ ADDITION_CASES = (
         (adder_ripple_gidney_carry_out, lambda n: n - 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_addition_carry_out[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -118,6 +119,7 @@ def test_addition_carry_out[n: nat](
         (adder_ripple_gidney_mod, lambda n: n - 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_addition_mod[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -183,6 +185,7 @@ def test_addition_mod[n: nat](
         ),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_addition_carry_out_dagger[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -242,6 +245,7 @@ def test_addition_carry_out_dagger[n: nat](
         (adder_ripple_gidney_mod, adder_ripple_gidney_mod_dagger, lambda n: n - 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_addition_mod_dagger[n: nat](
     n: int,
     cases: list[tuple[int, int]],

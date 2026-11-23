@@ -48,6 +48,7 @@ from guppyalgos.utils import int_to_bits
     ],
     ids=["ripple_cuccaro", "vandaele"],
 )
+@pytest.mark.symbolic_alternative
 def test_compare(
     n: int,
     a: int,
@@ -114,6 +115,7 @@ def test_compare(
         (7, 5, 100),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_partial_compare(n: int, a: int, b: int) -> None:
     """Test partial ripple carry compare circuit."""
     n_qubits = 2 * (n + 1) + 1

@@ -33,6 +33,7 @@ def _output_string(value: int, num_bits: int) -> str:
 
 
 @pytest.mark.parametrize("num_bits", [4, 5, 7, 12, 19])
+@pytest.mark.symbolic_alternative
 def test_cca_incrementer_compiles(num_bits: int) -> None:
     """Test CCA incremeter compiles without ownership or borrowing errors."""
 
@@ -49,6 +50,7 @@ def test_cca_incrementer_compiles(num_bits: int) -> None:
 
 
 @pytest.mark.parametrize("num_bits", [5, 7, 10, 20, 50, 100, 200, 500])
+@pytest.mark.symbolic_alternative
 def test_incrementer_does_not_panic(num_bits: int) -> None:
     """Test CCA incrementer runs without runtime panics."""
     num_ancillas = required_clean_ancillas(num_bits)
@@ -72,6 +74,7 @@ def test_incrementer_does_not_panic(num_bits: int) -> None:
         (7, [0, 1, 63, 126, 127]),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cca_incrementer(num_bits: int, values: list[int]) -> None:
     """Increment an m-bit register using conditionally clean ancillas."""
     num_ancillas = required_clean_ancillas(num_bits)
@@ -109,6 +112,7 @@ def test_cca_incrementer(num_bits: int, values: list[int]) -> None:
         (7, [0, 1, 63, 126, 127]),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cca_incrementer_dagger(num_bits: int, values: list[int]) -> None:
     """Decrement an m-bit register using conditionally clean ancillas."""
     num_ancillas = required_clean_ancillas(num_bits)
@@ -148,6 +152,7 @@ def test_cca_incrementer_dagger(num_bits: int, values: list[int]) -> None:
     ],
 )
 @pytest.mark.parametrize("inverse", [False, True])
+@pytest.mark.symbolic_alternative
 def test_cntrl_cca_incrementer(
     num_bits: int,
     values: list[int],
