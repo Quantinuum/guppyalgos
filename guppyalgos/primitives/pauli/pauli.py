@@ -5,7 +5,7 @@ from typing import no_type_check
 from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, frozenarray, nat, control, dagger
+from guppylang.std.builtins import Unitary, array, frozenarray, nat, control, dagger
 from guppylang.std.quantum import cx, cy, cz, qubit, x, y, z, h, sdg
 
 from guppyalgos.primitives.utilities.gates import apply_phase
@@ -152,21 +152,18 @@ class _z_basis_change[n: nat, nx: nat, ny: nat]:
 
 def pauli_to_z_basis[n_q: nat](
     pauli_string: zqp.String, size: int
-) -> GuppyFunctionDefinition[array[qubit, n_q], None]:
+) -> Unitary[[array[qubit, n_q]], None]:
     """Produce a guppy function to change basis to/from Z-basis for a zixy String.
 
-    Maps the given Pauli to the Z-basis on a register of given size.
-    Use ``with dagger`` to restore the original basis and ``with control``
-    to add external controls. Typically should be used as a pair for a GPG^dagger change
-    of basis surrounding a Pauli operation.
+    Maps the given Pauli to the Z-basis on a register of given size. Pair the
+    basis change with its inverse to conjugate a Pauli operation.
 
     Args:
         pauli_string (zqp.String): zixy string for the Pauli to change basis for
         size (int): size of the register to apply the basis change on
 
     Returns:
-        GuppyFunctionDefinition that takes in a qarray[size] and applies the basis
-        change.
+        A unitary that applies the basis change to an array of ``size`` qubits.
 
     """
     paulis = pauli_string.get_dict()

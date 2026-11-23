@@ -5,9 +5,8 @@ from __future__ import annotations
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, control, dagger, nat
+from guppylang.std.builtins import Unitary, array, control, dagger, nat
 from guppylang.std.quantum import cx, h, qubit, rz, sdg
 
 
@@ -24,13 +23,11 @@ def _change_basis(q0: qubit, q1: qubit) -> None:
 
 
 def givens_with_custom_rz(
-    rz_method: GuppyFunctionDefinition[[qubit, angle], None],
-) -> GuppyFunctionDefinition[[qubit, qubit, angle], None]:
+    rz_method: Unitary[[qubit, angle], None],
+) -> Unitary[[qubit, qubit, angle], None]:
     """Build a two-mode Givens rotation with a supplied RZ implementation.
 
-    The returned callable has signature ``(qubit, qubit, angle) -> None`` and
-    uses Guppy's half-turn angle convention. The supplied Rz implementation
-    must support both dagger and control modifiers.
+    The rotation uses Guppy's half-turn angle convention.
     """
 
     @guppy(unitary=True)
@@ -88,6 +85,4 @@ def givens_with_custom_rz(
     return givens_rotation_fn
 
 
-givens_rotation: GuppyFunctionDefinition[[qubit, qubit, angle], None] = (
-    givens_with_custom_rz(rz)
-)
+givens_rotation: Unitary[[qubit, qubit, angle], None] = givens_with_custom_rz(rz)

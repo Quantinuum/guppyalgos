@@ -8,7 +8,7 @@ import numpy
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle, pi
-from guppylang.std.builtins import array, comptime
+from guppylang.std.builtins import Unitary, array, comptime
 from guppylang.std.quantum import qubit, rz
 from numpy.typing import NDArray
 
@@ -16,6 +16,7 @@ from numpy.typing import NDArray
 def basis_rotation_implementation(
     mode_matrix: NDArray[numpy.float64],
     elementary_rotation: GuppyFunctionDefinition[[qubit, qubit, angle], None]
+    | Unitary[[qubit, qubit, angle], None]
     | None = None,
     elementary_phase_rz_method: GuppyFunctionDefinition[[qubit, angle], None] = rz,
     atol: float = 1e-10,
