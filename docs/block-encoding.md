@@ -256,7 +256,9 @@ from guppyalgos.algorithms.select import build_select_unary_from_data
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute, temp_and_uncompute,
 )
-from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
+from guppylang.std.builtins import control
+from guppylang.std.quantum import qubit
+from guppyalgos.primitives.pauli import pauli_to_gate
 
 terms = [
     zqp.String.from_str(label, 2)
@@ -265,16 +267,27 @@ terms = [
     )
 ]
 
+def select_term(term):
+    pauli = pauli_to_gate(term, 2)
+
+    @guppy
+    def apply_selected(flag: qubit, qs: array[qubit, 2]) -> None:
+        with control(flag):
+            pauli(qs)
+
+    return apply_selected
+
+
 unary_select_toffoli = build_select_unary_from_data(
     terms,
-    lambda term: pauli_to_cntrl_gate(term, 2),
+    select_term,
     comp_and_op=toffoli,
     uncomp_and_op=toffoli,
 )
 
 unary_select_temporary_and = build_select_unary_from_data(
     terms,
-    lambda term: pauli_to_cntrl_gate(term, 2),
+    select_term,
     comp_and_op=temp_and_compute,
     uncomp_and_op=temp_and_uncompute,
 )

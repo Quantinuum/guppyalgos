@@ -3,7 +3,7 @@
 from __future__ import annotations
 from guppylang import guppy
 
-from guppylang.std.builtins import array
+from guppylang.std.builtins import Unitary, array
 from guppylang.std.angles import angle
 from guppylang.std.quantum import qubit, rz
 import pytest
@@ -13,7 +13,6 @@ from guppyalgos.primitives.subroutines.ladders import CXLadderLinear, Ladder
 
 import zixy.qubit.pauli as zqp
 
-from guppylang.defs import GuppyFunctionDefinition
 
 from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
 
@@ -45,7 +44,7 @@ def pauli_exp_test_fn(
     pauli_string: zqp.String,
     n_state_qubits: int,
     cx_ladder: type[Ladder],
-    rz_method: GuppyFunctionDefinition[[qubit, angle], None],
+    rz_method: Unitary[[qubit, angle], None],
 ) -> None:
     """Test the pauli exponential implementation against the matrix exponential.
 
@@ -63,7 +62,7 @@ def pauli_exp_test_fn(
             exponentiated
         n_state_qubits: number of qubits in the register to apply the Pauli exponential
         cx_ladder (Ladder): CX ladder implementing Ladder protocol.
-        rz_method (GuppyFunctionDefinition): RZ decomposition method to use for the R
+        rz_method (Unitary): RZ decomposition method to use for the R
 
     """
     pauli_g = pauli_exp(pauli_string, n_state_qubits, cx_ladder, rz_method)
@@ -95,7 +94,7 @@ def test_pauli_exp_2q(
     p_str: str,
     n_state_qubits: int,
     cx_ladder: type[Ladder],
-    rz_method: GuppyFunctionDefinition[[qubit, angle], None],
+    rz_method: Unitary[[qubit, angle], None],
 ) -> None:
     """Test 2-qubit pauli exponentials over various pauli strings and methods."""
     pauli_string = zqp.String.from_str(p_str, n_state_qubits)
@@ -116,7 +115,7 @@ def test_pauli_exp_3q(
     p_str: str,
     n_state_qubits: int,
     cx_ladder: type[Ladder],
-    rz_method: GuppyFunctionDefinition[[qubit, angle], None],
+    rz_method: Unitary[[qubit, angle], None],
 ) -> None:
     """Test 3-qubit pauli exponentials over various pauli strings and methods."""
     pauli_string = zqp.String.from_str(p_str, n_state_qubits)
@@ -137,7 +136,7 @@ def test_pauli_exp_4q(
     p_str: str,
     n_state_qubits: int,
     cx_ladder: type[Ladder],
-    rz_method: GuppyFunctionDefinition[[qubit, angle], None],
+    rz_method: Unitary[[qubit, angle], None],
 ) -> None:
     """Test 4-qubit pauli exponentials over various pauli strings and methods."""
     pauli_string = zqp.String.from_str(p_str, n_state_qubits)

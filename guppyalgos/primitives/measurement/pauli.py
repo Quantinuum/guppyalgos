@@ -16,7 +16,7 @@ import zixy.qubit.pauli as zqp
 
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, comptime, nat, output, owned
+from guppylang.std.builtins import array, comptime, control, nat, output, owned
 from guppylang.std.quantum import collect_measurements, measure, measure_array, qubit
 
 from .stats import (
@@ -24,7 +24,7 @@ from .stats import (
     estimate_expectation_from_binary_samples,
 )
 from guppyalgos.algorithms.phase_estimation import hadamard_test
-from guppyalgos.primitives.pauli import pauli_to_cntrl_gate, pauli_to_z_basis
+from guppyalgos.primitives.pauli import pauli_to_gate, pauli_to_z_basis
 
 
 @dataclass(frozen=True)
@@ -237,7 +237,13 @@ def make_hadamard_test_pauli[n_q: nat](
     stream. Repeated shots estimate the expectation value of the observable
     associated with ``pauli_string``.
     """
-    controlled_pauli = pauli_to_cntrl_gate(pauli_string, size)
+    pauli = pauli_to_gate(pauli_string, size)
+
+    @guppy
+    @no_type_check
+    def controlled_pauli(ancilla: qubit, qs: array[qubit, comptime(size)]) -> None:
+        with control(ancilla):
+            pauli(qs)
 
     @guppy
     @no_type_check
