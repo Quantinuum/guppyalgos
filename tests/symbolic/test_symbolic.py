@@ -290,6 +290,7 @@ def ccswap_registers[n: nat](
 def decoder(compute):
     """Return a decoder from 2 qubits to 4, with indexed ANDs that apply these ops."""
 
+    @no_type_check
     def f(index: array[qubit, 2], out: array[qubit, 4]) -> None:
         for i in range(4):
             low, high = i % 2 == 1, i >= 2
