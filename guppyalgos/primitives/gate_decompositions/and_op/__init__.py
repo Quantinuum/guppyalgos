@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-from .pattern_controlled_and import pattern_controlled_and
+from .and_pattern_controlled import and_pattern_controlled
 from guppyalgos.primitives.utilities.t_state import t_state
 
 _and = import_module(".and", __name__)
@@ -11,7 +11,7 @@ temp_and_compute = _and.temp_and_compute
 temp_and_uncompute = _and.temp_and_uncompute
 
 __all__ = [
-    "pattern_controlled_and",
+    "and_pattern_controlled",
     "t_state",
     "temp_and",
     "temp_and_compute",
