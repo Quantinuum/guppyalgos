@@ -18,7 +18,12 @@ from guppyalgos.primitives.rotations import (
 )
 from guppyalgos.primitives.state_preparation.phase_gradient import phase_gradient
 from guppyalgos.utils import qarray
-from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    assert_unitary_modifiers,
+    get_unitary,
+)
 
 
 def _expected_givens_state(theta: float, target_bits: tuple[bool, bool]) -> np.ndarray:
@@ -131,3 +136,20 @@ def test_elementary_givens_rotation_matches_mode_matrix(theta: float) -> None:
 
     compiled = get_unitary(main, 2, endianness=Endianness.LITTLE)
     np.testing.assert_allclose(compiled, _expected_givens_unitary(theta), atol=1e-8)
+
+
+def test_elementary_givens_rotation_modifiers() -> None:
+    """Check both control branches and the inverse against the mode matrix."""
+    theta = 0.23
+
+    @guppy(unitary=True)
+    @no_type_check
+    def main(qreg: array[qubit, 2]) -> None:
+        givens_rotation(qreg[0], qreg[1], angle(comptime(theta)))
+
+    assert_unitary_modifiers(
+        main,
+        2,
+        expected_unitary=_expected_givens_unitary(theta),
+        endianness=Endianness.LITTLE,
+    )

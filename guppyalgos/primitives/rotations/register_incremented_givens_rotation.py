@@ -6,20 +6,55 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, control, dagger, nat
 from guppylang.std.quantum import crz, cx, h, qubit, rz, x
 
 
-@guppy
-def xx_basis_change(theta: angle, q0: qubit, q1: qubit) -> None:
+@guppy(daggerable=True)
+@no_type_check
+def _xx_to_z_basis(q0: qubit, q1: qubit) -> None:
+    """Map the XX Pauli onto Z on the second qubit."""
+    h(q0)
+    h(q1)
+    cx(q0, q1)
+
+
+@guppy.unitary
+class xx_basis_change:
     """Apply ``exp(-i pi theta XX / 2)`` using a Pauli gadget."""
-    h(q0)
-    h(q1)
-    cx(q0, q1)
-    rz(q1, theta)
-    cx(q0, q1)
-    h(q0)
-    h(q1)
+
+    @guppy(daggerable=True)
+    @no_type_check
+    def __call__(theta: angle, q0: qubit, q1: qubit) -> None:
+        """Apply the XX rotation."""
+        _xx_to_z_basis(q0, q1)
+        rz(q1, theta)
+        with dagger:
+            _xx_to_z_basis(q0, q1)
+
+    @guppy
+    @no_type_check
+    def controlled[n: nat](
+        theta: angle, q0: qubit, q1: qubit, ctrls: array[qubit, n]
+    ) -> None:
+        """Apply external controls only to the Z rotation."""
+        _xx_to_z_basis(q0, q1)
+        with control(ctrls):
+            rz(q1, theta)
+        with dagger:
+            _xx_to_z_basis(q0, q1)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n: nat](
+        theta: angle, q0: qubit, q1: qubit, ctrls: array[qubit, n]
+    ) -> None:
+        """Apply external controls only to the inverse Z rotation."""
+        _xx_to_z_basis(q0, q1)
+        with control(ctrls), dagger:
+            rz(q1, theta)
+        with dagger:
+            _xx_to_z_basis(q0, q1)
 
 
 @guppy.struct
