@@ -42,6 +42,7 @@ EXACT_CNX_METHODS = [
     "cnx_method", EXACT_CNX_METHODS, ids=lambda method: method.name
 )
 @pytest.mark.parametrize("n_register_qubits", [1, 3, 5])
+@pytest.mark.symbolic_alternative
 def test_equality_test_flag_marks_equal_pairs(
     cnx_method: CnxMethod, n_register_qubits: int
 ) -> None:

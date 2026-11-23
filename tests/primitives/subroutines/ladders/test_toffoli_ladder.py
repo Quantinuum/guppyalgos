@@ -74,6 +74,7 @@ def test_linear_toffoli_ladder_indices(
 
 
 @pytest.mark.parametrize(("n_qubits"), list(range(5, 11, 2)))
+@pytest.mark.symbolic_alternative
 def test_linear_and_log_depth_basis_equivalence(n_qubits: int) -> None:
     """Test that linear and log Toffoli ladders act identically."""
 
@@ -145,6 +146,7 @@ def test_linear_and_log_depth_basis_equivalence(n_qubits: int) -> None:
         )
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_get_ccx_ladder_impl_basic_sanity(
     n_qubits: int,
     ladder: Any,
@@ -196,6 +198,7 @@ def test_get_ccx_ladder_impl_basic_sanity(
         )
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_get_toffoli_ladder_impl(
     n_qubits: int,
     ladder: Any,
@@ -251,6 +254,7 @@ def test_get_toffoli_ladder_impl(
         )
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_concat_ladders(
     n_qubits_per_ladder: int,
     n_ladders: int,
@@ -313,6 +317,7 @@ def test_concat_ladders(
 
 
 @pytest.mark.parametrize("n_qubits", [5, 9, 11])
+@pytest.mark.symbolic_alternative
 def test_log_depth_ladder_with_cca(n_qubits: int) -> None:
     """Test the log depth ladder on caller-provided ancillae."""
     n_anc = log_toffoli_ladder_num_ancilla(n_qubits)

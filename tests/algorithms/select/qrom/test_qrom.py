@@ -127,6 +127,7 @@ def qrom_unary_iteration_test(
     ("n_index_elements"),
     [2**3, 2**4],
 )
+@pytest.mark.symbolic_alternative
 def test_qrom_unary_iteration_single_targ_toffoli(n_index_elements: int) -> None:
     """Test qrom_unary_iteration with toffoli-based AND."""
     qrom_unary_iteration_test(
@@ -138,6 +139,7 @@ def test_qrom_unary_iteration_single_targ_toffoli(n_index_elements: int) -> None
     ("n_index_elements"),
     [2**3, 2**4],
 )
+@pytest.mark.symbolic_alternative
 def test_qrom_unary_iteration_single_targ_google(n_index_elements: int) -> None:
     """Test qrom_unary_iteration with 4T compute and measurement-based uncompute AND."""
     qrom_unary_iteration_test(
@@ -152,6 +154,7 @@ def test_qrom_unary_iteration_single_targ_google(n_index_elements: int) -> None:
     ("n_index_elements"),
     [3, 6, 13],
 )
+@pytest.mark.symbolic_alternative
 def test_qrom_unary_iteration_single_targ_google_shorter(n_index_elements: int) -> None:
     """Test qrom_unary_iteration with 4T compute and measurement-based uncompute AND.
 
@@ -254,6 +257,7 @@ def qrom_unary_iteration_test_statevector(
 
 
 @pytest.mark.parametrize(("n_index_qubits"), [3, 4])
+@pytest.mark.symbolic_alternative
 def test_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
     """Test unary iteration applied to a uniform superposition.
 
@@ -290,6 +294,7 @@ def test_qrom_unary_iteration_statevector(n_index_qubits: int) -> None:
         (temp_and_compute, temp_and_uncompute),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_qrom_inversion(
     n_index_qubits: int,
     compute_and: GuppyFunctionDefinition[[qubit, qubit, qubit], None],

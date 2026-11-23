@@ -37,6 +37,7 @@ from guppyalgos.testing import (
 from guppyalgos.utils import qarray, _unsafe_array_borrow, _unsafe_array_unborrow
 
 
+@pytest.mark.symbolic_alternative
 def test_ccswap_qubits() -> None:
     """Swap two qubits when both controls are set."""
 
@@ -64,6 +65,7 @@ def test_ccswap_qubits() -> None:
     assert result["target_1"] == [True]
 
 
+@pytest.mark.symbolic_alternative
 def test_ccswap_registers() -> None:
     """Swap two equal-size registers when both controls are set."""
 

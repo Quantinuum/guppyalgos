@@ -25,6 +25,7 @@ from guppyalgos.utils import int_to_bits
 
 
 @pytest.mark.parametrize(("n", "k"), [(3, 3), (4, 2)])
+@pytest.mark.symbolic_alternative
 def test_cnx_ladder(n: int, k: int) -> None:
     """Test cnx ladder."""
     n_controls_b = k - 1

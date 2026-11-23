@@ -107,6 +107,7 @@ def test_log_cx_ladder_indices(
     ("n_qubits"),
     list(range(1, 11)),
 )
+@pytest.mark.symbolic_alternative
 def test_linear_and_log_depth_unitary_equivalence(n_qubits: int) -> None:
     """Test that linear and log CX ladder indices produce the same unitaries."""
 
@@ -123,6 +124,7 @@ def test_linear_and_log_depth_unitary_equivalence(n_qubits: int) -> None:
     assert_allclose_ignorephase(get_unitary(lin, n_qubits), get_unitary(log, n_qubits))
 
 
+@pytest.mark.symbolic_alternative
 def test_cx_ladder_modifiers() -> None:
     """Test the custom dagger, control, and controlled dagger implementations."""
     n_qubits = 4
@@ -154,6 +156,7 @@ def test_cx_ladder_modifiers() -> None:
         )
     ),
 )
+@pytest.mark.symbolic_alternative
 def test_get_cx_ladder_impl_basic_sanity(n_qubits: int, ladder: Any) -> None:
     """Basic sanity check for the CX ladder implementation.
 
@@ -190,6 +193,7 @@ def test_get_cx_ladder_impl_basic_sanity(n_qubits: int, ladder: Any) -> None:
         )
     ),
 )
+@pytest.mark.symbolic_alternative
 def test_get_cx_ladder_impl(n_qubits: int, ladder: Any) -> None:
     """Test the CX ladder implementation.
 

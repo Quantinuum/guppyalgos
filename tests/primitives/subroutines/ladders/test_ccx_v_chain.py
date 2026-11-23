@@ -25,6 +25,7 @@ from guppyalgos.utils import int_to_bits
 
 @pytest.mark.parametrize("implementation", ["linear", "logdepth"])
 @pytest.mark.parametrize("n", [1, 2, 6, 8, 10])
+@pytest.mark.symbolic_alternative
 def test_ccx_v_chain(implementation: str, n: int) -> None:
     """Test ccx v chain."""
     if implementation == "linear":
