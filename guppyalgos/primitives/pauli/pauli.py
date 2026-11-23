@@ -101,6 +101,55 @@ def _apply_z_basis[n: nat, nx: nat, ny: nat](
             h(q[idx])
 
 
+@guppy.unitary
+class _z_basis_change[n: nat, nx: nat, ny: nat]:
+    """Apply a Pauli basis change with explicit modifiers for the index loops."""
+
+    @guppy
+    @no_type_check
+    def __call__(
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+    ) -> None:
+        """Map the Pauli string to the Z basis."""
+        _apply_z_basis(q, x_indices, y_indices, False)
+
+    @guppy
+    @no_type_check
+    def daggered(
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+    ) -> None:
+        """Restore the original basis."""
+        _apply_z_basis(q, x_indices, y_indices, True)
+
+    @guppy
+    @no_type_check
+    def controlled[k: nat](
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+        controls: array[qubit, k],
+    ) -> None:
+        """Change basis under external controls."""
+        with control(controls):
+            _apply_z_basis(q, x_indices, y_indices, False)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[k: nat](
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+        controls: array[qubit, k],
+    ) -> None:
+        """Restore the basis under external controls."""
+        with control(controls):
+            _apply_z_basis(q, x_indices, y_indices, True)
+
+
 def pauli_to_z_basis[n_q: nat](
     pauli_string: zqp.String, size: int
 ) -> GuppyFunctionDefinition[array[qubit, n_q], None]:
@@ -126,38 +175,10 @@ def pauli_to_z_basis[n_q: nat](
     x_indices = [idx for idx, p in paulis.items() if p == zqp.X]
     y_indices = [idx for idx, p in paulis.items() if p == zqp.Y]
 
-    # Explicit modifiers keep the index loops in Guppy: automatic dagger
-    # generation does not support loops.
-    @guppy.unitary
-    class pauli_gate:
-        @guppy
-        @no_type_check
-        def __call__(q: array[qubit, comptime(size)]) -> None:
-            """Map the Pauli string to the Z basis."""
-            _apply_z_basis(q, comptime(x_indices), comptime(y_indices), False)
-
-        @guppy
-        @no_type_check
-        def daggered(q: array[qubit, comptime(size)]) -> None:
-            """Restore the original basis."""
-            _apply_z_basis(q, comptime(x_indices), comptime(y_indices), True)
-
-        @guppy
-        @no_type_check
-        def controlled[n: nat](
-            q: array[qubit, comptime(size)], controls: array[qubit, n]
-        ) -> None:
-            """Change basis under external controls."""
-            with control(controls):
-                _apply_z_basis(q, comptime(x_indices), comptime(y_indices), False)
-
-        @guppy
-        @no_type_check
-        def ctrl_daggered[n: nat](
-            q: array[qubit, comptime(size)], controls: array[qubit, n]
-        ) -> None:
-            """Restore the basis under external controls."""
-            with control(controls):
-                _apply_z_basis(q, comptime(x_indices), comptime(y_indices), True)
+    @guppy(unitary=True)
+    @no_type_check
+    def pauli_gate(q: array[qubit, comptime(size)]) -> None:
+        """Apply the basis change for the supplied Pauli string."""
+        _z_basis_change(q, comptime(x_indices), comptime(y_indices))
 
     return pauli_gate

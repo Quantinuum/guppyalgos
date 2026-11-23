@@ -217,3 +217,20 @@ def test_pauli_to_z_basis_modifiers(paulis: str) -> None:
     assert_unitary_modifiers(
         pauli_to_z_basis(pauli_string, 2), 2, expected_unitary=expected
     )
+
+
+def test_composed_pauli_to_z_basis_modifiers() -> None:
+    """Check composed modifiers for equal-size supports on different qubits."""
+    xy_basis = pauli_to_z_basis(zqp.String.from_str("X0 Y1"), 2)
+    yx_basis = pauli_to_z_basis(zqp.String.from_str("Y0 X1"), 2)
+
+    @guppy(unitary=True)
+    @no_type_check
+    def change_basis(q: array[qubit, 2]) -> None:
+        xy_basis(q)
+        yx_basis(q)
+
+    hadamard = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    y_to_z = hadamard @ np.diag([1, -1j])
+    expected = np.kron(y_to_z @ hadamard, hadamard @ y_to_z)
+    assert_unitary_modifiers(change_basis, 2, expected_unitary=expected)
