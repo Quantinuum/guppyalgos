@@ -502,12 +502,13 @@ class apply_phase:  # noqa: D101
         r"""Apply a phase gate.
 
         Up to a global phase:
+
         .. math::
 
-            \\begin{pmatrix}
-            1 & 0 \\\\
-            0 & e^{i\\theta}
-            \\end{pmatrix}
+            \begin{pmatrix}
+            1 & 0 \\
+            0 & e^{i\theta}
+            \end{pmatrix}
         """
         rz(q, theta)
 

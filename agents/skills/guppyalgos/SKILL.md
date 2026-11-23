@@ -77,3 +77,5 @@ If an environment dependency is unavailable (for example private indexes), repor
 
 For the number of qubits typically used in tests, compilation takes longer than emulation. For long looping tests consider compiling outside
 of the loop with `main.emulator(n)` and passing in the particular inputs for that test using entrypoint arguments to reduce runtime.
+
+Test classical reversible circuits, such as circuits of X, CX and Toffoli gates, symbolically, including any custom modifiers, as `tests/symbolic/README.md` explains. If a function can't be checked symbolically but another function that computes the same map can, use that function as the reference in its emulator tests.

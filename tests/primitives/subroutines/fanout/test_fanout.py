@@ -76,6 +76,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ZERO_BITS,
             _ONE_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="basic-compute",
         ),
         pytest.param(
@@ -84,6 +85,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ZERO_BITS,
             _ONE_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="log-compute",
         ),
         pytest.param(
@@ -109,6 +111,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ONE_BITS,
             _ZERO_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="basic-uncompute",
         ),
         pytest.param(
@@ -117,6 +120,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ONE_BITS,
             _ZERO_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="log-uncompute",
         ),
         pytest.param(
@@ -142,6 +146,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ARBITRARY_BITS,
             _XOR_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="basic-general",
         ),
         pytest.param(
@@ -150,6 +155,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ARBITRARY_BITS,
             _XOR_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="log-general",
         ),
         pytest.param(
@@ -167,6 +173,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ARBITRARY_BITS,
             _ARBITRARY_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="basic-control-zero",
         ),
         pytest.param(
@@ -175,6 +182,7 @@ def _basic_total_qubits(n_target_qubits: int) -> int:
             _ARBITRARY_BITS,
             _ARBITRARY_BITS,
             _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
             id="log-control-zero",
         ),
         pytest.param(
@@ -239,8 +247,18 @@ def test_fanout(
 @pytest.mark.parametrize(
     ("fanout_operation", "total_qubits_fn"),
     [
-        pytest.param(fanout_basic, _basic_total_qubits, id="basic"),
-        pytest.param(fanout_log, _basic_total_qubits, id="log"),
+        pytest.param(
+            fanout_basic,
+            _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
+            id="basic",
+        ),
+        pytest.param(
+            fanout_log,
+            _basic_total_qubits,
+            marks=pytest.mark.symbolic_alternative,
+            id="log",
+        ),
         pytest.param(
             fanout_measurement_parity,
             fanout_measurement_parity_total_qubits,

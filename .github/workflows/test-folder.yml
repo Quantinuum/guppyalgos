@@ -48,7 +48,7 @@ jobs:
               raise SystemExit("Expected a nonempty JSON list of test paths")
           print("Assigned paths:", *paths, sep="\n", flush=True)
           raise SystemExit(pytest.main([
-              "-n", "4", "-v", "--tb=short",
+              "-n", "4", "-v", "--tb=short", "-m", "not symbolic_alternative",
               "--junitxml=test-results.xml", "--", *paths,
           ]))
           PY

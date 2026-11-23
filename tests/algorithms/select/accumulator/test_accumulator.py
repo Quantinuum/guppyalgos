@@ -180,6 +180,7 @@ def test_index_prep_encoding(ldx: int) -> None:
     ("n_index_elements", "ldx"),
     [(n, ldx) for n in [4, 8] for ldx in range(n)],
 )
+@pytest.mark.symbolic_alternative
 def test_accumulator_unary_iteration_basic(
     comp_and_op: GuppyFunctionDefinition,
     uncomp_and_op: GuppyFunctionDefinition,
@@ -232,6 +233,7 @@ def test_accumulator_unary_iteration_basic(
 @pytest.mark.parametrize(("comp_and_op", "uncomp_and_op"), AND_PRIMITIVES)
 @pytest.mark.parametrize("n_index_elements", [4, 5])
 @pytest.mark.parametrize("ryangle", [0.31, 0.7])
+@pytest.mark.symbolic_alternative
 def test_accumulator_unary_iteration_statevector(
     comp_and_op: GuppyFunctionDefinition,
     uncomp_and_op: GuppyFunctionDefinition,
@@ -302,6 +304,7 @@ def test_accumulator_unary_iteration_statevector(
 @pytest.mark.parametrize(("comp_and_op", "uncomp_and_op"), AND_PRIMITIVES)
 @pytest.mark.parametrize("n_index_elements", [3, 4])
 @pytest.mark.parametrize("ryangle", [0.31, 0.7])
+@pytest.mark.symbolic_alternative
 def test_guarded_accumulator_unary_iteration_statevector(
     comp_and_op: GuppyFunctionDefinition,
     uncomp_and_op: GuppyFunctionDefinition,

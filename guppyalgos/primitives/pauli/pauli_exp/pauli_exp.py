@@ -32,7 +32,7 @@ def pauli_exp[n_state_q: nat](
     logarithmic depth.
 
     $$
-    e^{-i \frac{\\theta}{2} P} = B^{\dagger} \cdot CX_{ladder}^{\dagger}
+    e^{-i \frac{\theta}{2} P} = B^{\dagger} \cdot CX_{ladder}^{\dagger}
     \cdot R_Z(\theta) \cdot CX_{ladder} \cdot B
     $$
 
