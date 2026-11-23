@@ -73,9 +73,8 @@ from guppyalgos.primitives.arithmetic.incrementer.linear_depth_incrementer impor
     linear_depth_incrementer,
 )
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_comp_index,
+    and_pattern_controlled,
     temp_and_compute,
-    temp_and_uncomp_index,
     temp_and_uncompute,
 )
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import (
@@ -288,15 +287,19 @@ def ccswap_registers[n: nat](
         swap(a, b)
 
 
-def decoder(compute, uncompute):
+def decoder(compute):
     """Return a decoder from 2 qubits to 4, with indexed ANDs that apply these ops."""
 
+    @no_type_check
     def f(index: array[qubit, 2], out: array[qubit, 4]) -> None:
         for i in range(4):
             low, high = i % 2 == 1, i >= 2
-            target = temp_and_comp_index(index[0], low, index[1], high, compute)
+            target = qubit()
+            and_pattern_controlled(target, index[0], low, index[1], high, compute)
             cx(target, out[i])
-            temp_and_uncomp_index(target, index[0], low, index[1], high, uncompute)
+            with dagger:
+                and_pattern_controlled(target, index[0], low, index[1], high, compute)
+            discard(target)
 
     f.__name__ = f"temp_and_index_{compute.wrapped.name}"
     return guppy(f)
@@ -694,7 +697,7 @@ CASES += [  # the unary iterations, with each pair of AND ops
     case
     for ops in [(toffoli, toffoli), (temp_and_compute, temp_and_uncompute)]
     for case in [
-        (decoder(*ops), "in", decode, [4], (), 1),
+        (decoder(ops[0]), "in", decode, [4], (), 1),
         (
             qrom_on_table(qrom_unary_iteration, *ops),
             "in",
