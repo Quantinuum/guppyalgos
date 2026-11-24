@@ -190,8 +190,11 @@ For three phase qubits, the structure is:
 
 - Prepare the phase register with Hadamards **before** calling `qpe`.
   The library's `qpe` applies controlled powers and the inverse QFT.
-- `qubitized_power_oracle` repeats the controlled walk for the requested
-  integer power. With $m$ phase qubits, this uses $2^m-1$ walk steps.
+- `qubitized_power_oracle(control, prep, target, power, cntrl_walk)` repeats a
+  `Unitary` controlled-walk callback for the requested integer power and supports
+  explicit control and dagger modifiers. Struct-based walks whose modifier
+  capabilities have not been validated use a local forward-only repetition loop
+  in their QPE adapter. With $m$ phase qubits, either form uses $2^m-1$ walk steps.
 - A Hamiltonian eigenstate with a zero preparation register generally overlaps
   both walk eigenstates. The two conjugate phases encode the same energy.
 - Energy-sampling probabilities depend on the input's eigenstate overlaps;

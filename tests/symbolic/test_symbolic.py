@@ -686,7 +686,7 @@ CASES: list[tuple] = [
     (cnx_cca_logdepth_dirty, "nqqq", multi_controlled_x_dirty, SIZES, (), 0),
     (equality, "nnq", equal, SIZES, (), lambda n: int(n >= 3)),
     (fanout_basic, "qn", fanout, SIZES, (), 0, True),
-    (fanout_log, "qn", fanout, SIZES, (), 0),
+    (fanout_log, "qn", fanout, SIZES, (), 0, True),
     (fanout_from_mask, "qn", masked_fanout, SIZES, (), None),
     (ccx_v_chain, "nnq", toffoli_v_chain, SIZES, (), 0),
     (ccx_v_chain_logdepth, "nnq", toffoli_v_chain, SIZES, (), 0),
