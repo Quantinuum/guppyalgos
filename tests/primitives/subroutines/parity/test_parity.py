@@ -12,6 +12,7 @@ from guppyalgos.primitives.subroutines.parity import (
     parity_laqcc_total_qubits,
     parity_sequential,
 )
+
 from guppyalgos.utils import qarray
 
 

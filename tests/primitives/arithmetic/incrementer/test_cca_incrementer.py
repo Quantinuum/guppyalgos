@@ -5,7 +5,7 @@ from typing import no_type_check
 
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, output
+from guppylang.std.builtins import array, control, dagger, output
 from guppylang.std.quantum import (
     collect_measurements,
     measure,
@@ -17,6 +17,7 @@ from guppylang.std.quantum import (
 from guppyalgos.utils import qarray
 
 from guppyalgos.primitives.arithmetic.incrementer.incrementer_cca import (
+    cat_cca,
     cca_incrementer,
     cca_decrementer,
     cntrl_cca_incrementer,
@@ -35,6 +36,7 @@ def _output_string(value: int, num_bits: int) -> str:
 
 
 @pytest.mark.parametrize("num_bits", [4, 5, 7, 12, 19])
+@pytest.mark.symbolic_alternative
 def test_cca_incrementer_compiles(num_bits: int) -> None:
     """Test CCA incremeter compiles without ownership or borrowing errors."""
 
@@ -51,6 +53,7 @@ def test_cca_incrementer_compiles(num_bits: int) -> None:
 
 
 @pytest.mark.parametrize("num_bits", [5, 7, 10, 20, 50, 100, 200, 500])
+@pytest.mark.symbolic_alternative
 def test_incrementer_does_not_panic(num_bits: int) -> None:
     """Test CCA incrementer runs without runtime panics."""
     num_ancillas = required_clean_ancillas(num_bits)
@@ -74,6 +77,7 @@ def test_incrementer_does_not_panic(num_bits: int) -> None:
         (7, [0, 1, 63, 126, 127]),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cca_incrementer(num_bits: int, values: list[int]) -> None:
     """Increment an m-bit register using conditionally clean ancillas."""
     num_ancillas = required_clean_ancillas(num_bits)
@@ -111,6 +115,7 @@ def test_cca_incrementer(num_bits: int, values: list[int]) -> None:
         (7, [0, 1, 63, 126, 127]),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cca_decrementer(num_bits: int, values: list[int]) -> None:
     """Decrement an m-bit register using conditionally clean ancillas."""
     num_ancillas = required_clean_ancillas(num_bits)
@@ -149,6 +154,7 @@ def test_cca_decrementer(num_bits: int, values: list[int]) -> None:
     ],
 )
 @pytest.mark.parametrize("dagger", [False, True])
+@pytest.mark.symbolic_alternative
 def test_cntrl_cca_incrementer(
     num_bits: int,
     values: list[int],
@@ -200,3 +206,15 @@ def test_cntrl_cca_incrementer(
             assert result.collated_counts() == Counter(
                 {(("ctrl", expected_ctrl), ("out", expected)): 10}
             ), (value, control_on, dagger)
+
+
+def test_cat_cca_modifier_compilation() -> None:
+    """Compile added controls and adjoints for the incrementer CCA catalyst."""
+
+    @guppy
+    @no_type_check
+    def circuit(qs: array[qubit, 3], cs: array[qubit, 2]) -> None:
+        with control(cs), dagger:
+            cat_cca(qs[0], qs[1], qs[2])
+
+    circuit.compile_function()

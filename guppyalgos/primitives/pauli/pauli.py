@@ -2,11 +2,11 @@
 
 import zixy.qubit.pauli as zqp
 from typing import no_type_check
-from guppylang import guppy
+from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import cx, cy, cz, qubit, x, y, z, h, sdg, s
+from guppylang.std.builtins import Unitary, array, frozenarray, nat, control, dagger
+from guppylang.std.quantum import cx, cy, cz, qubit, x, y, z, h, sdg
 
 from guppyalgos.primitives.utilities.gates import apply_phase
 
@@ -80,42 +80,102 @@ def pauli_to_cntrl_gate[n_q: nat](
     return cntrl_pauli_gate
 
 
+@guppy(controllable=True)
+@no_type_check
+def _apply_z_basis[n: nat, nx: nat, ny: nat](
+    q: array[qubit, n],
+    x_indices: frozenarray[int, nx],
+    y_indices: frozenarray[int, ny],
+    inverse: bool @ comptime,
+) -> None:
+    """Apply independent single-qubit basis changes in either direction."""
+    for idx in x_indices:
+        h(q[idx])
+    for idx in y_indices:
+        if inverse:
+            with dagger:
+                sdg(q[idx])
+                h(q[idx])
+        else:
+            sdg(q[idx])
+            h(q[idx])
+
+
+@guppy.unitary
+class _z_basis_change[n: nat, nx: nat, ny: nat]:
+    """Apply a Pauli basis change with explicit modifiers for the index loops."""
+
+    @guppy
+    @no_type_check
+    def __call__(
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+    ) -> None:
+        """Map the Pauli string to the Z basis."""
+        _apply_z_basis(q, x_indices, y_indices, False)
+
+    @guppy
+    @no_type_check
+    def daggered(
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+    ) -> None:
+        """Restore the original basis."""
+        _apply_z_basis(q, x_indices, y_indices, True)
+
+    @guppy
+    @no_type_check
+    def controlled[k: nat](
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+        controls: array[qubit, k],
+    ) -> None:
+        """Change basis under external controls."""
+        with control(controls):
+            _apply_z_basis(q, x_indices, y_indices, False)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[k: nat](
+        q: array[qubit, n],
+        x_indices: frozenarray[int, nx],
+        y_indices: frozenarray[int, ny],
+        controls: array[qubit, k],
+    ) -> None:
+        """Restore the basis under external controls."""
+        with control(controls):
+            _apply_z_basis(q, x_indices, y_indices, True)
+
+
 def pauli_to_z_basis[n_q: nat](
-    pauli_string: zqp.String, size: int, dagger: bool = False
-) -> GuppyFunctionDefinition[array[qubit, n_q], None]:
+    pauli_string: zqp.String, size: int
+) -> Unitary[[array[qubit, n_q]], None]:
     """Produce a guppy function to change basis to/from Z-basis for a zixy String.
 
-    Maps the given Pauli to the Z-basis (or from Z-basis if dagger=True) on a
-    register of given size. Typically should be used as a pair for a GPG^dagger change
-    of basis surrounding a Pauli operation.
+    Maps the given Pauli to the Z-basis on a register of given size. Pair the
+    basis change with its inverse to conjugate a Pauli operation.
 
     Args:
         pauli_string (zqp.String): zixy string for the Pauli to change basis for
         size (int): size of the register to apply the basis change on
-        dagger (bool): whether to return the dagger operation (i.e. from Z-basis to
-            Pauli basis). Default False (i.e. from Pauli basis to Z-basis).
 
     Returns:
-        GuppyFunctionDefinition that takes in a qarray[size] and applies the basis
-        change.
+        A unitary that applies the basis change to an array of ``size`` qubits.
 
     """
+    paulis = pauli_string.get_dict()
+    if any(idx >= size for idx in paulis):
+        raise ValueError("Pauli index out of register index range")
+    x_indices = [idx for idx, p in paulis.items() if p == zqp.X]
+    y_indices = [idx for idx, p in paulis.items() if p == zqp.Y]
 
-    @guppy.comptime
+    @guppy(unitary=True)
     @no_type_check
-    def pauli_gate(q: array[qubit, size]) -> None:
-        for idx, p in pauli_string.get_dict().items():
-            if idx >= size:
-                raise ValueError("Pauli index out of register index range")
-            match p:
-                case zqp.X:
-                    h(q[idx])
-                case zqp.Y:
-                    if not dagger:
-                        sdg(q[idx])
-                        h(q[idx])
-                    else:
-                        h(q[idx])
-                        s(q[idx])
+    def pauli_gate(q: array[qubit, comptime(size)]) -> None:
+        """Apply the basis change for the supplied Pauli string."""
+        _z_basis_change(q, comptime(x_indices), comptime(y_indices))
 
     return pauli_gate

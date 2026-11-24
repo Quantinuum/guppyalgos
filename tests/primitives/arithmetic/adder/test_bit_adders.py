@@ -3,6 +3,7 @@
 from typing import no_type_check
 
 import numpy as np
+import pytest
 from guppylang.decorator import guppy
 from guppylang.std.builtins import control, dagger
 from guppylang.std.debug import state_output
@@ -34,6 +35,7 @@ def _full_adder_basis_output(
     return cin_bit, a_bit, b_bit, carry_bit
 
 
+@pytest.mark.symbolic_alternative
 def test_half_adder_truth_table() -> None:
     """Verify half_adder implements sum = a xor b and carry = a and b."""
 
@@ -79,6 +81,7 @@ def test_half_adder_truth_table() -> None:
             assert_allclose_ignorephase(states["carry"].get_single_state(), zero_state)
 
 
+@pytest.mark.symbolic_alternative
 def test_full_adder_truth_table() -> None:
     """Verify full_adder computes a+b+cin with sum in b and carry in c_out."""
 
@@ -132,6 +135,7 @@ def test_full_adder_truth_table() -> None:
             assert_allclose_ignorephase(states["carry"].get_single_state(), zero_state)
 
 
+@pytest.mark.symbolic_alternative
 def test_half_adder_inverse() -> None:
     """Verify daggered half_adder acts as the inverse."""
 
@@ -172,6 +176,7 @@ def test_half_adder_inverse() -> None:
             assert_allclose_ignorephase(state.get_single_state(), zero_state)
 
 
+@pytest.mark.symbolic_alternative
 def test_full_adder_dagger() -> None:
     """Verify daggered full_adder acts as the inverse."""
 

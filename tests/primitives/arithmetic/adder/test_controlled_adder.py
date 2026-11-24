@@ -58,6 +58,7 @@ ADDITION_CASES = (
         (cntrl_adder_ripple_cuccaro_mod, lambda n: 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_adder_mod[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -118,6 +119,7 @@ def test_cntrl_adder_mod[n: nat](
         (cntrl_adder_ripple_cuccaro_mod, lambda n: 1),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_adder_mod_statevector_superposition[n: nat](
     n: int,
     controlled_adder: GuppyFunctionDefinition[
@@ -222,6 +224,7 @@ def test_cntrl_adder_mod_statevector_superposition[n: nat](
         (cntrl_adder_ripple_gidney_carry_out, lambda n: n),
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_adder_carry_out[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -318,6 +321,7 @@ def test_cntrl_adder_carry_out[n: nat](
         if n in widths
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_addition_carry_out_dagger[n: nat](
     n: int,
     cases: list[tuple[int, int]],
@@ -419,6 +423,7 @@ def test_cntrl_addition_carry_out_dagger[n: nat](
         if n in widths
     ],
 )
+@pytest.mark.symbolic_alternative
 def test_cntrl_addition_mod_dagger[n: nat](
     n: int,
     cases: list[tuple[int, int]],

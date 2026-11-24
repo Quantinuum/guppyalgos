@@ -15,3 +15,4 @@ def func[n: nat](qs: array[qubit, n]) -> None: ...
 - Prioritize testing of superposition inputs where possible, for performance and catching relative phases
 - If functions use qubits / qubit array arguments that are supplied in the 0 state and not returned, suggest that they should be allocated internally within the function.
 - In tests, include checks that ancilla have been correctly returned to 0 to catch bugs from not correctly cleaning up which can propagate to observable changes on controlling or daggering.
+- Test classical reversible circuits, such as circuits of X, CX and Toffoli gates, symbolically, including any custom modifiers, as `tests/symbolic/README.md` explains, and mark emulator tests that only repeat a symbolic test with `@pytest.mark.symbolic_alternative`. If a function can't be checked symbolically but another function that computes the same map can, use that function as the reference in its emulator tests.

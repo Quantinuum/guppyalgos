@@ -10,13 +10,20 @@ from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_output
 from guppylang.defs import GuppyFunctionDefinition
 from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
+    ccry_cx,
+    ccry_toffoli,
     ccx,
     ccy,
     ccz,
-    ccry_toffoli,
-    ccry_cx,
 )
-from guppyalgos.testing import get_statevector, get_unitary, assert_allclose_ignorephase
+from guppyalgos.primitives.gate_decompositions.cnx.ccu_rel_phase import (
+    ccu_phase_correction,
+    ccz_rel_phase,
+)
+from guppyalgos.testing import (
+    get_statevector,
+    assert_unitary_modifiers,
+)
 
 
 from typing import no_type_check
@@ -193,33 +200,64 @@ def test_ccu_gate_are_self_adjoint(
     assert np.isclose(np.abs(result_state[ind]), 1.0)
 
 
-def ccry_unitary(theta: float):
-    """Return the exact 8x8 unitary matrix for the CCRY gate."""
-    U = np.eye(8, dtype=complex)
-
-    cos_half = np.cos(theta / 2)
-    sin_half = np.sin(theta / 2)
-    ry = np.array([[cos_half, -sin_half], [sin_half, cos_half]], dtype=complex)
-
-    U[6:8, 6:8] = ry
-
-    return U
-
-
 @pytest.mark.parametrize("ccry_fun", [ccry_toffoli, ccry_cx])
-def test_ccry_gate(
+@pytest.mark.parametrize("theta", [-0.3, 0.0, 0.25])
+def test_ccry_modifiers(
     ccry_fun: GuppyFunctionDefinition[[qubit, qubit, qubit, angle], None],
+    theta: float,
 ) -> None:
-    """Test CCRy gate with different decompositions and angles."""
-    thetas = np.arange(0, 11) / 10
+    """Check every modifier against an independent CCRy matrix, including phases."""
 
-    for theta in thetas:
+    @guppy(unitary=True)
+    @no_type_check
+    def apply_ccry(qs: array[qubit, 3]) -> None:
+        ccry_fun(qs[0], qs[1], qs[2], angle(theta))
 
-        @guppy
-        @no_type_check
-        def apply_ccry(qs: array[qubit, 3]) -> None:
-            ccry_fun(qs[0], qs[1], qs[2], angle(comptime(theta)))  # noqa: B023
+    c = np.cos(theta * np.pi / 2)
+    s = np.sin(theta * np.pi / 2)
+    # Basis order: |control1, control2, target>. Only |11> rotates the target.
+    expected = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, c, -s],
+            [0, 0, 0, 0, 0, 0, s, c],
+        ],
+        dtype=np.complex128,
+    )
 
-        u_guppy = get_unitary(apply_ccry, 3)
-        u_exact = ccry_unitary(theta * np.pi)
-        assert_allclose_ignorephase(u_guppy, u_exact)
+    # Added control uses an AND flag and a three-control CNX with one ancilla.
+    assert_unitary_modifiers(
+        apply_ccry,
+        3,
+        expected_unitary=expected,
+        n_extra_qubits=2,
+    )
+
+
+def test_ccz_rel_phase_modifiers() -> None:
+    """Check the relative-phase CCZ and its modifiers."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def operation(qs: array[qubit, 3]) -> None:
+        ccz_rel_phase(qs[0], qs[1], qs[2])
+
+    expected = np.diag([1, 1, 1, 1, 1, 1, -1j, 1j])
+    assert_unitary_modifiers(operation, 3, expected_unitary=expected)
+
+
+def test_ccu_phase_correction_modifiers() -> None:
+    """Check the CCU phase correction and its modifiers."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def operation(qs: array[qubit, 2]) -> None:
+        ccu_phase_correction(qs[0], qs[1])
+
+    expected = np.diag(np.array([1, 1, 1, 1j]))
+    assert_unitary_modifiers(operation, 2, expected_unitary=expected)
