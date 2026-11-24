@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
-from typing import no_type_check
+from typing import Any, no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, comptime, control, dagger, nat, owned
+from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.builtins import (
+    Function,
+    array,
+    comptime,
+    control,
+    dagger,
+    nat,
+    owned,
+)
 from guppylang.std.quantum import (
     cx,
     discard,
@@ -18,14 +27,80 @@ from guppylang.std.quantum import (
     x,
 )
 
-
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
-from guppyalgos.utils import qarray
+from guppyalgos.utils import _unsafe_array_borrow, _unsafe_array_unborrow, qarray
+from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 
+@guppy
+@no_type_check
+def _extra_controls_cnx[n: nat, n_extra_controls: nat](
+    controls: array[qubit, n],
+    target: qubit,
+    extra_controls: array[qubit, n_extra_controls],
+    cnx: Function[[array[qubit, comptime(n + n_extra_controls)], qubit], None],  # ty: ignore[unsupported-operator]
+) -> None:
+    controls_borrowed = _unsafe_array_borrow(controls)
+    extra_controls_borrowed = _unsafe_array_borrow(extra_controls)
+    total_controls = join_arrays(
+        controls_borrowed,
+        extra_controls_borrowed,
+        comptime(n + n_extra_controls),
+    )
+    cnx(total_controls, target)
+    controls_borrowed, extra_controls_borrowed = split_array(
+        total_controls, n, n_extra_controls
+    )
+    _unsafe_array_unborrow(controls, controls_borrowed)
+    _unsafe_array_unborrow(extra_controls, extra_controls_borrowed)
+
+
+def unitary_modify_cnx(cnx_kernel: GuppyFunctionDefinition) -> Any:
+    """Decorate a cnx to apply unitary modifiers to it."""
+
+    @guppy.unitary
+    class UnitaryCNX:
+        @guppy
+        def __call__[n: nat](controls: array[qubit, n], target: qubit) -> None:
+            cnx_kernel(controls, target)
+
+        @guppy
+        def daggered[n: nat](controls: array[qubit, n], target: qubit) -> None:
+            cnx_kernel(controls, target)
+
+        @guppy
+        def controlled[n: nat, n_extra_controls: nat](
+            controls: array[qubit, n],
+            target: qubit,
+            extra_controls: array[qubit, n_extra_controls],
+        ) -> None:
+            _extra_controls_cnx(
+                controls,
+                target,
+                extra_controls,
+                cnx_kernel[comptime(n + n_extra_controls)],  # ty: ignore[unsupported-operator]
+            )
+
+        @guppy
+        def ctrl_daggered[n: nat, n_extra_controls: nat](
+            controls: array[qubit, n],
+            target: qubit,
+            extra_controls: array[qubit, n_extra_controls],
+        ) -> None:
+            _extra_controls_cnx(
+                controls,
+                target,
+                extra_controls,
+                cnx_kernel[comptime(n + n_extra_controls)],  # ty: ignore[unsupported-operator]
+            )
+
+    return UnitaryCNX
+
+
+@unitary_modify_cnx
 @guppy
 @no_type_check
 def cnx[n_controls: nat](control: array[qubit, n_controls], target: qubit) -> None:
@@ -64,6 +139,7 @@ def cnx[n_controls: nat](control: array[qubit, n_controls], target: qubit) -> No
         discard(ancilla)
 
 
+@unitary_modify_cnx
 @guppy
 @no_type_check
 def cnx_single_ancilla[n_controls: nat](
@@ -98,6 +174,7 @@ def cnx_single_ancilla[n_controls: nat](
         _cnx_single_ancilla_aux(control, target)
 
 
+@unitary_modify_cnx
 @guppy
 @no_type_check
 def cnx_toffoli_ladder[n_controls: nat](
