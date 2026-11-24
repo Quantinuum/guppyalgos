@@ -1,23 +1,25 @@
 """Fanout based on log depth cx ladder."""
 
-from guppyalgos.primitives.subroutines.ladders import CXLadderLog
-from guppylang.std.builtins import nat
 from typing import no_type_check
-from guppylang import guppy, qubit, array
+
+from guppylang import array, guppy, qubit
+from guppylang.std.builtins import control, nat
 from guppylang.std.quantum import cx
+
+from guppyalgos.primitives.subroutines.ladders import CXLadderLog
 
 
 @guppy
 @no_type_check
 def _fanout_log_controlled[n_ctrl: nat, n_data_qubits: nat](
-    control: qubit,
+    input: qubit,
     data_qs: array[qubit, n_data_qubits],
     extra_controls: array[qubit, n_ctrl],
 ) -> None:
     ladder = CXLadderLog()
     ladder.ascending_dagger(data_qs)
     with control(extra_controls):
-        cx(control, data_qs[0])
+        cx(input, data_qs[0])
     ladder.ascending(data_qs)
 
 
