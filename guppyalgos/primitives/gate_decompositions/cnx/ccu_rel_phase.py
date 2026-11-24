@@ -1,7 +1,6 @@
 """CCU gates up to a relative phase."""
 
 from guppylang import guppy
-from guppylang.std.builtins import dagger
 from guppylang.std.quantum import qubit, cx, t, tdg, h
 
 
@@ -72,7 +71,7 @@ def ccu_phase_correction(control1: qubit, control2: qubit) -> None:
     cx(control1, control2)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccx_rel_phase(control1: qubit, control2: qubit, target: qubit) -> None:
     """CCX gate implementation up to a relative phase.
@@ -94,21 +93,4 @@ def ccx_rel_phase(control1: qubit, control2: qubit, target: qubit) -> None:
     """
     h(target)
     ccz_rel_phase(control1, control2, target)
-    h(target)
-
-
-@guppy
-@no_type_check
-def ccx_rel_phase_dg(control1: qubit, control2: qubit, target: qubit) -> None:
-    """CCX gate implementation up to a relative phase using the adjoint circuit.
-
-    Args:
-        target: The target qubit.
-        control1: The first control qubit.
-        control2: The second control qubit.
-
-    """
-    h(target)
-    with dagger:
-        ccz_rel_phase(control1, control2, target)
     h(target)
