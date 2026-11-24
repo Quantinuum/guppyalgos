@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import no_type_check
 
 import zixy.qubit.pauli as zqp
-from guppylang import guppy
+from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, dagger, nat
 from guppylang.std.quantum import crz, qubit, rz
 
 from guppyalgos.primitives.pauli import pauli_to_z_basis
@@ -70,29 +70,30 @@ def pauli_exp[n_state_q: nat](
 
     basis_change = pauli_to_z_basis(pauli_string=pauli_string, size=n_qubits)
 
-    basis_change_dagger = pauli_to_z_basis(
-        pauli_string=pauli_string, size=n_qubits, dagger=True
-    )
+    pauli_indices = list(pauli_string.get_dict().keys())
 
-    pauli_indices = tuple(pauli_string.get_dict().keys())
-
-    @guppy.comptime
+    @guppy
     @no_type_check
-    def pauli_gadget_fn(qreg: array[qubit, n_qubits], angle: angle) -> None:
+    def pauli_gadget_fn(qreg: array[qubit, comptime(n_qubits)], angle: angle) -> None:
         ladder = cx_ladder()
-        qubit_subset = [qreg[i] for i in pauli_indices]
-
         basis_change(qreg)
+        indices = comptime(pauli_indices)
+        # Move the active support out, then restore it before undoing the basis.
+        qubit_subset = array(qreg.take(i) for i in indices)
 
         if len(qubit_subset) > 1:
             ladder.ascending(qubit_subset)
 
-        rz_method(qubit_subset[-1], angle)
+        rz_method(qubit_subset[comptime(len(pauli_indices) - 1)], angle)
 
         if len(qubit_subset) > 1:
             ladder.ascending_dagger(qubit_subset)
 
-        basis_change_dagger(qreg)
+        for i in range(comptime(len(pauli_indices))):
+            qreg.put(qubit_subset.take(i), indices[i])
+        qubit_subset.discard_all_taken()
+        with dagger:
+            basis_change(qreg)
 
     return pauli_gadget_fn
 
@@ -138,11 +139,11 @@ def cntrl_pauli_exp[n_state_q: nat](
     """
     if pauli_string.is_identity():
 
-        @guppy.comptime
+        @guppy
         @no_type_check
         def cntrl_pauli_gadget_fn(
             control: qubit,
-            qreg: array[qubit, n_qubits],
+            qreg: array[qubit, comptime(n_qubits)],
             theta: angle,
         ) -> None:
             rz_method(control, -theta / 2)
@@ -151,32 +152,35 @@ def cntrl_pauli_exp[n_state_q: nat](
 
     basis_change = pauli_to_z_basis(pauli_string=pauli_string, size=n_qubits)
 
-    basis_change_dagger = pauli_to_z_basis(
-        pauli_string=pauli_string, size=n_qubits, dagger=True
-    )
+    pauli_indices = list(pauli_string.get_dict().keys())
 
-    pauli_indices = tuple(pauli_string.get_dict().keys())
-
-    @guppy.comptime
+    @guppy
     @no_type_check
     def cntrl_pauli_gadget_fn(
         control: qubit,
-        qreg: array[qubit, n_qubits],
+        qreg: array[qubit, comptime(n_qubits)],
         theta: angle,
     ) -> None:
         ladder = cx_ladder()
-        qubit_subset = [qreg[i] for i in pauli_indices]
-
         basis_change(qreg)
+        indices = comptime(pauli_indices)
+        # Move the active support out, then restore it before undoing the basis.
+        qubit_subset = array(qreg.take(i) for i in indices)
 
         if len(qubit_subset) > 1:
             ladder.ascending(qubit_subset)
 
-        controlled_rz_method(control, qubit_subset[-1], theta)
+        controlled_rz_method(
+            control, qubit_subset[comptime(len(pauli_indices) - 1)], theta
+        )
 
         if len(qubit_subset) > 1:
             ladder.ascending_dagger(qubit_subset)
 
-        basis_change_dagger(qreg)
+        for i in range(comptime(len(pauli_indices))):
+            qreg.put(qubit_subset.take(i), indices[i])
+        qubit_subset.discard_all_taken()
+        with dagger:
+            basis_change(qreg)
 
     return cntrl_pauli_gadget_fn

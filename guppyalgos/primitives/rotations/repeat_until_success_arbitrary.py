@@ -8,7 +8,7 @@ from guppylang.std.builtins import output
 from guppylang.std.quantum import angle, cx, h, measure, qubit, rz
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def dummy_theta_resource_state(q: qubit, theta: angle) -> None:
     """Prepare ``|0> + exp(-i * theta)|1>`` using Rz and H gates.
