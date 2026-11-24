@@ -56,12 +56,11 @@ def test_ham_sim_trotter_first_order(ham_op: zqp.RealTermSum) -> None:
     n_state_qubits = len(ham_op.qubits)
 
     ham_trotter_step = trotter_first_order(ham_op, n_state_qubits)
-    ham_sim = ham_sim_trotter(ham_trotter_step, n_steps, time_step, n_state_qubits)
 
     @guppy
     @no_type_check
     def main(state_qreg: array[qubit, n_state_qubits]) -> None:
-        ham_sim(state_qreg)
+        ham_sim_trotter(state_qreg, ham_trotter_step, n_steps, time_step)
 
     guppy_u = get_unitary(main, n_state_qubits)
     step_u = trotter_step_matrix(ham_op, time_step, little_endian=True)
@@ -81,17 +80,11 @@ def test_ham_sim_trotter_higher_order_matches_exact_evolution() -> None:
     time_step = 0.05
 
     trotter_step = trotter_higher_order(ham_op, n_state_qubits, order=4)
-    ham_sim = ham_sim_trotter(
-        trotter_step,
-        n_steps,
-        time_step,
-        n_state_qubits,
-    )
 
     @guppy
     @no_type_check
     def main(state_qreg: array[qubit, n_state_qubits]) -> None:
-        ham_sim(state_qreg)
+        ham_sim_trotter(state_qreg, trotter_step, n_steps, time_step)
 
     actual = get_unitary(main, n_state_qubits)
     hamiltonian_matrix = ham_op.to_sparse_matrix(True).toarray()
