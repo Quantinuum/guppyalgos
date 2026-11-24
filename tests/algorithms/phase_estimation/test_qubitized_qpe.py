@@ -32,7 +32,6 @@ from guppyalgos.algorithms.block_encoding.lcu import (
 )
 from guppyalgos.algorithms.phase_estimation import (
     QubitizationRegs,
-    qubitized_power_oracle,
     qpe,
 )
 from guppyalgos.algorithms.block_encoding.qubitization import QubitizationCntrl
@@ -113,7 +112,8 @@ def build_qubitized_power_oracle() -> GuppyFunctionDefinition[
         regs: QubitizationRegs[1, array[qubit, 1]],
         power: int,
     ) -> None:
-        qubitized_power_oracle(control, regs, power, cntrl_walk)
+        for _ in range(power):
+            cntrl_walk(control, regs.prep, regs.target)
 
     return power_oracle
 
@@ -261,7 +261,8 @@ def test_qubitized_qpe_unary_iteration_select(ham_op: zqp.RealTermSum) -> None:
         ],
         power: int,
     ) -> None:
-        qubitized_power_oracle(control, regs, power, cntrl_walk)
+        for _ in range(power):
+            cntrl_walk(control, regs.prep, regs.target)
 
     @guppy
     @no_type_check
