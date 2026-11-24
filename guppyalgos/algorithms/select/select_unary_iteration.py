@@ -6,11 +6,11 @@ from typing import no_type_check
 
 from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import Function, array, nat
+from guppylang.std.builtins import Function, Unitary, array, nat
 from guppylang.std.quantum import cx, qubit, reset, x, discard_array
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    index_and,
+    and_pattern_controlled,
     temp_and_compute,
     temp_and_uncompute,
 )
@@ -73,7 +73,7 @@ def msb_diff_depths(bools: list[list[bool]]) -> list[int]:
 @guppy
 @no_type_check
 def compute_cascade[n_i_q: nat, n_w_q: nat](
-    comp_and_op: Callable[[qubit, qubit, qubit], None],
+    comp_and_op: Unitary[[qubit, qubit, qubit], None],
     max_cascade_depth: int,
     msb_diff_depth: int,
     bools: array[bool, n_i_q],
@@ -106,7 +106,7 @@ def compute_cascade[n_i_q: nat, n_w_q: nat](
     next_cascade_depth = msb_diff_depth + 1
     work_index = max_cascade_depth - next_cascade_depth
     if msb_diff_depth == 0:
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             index_qreg[max_cascade_depth],
             bools[max_cascade_depth],
@@ -117,7 +117,7 @@ def compute_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = max_cascade_depth - next_cascade_depth
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -182,7 +182,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     bools: array[bool, n_i_q],
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    uncomp_and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute a little-endian unary cascade from qubit 0 toward a high index.
 
@@ -207,7 +207,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     most_significant_index = len(index_qreg) - 1
     work_index = most_significant_index - current_cascade_depth
     if current_cascade_depth == 1:
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             index_qreg[most_significant_index],
             bools[most_significant_index],
@@ -218,7 +218,7 @@ def uncompute_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = most_significant_index - current_cascade_depth
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -273,8 +273,8 @@ def select_unary_iteration[
     TargetRegs,
     n_index_el: nat,
     n_index_qubits: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
 ](
     controlled_ops: array[
         Callable[[qubit, TargetRegs], None],
@@ -420,8 +420,8 @@ def cntrl_select_unary_iteration[
     TargetRegs,
     n_index_qubits: nat,
     n_index_elements: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
 ](
     controlled_ops: array[
         Callable[[qubit, TargetRegs], None],
@@ -526,7 +526,7 @@ def cntrl_select_unary_iteration[
 @guppy
 @no_type_check
 def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
-    comp_and_op: Callable[[qubit, qubit, qubit], None],
+    comp_and_op: Unitary[[qubit, qubit, qubit], None],
     max_cascade_depth: int,
     msb_diff_depth: int,
     bools: array[bool, n_i_q],
@@ -561,7 +561,7 @@ def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     work_index = max_cascade_depth - next_cascade_depth
     if msb_diff_depth == 0:
         most_significant_index = len(index_qreg) - 1
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             control_q,
             True,
@@ -573,7 +573,7 @@ def compute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = len(index_qreg) - next_cascade_depth
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -636,7 +636,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     control_q: qubit,
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    uncomp_and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute a controlled little-endian cascade away from index qubit 0.
 
@@ -664,7 +664,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     work_index = len(index_qreg) - current_cascade_depth
     if current_cascade_depth == 1:
         most_significant_index = len(index_qreg) - 1
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             control_q,
             True,
@@ -675,7 +675,7 @@ def uncompute_cntrl_cascade[n_i_q: nat, n_w_q: nat](
     else:
         previous_work_index = work_index + 1
         physical_index = len(index_qreg) - current_cascade_depth
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,

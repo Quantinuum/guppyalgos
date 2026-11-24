@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import no_type_check
 
 from guppylang import comptime, guppy
-from guppylang.std.builtins import array, frozenarray, nat
+from guppylang.std.builtins import Unitary, array, dagger, frozenarray, nat
 from guppylang.std.quantum import cx, discard, discard_array, qubit, reset, x
 
 from guppyalgos.algorithms.select.select_unary_iteration import (
@@ -14,9 +14,7 @@ from guppyalgos.algorithms.select.select_unary_iteration import (
     uncompute_cascade,
 )
 from guppyalgos.primitives.gate_decompositions.and_op import (
-    index_and,
-    temp_and_comp_index,
-    temp_and_uncomp_index,
+    and_pattern_controlled,
 )
 from guppyalgos.utils import qarray
 from guppyalgos.utils import int_to_bits
@@ -28,8 +26,8 @@ def accumulator_unary_iteration[
     n_s_q: nat,
     n_index_qubits: nat,
     n_index_elements: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
     ControlledOp: Callable[[qubit, array[qubit, n_s_q]], None],
 ](
     controlled_ops: array[
@@ -158,8 +156,8 @@ def accumulator_unary_iteration[
 def _geq_const_compute[
     n_i_q: nat,
     n_w_q: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
 ](
     comparison_depth: int,
     most_significant_index: int,
@@ -198,7 +196,9 @@ def _geq_const_compute[
         # [x[MSB] == L[MSB]] & [x[physical_index] == 1]
         # when L[physical_index] == 0.
         if not threshold_bits[physical_index]:
-            term_q = temp_and_comp_index(
+            term_q = qubit()
+            and_pattern_controlled(
+                term_q,
                 index_qreg[most_significant_index],
                 True,
                 index_qreg[physical_index],
@@ -206,17 +206,19 @@ def _geq_const_compute[
                 comp_and_op,
             )
             cx(term_q, target_q)
-            temp_and_uncomp_index(
-                term_q,
-                index_qreg[most_significant_index],
-                True,
-                index_qreg[physical_index],
-                True,
-                uncomp_and_op,
-            )
+            with dagger:
+                and_pattern_controlled(
+                    term_q,
+                    index_qreg[most_significant_index],
+                    True,
+                    index_qreg[physical_index],
+                    True,
+                    comp_and_op,
+                )
+            discard(term_q)
 
         # Equality of the two most-significant bits.
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             index_qreg[most_significant_index],
             True,
@@ -232,7 +234,9 @@ def _geq_const_compute[
         # [more-significant x bits == L bits] & [x[physical_index] == 1]
         # when L[physical_index] == 0.
         if not threshold_bits[physical_index]:
-            term_q = temp_and_comp_index(
+            term_q = qubit()
+            and_pattern_controlled(
+                term_q,
                 work_qreg[previous_work_index],
                 True,
                 index_qreg[physical_index],
@@ -240,17 +244,19 @@ def _geq_const_compute[
                 comp_and_op,
             )
             cx(term_q, target_q)
-            temp_and_uncomp_index(
-                term_q,
-                work_qreg[previous_work_index],
-                True,
-                index_qreg[physical_index],
-                True,
-                uncomp_and_op,
-            )
+            with dagger:
+                and_pattern_controlled(
+                    term_q,
+                    work_qreg[previous_work_index],
+                    True,
+                    index_qreg[physical_index],
+                    True,
+                    comp_and_op,
+                )
+            discard(term_q)
 
         # Extend prefix equality toward the least-significant bit.
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -281,7 +287,7 @@ def _geq_const_uncompute[
     threshold_bits: frozenarray[bool, n_i_q],
     index_qreg: array[qubit, n_i_q],
     work_qreg: array[qubit, n_w_q],
-    uncomp_and_op: Callable[[qubit, qubit, qubit], None],
+    uncomp_and_op: Unitary[[qubit, qubit, qubit], None],
 ) -> None:
     """Uncompute the little-endian prefix-equality ladder toward the MSB."""
     most_significant_index = len(index_qreg) - 1
@@ -289,7 +295,7 @@ def _geq_const_uncompute[
     work_index = most_significant_index - comparison_depth
 
     if comparison_depth == 1:
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             index_qreg[most_significant_index],
             True,
@@ -299,7 +305,7 @@ def _geq_const_uncompute[
         )
     else:
         previous_work_index = work_index + 1
-        index_and(
+        and_pattern_controlled(
             work_qreg[work_index],
             work_qreg[previous_work_index],
             True,
@@ -326,8 +332,8 @@ def _geq_const_uncompute[
 def _xor_geq_const_into[
     n_i_q: nat,
     n_w_q: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
 ](
     target_q: qubit,
     threshold_bits: frozenarray[bool, n_i_q],
@@ -377,8 +383,8 @@ def guarded_accumulator_unary_iteration[
     n_s_q: nat,
     n_index_qubits: nat,
     n_index_elements: nat,
-    CompAND: Callable[[qubit, qubit, qubit], None],
-    UncompAND: Callable[[qubit, qubit, qubit], None],
+    CompAND: Unitary[[qubit, qubit, qubit], None],
+    UncompAND: Unitary[[qubit, qubit, qubit], None],
     ControlledOp: Callable[[qubit, array[qubit, n_s_q]], None],
 ](
     controlled_ops: array[
