@@ -76,7 +76,7 @@ markers = [
 ]
 
 [tool.ruff]
-lint.select = ["E", "F", "B", "RUF", "PT", "UP", "C4", "D", "T10"]
+lint.select = ["E", "F", "B", "RUF", "PT", "UP", "C4", "D", "T10", "I"]
 lint.ignore = ["RUF002"]
 extend-exclude = ["**/*.ipynb", "tests/conftest.py", ".venv/**", "docs/**"]
 target-version = "py312"
