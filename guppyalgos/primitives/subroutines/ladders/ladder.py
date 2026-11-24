@@ -20,25 +20,15 @@ class Ladder:
     descending instead has the ladder oriented the other way.
     """
 
-    # TODO all of these could be staticmethods
-    @guppy.require
+    # TODO these could be staticmethods
+    @guppy.require(unitary=True)
     def ascending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ladder ascending in qubit index."""
         ...
 
-    @guppy.require
+    @guppy.require(unitary=True)
     def descending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ladder descending in qubit index."""
-        ...
-
-    @guppy.require
-    def ascending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
-        """Apply dagger of ascending ladder."""
-        ...
-
-    @guppy.require
-    def descending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
-        """Apply dagger of descending ladder."""
         ...
 
 

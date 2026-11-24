@@ -7,28 +7,28 @@ from typing import Any, no_type_check
 import numpy as np
 import pytest
 from guppylang import comptime, guppy
-from guppylang.std.builtins import array
+from guppylang.std.builtins import array, control, dagger
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard_array, qubit
+from guppylang.std.quantum import discard, discard_array, qubit
 from selene_sim import Quest
 
+from guppyalgos.primitives.state_preparation.uniform import uniform_state
+from guppyalgos.primitives.subroutines.ladders import Ladder
 from guppyalgos.primitives.subroutines.ladders.cx_ladder import (
     CXLadderLinear,
     CXLadderLog,
     _cx_ladder_apply_from_inds,
-    ladder_inds_from_ascending,
     _lin_cx_ladder_indices,
+    ladder_inds_from_ascending,
     log_cx_ladder_indices,
 )
 from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
-from guppyalgos.primitives.state_preparation.uniform import uniform_state
-from guppyalgos.utils import qarray
-
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     assert_unitary_modifiers,
     get_unitary,
 )
+from guppyalgos.utils import qarray
 
 
 @pytest.mark.parametrize(

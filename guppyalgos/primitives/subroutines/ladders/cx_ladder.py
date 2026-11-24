@@ -1,13 +1,13 @@
 """Implementations for CX ladders."""
 
-from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
-
 from typing import cast, no_type_check
 
 from guppylang import comptime, guppy
 from guppylang.std.array import frozenarray
-from guppylang.std.builtins import array, nat, control, dagger
+from guppylang.std.builtins import array, control, dagger, nat
 from guppylang.std.quantum import cx, qubit
+
+from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 
 
 @guppy.struct
@@ -17,7 +17,7 @@ class CXLadderLinear:
     Protocols: Ladder
     """
 
-    @guppy
+    @guppy(unitary=True)
     @no_type_check
     def ascending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ascending linear CX ladder."""
@@ -26,20 +26,7 @@ class CXLadderLinear:
             comptime(_lin_cx_ladder_indices(n)),
         )
 
-    @guppy
-    @no_type_check
-    def ascending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
-        """Apply ascending linear CX ladder dagger."""
-        _cx_ladder_apply_from_inds(
-            qs,
-            comptime(
-                ladder_inds_from_ascending(
-                    _lin_cx_ladder_indices(n), LadderIndexing.ASCENDING_DAGGER
-                )
-            ),
-        )
-
-    @guppy
+    @guppy(unitary=True)
     @no_type_check
     def descending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply descending linear CX ladder."""
@@ -48,19 +35,6 @@ class CXLadderLinear:
             comptime(
                 ladder_inds_from_ascending(
                     _lin_cx_ladder_indices(n), LadderIndexing.DESCENDING
-                )
-            ),
-        )
-
-    @guppy
-    @no_type_check
-    def descending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
-        """Apply descending linear CX ladder dagger."""
-        _cx_ladder_apply_from_inds(
-            qs,
-            comptime(
-                ladder_inds_from_ascending(
-                    _lin_cx_ladder_indices(n), LadderIndexing.DESCENDING_DAGGER
                 )
             ),
         )
@@ -75,7 +49,7 @@ class CXLadderLog:
     Protocols: Ladder
     """
 
-    @guppy
+    @guppy(unitary=True)
     @no_type_check
     def ascending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply ascending log-depth CX ladder."""
@@ -84,20 +58,7 @@ class CXLadderLog:
             comptime(log_cx_ladder_indices(n)),
         )
 
-    @guppy
-    @no_type_check
-    def ascending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
-        """Apply ascending log-depth CX ladder dagger."""
-        _cx_ladder_apply_from_inds(
-            qs,
-            comptime(
-                ladder_inds_from_ascending(
-                    log_cx_ladder_indices(n), LadderIndexing.ASCENDING_DAGGER
-                )
-            ),
-        )
-
-    @guppy
+    @guppy(unitary=True)
     @no_type_check
     def descending[n: nat](self, qs: array[qubit, n]) -> None:
         """Apply descending log-depth CX ladder."""
@@ -106,19 +67,6 @@ class CXLadderLog:
             comptime(
                 ladder_inds_from_ascending(
                     log_cx_ladder_indices(n), LadderIndexing.DESCENDING
-                )
-            ),
-        )
-
-    @guppy
-    @no_type_check
-    def descending_dagger[n: nat](self, qs: array[qubit, n]) -> None:
-        """Apply descending log-depth CX ladder dagger."""
-        _cx_ladder_apply_from_inds(
-            qs,
-            comptime(
-                ladder_inds_from_ascending(
-                    log_cx_ladder_indices(n), LadderIndexing.DESCENDING_DAGGER
                 )
             ),
         )
