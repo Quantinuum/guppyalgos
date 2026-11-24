@@ -1,4 +1,5 @@
 """Verify the classical reversible circuits of guppyalgos against their specs."""
+from enum import Enum, auto
 
 import gc
 import inspect
@@ -9,7 +10,7 @@ from functools import partial
 from typing import no_type_check
 
 import pytest
-from guppylang import comptime, guppy
+from guppylang import guppy
 from guppylang.std.builtins import Function, array, control, dagger, nat
 from guppylang.std.quantum import cx, discard, qubit, toffoli
 
@@ -101,10 +102,6 @@ from guppyalgos.primitives.subroutines.ladders import (
     cnx_ladder_logdepth_num_ancilla,
     log_toffoli_ladder_num_ancilla,
 )
-from guppyalgos.primitives.subroutines.ladders.cx_ladder import (
-    _cx_ladder_apply_from_inds,
-    log_cx_ladder_indices,
-)
 from guppyalgos.primitives.subroutines.swap.swapup import (
     swapup_linear,
     swapup_linear_register,
@@ -155,6 +152,27 @@ ODD_SIZES = [*range(1, 12, 2), 15, 21, 25, 29]
 SMALL_SIZES = range(1, 11)
 
 
+class UnitaryFlags(Enum):
+    """Specifier for unitary flags of a function."""
+
+    NoFlags = 0
+    Control = auto()
+    Dagger = auto()
+
+    Unitary = Control | Dagger
+
+def unitary_flags_to_kwargs(flag: UnitaryFlags):
+    match flag:
+        case UnitaryFlags.NoFlags:
+            return {}
+        case UnitaryFlags.Control:
+            return {"control": True}
+        case UnitaryFlags.Dagger:
+            return {"daggerable", True}
+        case UnitaryFlags.Unitary:
+            return {"unitary" :True}
+    
+        
 # wrappers of library functions that wrap() cannot call as they are
 
 
@@ -305,7 +323,7 @@ def decoder(compute):
     return guppy(f)
 
 
-def method(struct, name):
+def method(struct, name, unitary_flags: UnitaryFlags):
     """Return a method of a guppy struct as a function of one qubit array."""
     bound = getattr(struct.wrapped.python_class, name)
 
@@ -313,43 +331,7 @@ def method(struct, name):
         bound(struct(), q)
 
     f.__name__ = f"{struct.wrapped.name}.{name}"
-    return guppy(f)
-
-
-def daggered_cx_ladder(n):
-    """Return the dagger of the log depth CX ladder."""
-
-    @guppy(unitary=True)
-    @no_type_check
-    def f(q: array[qubit, n]) -> None:
-        with dagger:
-            _cx_ladder_apply_from_inds(q, comptime(log_cx_ladder_indices(n)))
-
-    return f
-
-
-def controlled_cx_ladder(n):
-    """Return the log depth CX ladder under a control."""
-
-    @guppy
-    @no_type_check
-    def f(c: qubit, q: array[qubit, n]) -> None:
-        with control(c):
-            _cx_ladder_apply_from_inds(q, comptime(log_cx_ladder_indices(n)))
-
-    return f
-
-
-def controlled_daggered_cx_ladder(n):
-    """Return the dagger of the log depth CX ladder under a control."""
-
-    @guppy
-    @no_type_check
-    def f(c: qubit, q: array[qubit, n]) -> None:
-        with control(c), dagger:
-            _cx_ladder_apply_from_inds(q, comptime(log_cx_ladder_indices(n)))
-
-    return f
+    return guppy(**unitary_flags_to_kwargs(unitary_flags))(f)
 
 
 # components that the library's factories build from classical data
@@ -741,26 +723,20 @@ LADDERS = [  # (struct, spec of its ascending ladder, sizes, ancillas)
 ]
 VARIANTS = {  # the methods of a ladder, with the options of its spec
     "ascending": {},
-    "ascending_dagger": {"dagger": True},
     "descending": {"descending": True},
-    "descending_dagger": {"descending": True, "dagger": True},
 }
 CASES += [
-    (method(struct, variant), "n", partial(spec, **options), sizes, (), ancillas)
+    (
+        method(struct, variant, UnitaryFlags.Unitary),
+        "n",
+        partial(spec, **options),
+        sizes,
+        (),
+        ancillas,
+        True,
+    )
     for struct, spec, sizes, ancillas in LADDERS
     for variant, options in VARIANTS.items()
-]
-CASES += [  # the custom modifiers of the CX ladder
-    (daggered_cx_ladder, "n", partial(cx_ladder, dagger=True), SIZES, (), 0, True),
-    (controlled_cx_ladder, "qn", with_control(cx_ladder), SIZES, (), 0),
-    (
-        controlled_daggered_cx_ladder,
-        "qn",
-        partial(with_control(cx_ladder), dagger=True),
-        SIZES,
-        (),
-        0,
-    ),
 ]
 
 
