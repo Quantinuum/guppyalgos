@@ -10,6 +10,8 @@ from guppylang.std.quantum import qubit
 from guppyalgos.primitives.gate_decompositions.cnx.cnx_cca import cnx_cca_logdepth_dirty
 from guppyalgos.primitives.subroutines.ladders.toffoli_ladder import (
     ToffoliLadderLog,
+    log_ladder_ascending_dagger,
+    log_ladder_ascending_dagger_with_cca,
     log_toffoli_ladder_num_ancilla,
 )
 
@@ -112,9 +114,9 @@ def cnx_ladder_logdepth(
         rest = list(taken)
         if inverse:
             if rest:
-                ladder.ascending_dagger_with_cca(middle, rest)
+                log_ladder_ascending_dagger_with_cca(middle, rest)
             else:
-                ladder.ascending_dagger(middle)
+                log_ladder_ascending_dagger(middle)
         elif rest:
             ladder.ascending_with_cca(middle, rest)
         else:

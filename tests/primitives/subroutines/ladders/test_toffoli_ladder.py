@@ -94,10 +94,12 @@ def test_linear_and_log_depth_basis_equivalence(n_qubits: int) -> None:
             ladder().descending(qs)
             state_output("res_desc", qs)
 
-            ladder().ascending_dagger(qs)
+            with dagger:
+                ladder().ascending(qs)
             state_output("res_ascdag", qs)
 
-            ladder().descending_dagger(qs)
+            with dagger:
+                ladder().descending(qs)
             state_output("res_descdag", qs)
 
             discard_array(qs)
@@ -168,11 +170,11 @@ def test_get_ccx_ladder_impl_basic_sanity(
 
         ladder().descending(qs)
         state_output("res_desc", qs)
-
-        ladder().ascending_dagger(qs)
+        with dagger:
+            ladder().ascending(qs)
         state_output("res_ascdag", qs)
-
-        ladder().descending_dagger(qs)
+        with dagger:
+            ladder().descending(qs)
         state_output("res_descdag", qs)
 
         discard_array(qs)
@@ -223,11 +225,12 @@ def test_get_toffoli_ladder_impl(
 
         ladder().descending(qs)
         state_output("res_desc", qs)
-
-        ladder().ascending_dagger(qs)
+        with dagger:
+            ladder().ascending(qs)
         state_output("res_ascdag", qs)
 
-        ladder().descending_dagger(qs)
+        with dagger:
+            ladder().descending(qs)
         state_output("res_descdag", qs)
 
         discard_array(qs)
@@ -334,9 +337,11 @@ def test_log_depth_ladder_with_cca(n_qubits: int) -> None:
         elif orientation == 1:
             ladder.descending_with_cca(qs, anc)
         elif orientation == 2:
-            ladder.ascending_dagger_with_cca(qs, anc)
+            with dagger:
+                ladder.ascending_with_cca(qs, anc)
         else:
-            ladder.descending_dagger_with_cca(qs, anc)
+            with dagger:
+                ladder.descending_with_cca(qs, anc)
         discard_array(anc)
         output("qs", collect_measurements(measure_array(qs)))
 

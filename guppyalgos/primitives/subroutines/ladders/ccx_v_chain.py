@@ -21,6 +21,7 @@ from guppyalgos.primitives.subroutines.ladders.cnx_ladder import (
 )
 from guppyalgos.primitives.subroutines.ladders.toffoli_ladder import (
     ToffoliLadderLog,
+    log_ladder_ascending_dagger_with_cca,
     log_toffoli_ladder_num_ancilla,
 )
 
@@ -104,7 +105,7 @@ def _apply_block_ladders(blocks_a, blocks_b, bottom_cca, inverse: bool = False) 
             ]
             ladder_qs.append(blocks_a[j][-1])
             if inverse:
-                ToffoliLadderLog().ascending_dagger_with_cca(ladder_qs, cca)  # ty: ignore[missing-argument]
+                log_ladder_ascending_dagger_with_cca(ladder_qs, cca)
             else:
                 ToffoliLadderLog().ascending_with_cca(ladder_qs, cca)  # ty: ignore[missing-argument]
             if borrowing:
