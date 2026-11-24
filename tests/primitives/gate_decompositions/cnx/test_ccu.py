@@ -18,6 +18,7 @@ from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
 )
 from guppyalgos.primitives.gate_decompositions.cnx.ccu_rel_phase import (
     ccu_phase_correction,
+    ccx_rel_phase,
     ccz_rel_phase,
 )
 from guppyalgos.testing import (
@@ -248,6 +249,19 @@ def test_ccz_rel_phase_modifiers() -> None:
         ccz_rel_phase(qs[0], qs[1], qs[2])
 
     expected = np.diag([1, 1, 1, 1, 1, 1, -1j, 1j])
+    assert_unitary_modifiers(operation, 3, expected_unitary=expected)
+
+
+def test_ccx_rel_phase_modifiers() -> None:
+    """Check the relative-phase CCX and its modifiers."""
+
+    @guppy(unitary=True)
+    @no_type_check
+    def operation(qs: array[qubit, 3]) -> None:
+        ccx_rel_phase(qs[0], qs[1], qs[2])
+
+    expected = np.eye(8, dtype=np.complex128)
+    expected[6:, 6:] = [[0, -1j], [-1j, 0]]
     assert_unitary_modifiers(operation, 3, expected_unitary=expected)
 
 
