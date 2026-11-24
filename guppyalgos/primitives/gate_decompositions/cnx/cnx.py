@@ -110,7 +110,6 @@ def cnx[n_controls: nat](control: array[qubit, n_controls], target: qubit) -> No
     target, uses $\lceil{(n-3)/2}\rceil$ ancillary qubits to apply the multicontrolled-x
     gate on the target using $6n -12$ CNOT gates.
 
-
     Args:
         control (array[qubit, n_controls]): register of control qubits.
         target (qubit): target qubit.
@@ -152,8 +151,6 @@ def cnx_single_ancilla[n_controls: nat](
     borrowing qubits from one half in perform the cnx for the other half.
     Uses ~12*n_control toffoli gates.
 
-    Control and dagger constructed with `unitary_modify_cnx`.
-
     Args:
         control (array[qubit, n_controls]): register of control qubits.
         target (qubit): target qubit.
@@ -187,8 +184,6 @@ def cnx_toffoli_ladder[n_controls: nat](
 
     Applies the standard temporary-AND ladder construction with
     measurement-based uncompute for the temporary-ANDs (relative toffolis).
-
-    Control and dagger constructed with `unitary_modify_cnx`.
 
     Args:
         control (array[qubit, n_controls]): register of control qubits.
