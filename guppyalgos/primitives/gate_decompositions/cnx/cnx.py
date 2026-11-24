@@ -37,11 +37,11 @@ from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 @guppy
 @no_type_check
-def _extra_controls_cnx[n: nat, n_extra_controls: nat, n_total: nat](
+def _extra_controls_cnx[n: nat, n_extra_controls: nat](
     controls: array[qubit, n],
     target: qubit,
     extra_controls: array[qubit, n_extra_controls],
-    cnx: Function[[array[qubit, n_total], qubit], None],
+    cnx: Function[[array[qubit, comptime(n + n_extra_controls)], qubit], None],  # ty: ignore[unsupported-operator]
 ) -> None:
     controls_borrowed = _unsafe_array_borrow(controls)
     extra_controls_borrowed = _unsafe_array_borrow(extra_controls)
@@ -110,7 +110,6 @@ def cnx[n_controls: nat](control: array[qubit, n_controls], target: qubit) -> No
     target, uses $\lceil{(n-3)/2}\rceil$ ancillary qubits to apply the multicontrolled-x
     gate on the target using $6n -12$ CNOT gates.
 
-    Control and dagger constructed with `unitary_modify_cnx`.
 
     Args:
         control (array[qubit, n_controls]): register of control qubits.
