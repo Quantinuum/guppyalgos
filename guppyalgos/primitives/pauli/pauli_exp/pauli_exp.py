@@ -88,7 +88,8 @@ def pauli_exp[n_state_q: nat](
         rz_method(qubit_subset[comptime(len(pauli_indices) - 1)], angle)
 
         if len(qubit_subset) > 1:
-            ladder.ascending_dagger(qubit_subset)
+            with dagger:
+                ladder.ascending(qubit_subset)
 
         for i in range(comptime(len(pauli_indices))):
             qreg.put(qubit_subset.take(i), indices[i])
@@ -176,7 +177,8 @@ def cntrl_pauli_exp[n_state_q: nat](
         )
 
         if len(qubit_subset) > 1:
-            ladder.ascending_dagger(qubit_subset)
+            with dagger:
+                ladder.ascending(qubit_subset)
 
         for i in range(comptime(len(pauli_indices))):
             qreg.put(qubit_subset.take(i), indices[i])

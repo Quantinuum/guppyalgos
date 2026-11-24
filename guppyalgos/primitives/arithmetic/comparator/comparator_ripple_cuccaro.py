@@ -3,7 +3,7 @@
 from typing import no_type_check
 
 from guppylang import array, guppy, qubit
-from guppylang.std.builtins import nat
+from guppylang.std.builtins import dagger, nat
 from guppylang.std.quantum import cx, x, toffoli, discard
 
 from guppyalgos.primitives.utilities.gates import transversal
@@ -167,7 +167,8 @@ def partial_comparator_ripple_cuccaro[n: nat](
             # Forward n-1 CX ladder
             cx(a_reg[1], ancilla)
             cx_p, cx_q, cx_s = _unsafe_array_borrow_slice(a_reg, 1, comptime(n - 1), 0)
-            cx_ladder.descending_dagger(cx_q)
+            with dagger:
+                cx_ladder.descending(cx_q)
             _unsafe_array_unborrow_slice(a_reg, cx_p, cx_q, cx_s)
 
             # Forward n-2 Toffoli ladder

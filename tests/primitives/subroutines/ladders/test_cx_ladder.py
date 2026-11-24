@@ -171,9 +171,11 @@ def test_get_cx_ladder_impl_basic_sanity(n_qubits: int, ladder: Any) -> None:
         state_output("res_asc", qs)
         ladder().descending(qs)
         state_output("res_desc", qs)
-        ladder().ascending_dagger(qs)
+        with dagger:
+            ladder().ascending(qs)
         state_output("res_ascdag", qs)
-        ladder().descending_dagger(qs)
+        with dagger:
+            ladder().descending(qs)
         state_output("res_descdag", qs)
         discard_array(qs)
 
@@ -211,9 +213,11 @@ def test_get_cx_ladder_impl(n_qubits: int, ladder: Any) -> None:
         state_output("res_asc", qs)
         ladder().descending(qs)
         state_output("res_desc", qs)
-        ladder().ascending_dagger(qs)
+        with dagger:
+            ladder().ascending(qs)
         state_output("res_ascdag", qs)
-        ladder().descending_dagger(qs)
+        with dagger:
+            ladder().descending(qs)
         state_output("res_descdag", qs)
         discard_array(qs)
 
