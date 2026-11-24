@@ -3,13 +3,12 @@
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.quantum import qubit
-from guppylang.std.builtins import array, frozenarray, nat
-from guppylang.std.quantum import h, x, rz
 from guppylang.std.angles import angle
+from guppylang.std.builtins import array, frozenarray, nat
+from guppylang.std.quantum import h, qubit, rz, x
 
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.algorithms.block_encoding.lcu import LCU
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 
 
 @guppy.struct

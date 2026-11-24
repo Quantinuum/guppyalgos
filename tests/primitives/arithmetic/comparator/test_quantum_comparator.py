@@ -1,17 +1,15 @@
 """Tests for quantum comparators."""
 
-from typing import no_type_check
 from collections.abc import Callable
+from typing import no_type_check
 
+import numpy as np
 import pytest
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, qubit
 from selene_sim import Quest
-from guppyalgos.testing import project_state_onto_bitstring
-
-import numpy as np
 
 from guppyalgos.primitives.arithmetic.comparator import (
     comparator_ripple_cuccaro,
@@ -19,8 +17,8 @@ from guppyalgos.primitives.arithmetic.comparator import (
     partial_comparator_ripple_cuccaro,
 )
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from guppyalgos.testing import project_state_onto_bitstring
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @pytest.mark.parametrize(

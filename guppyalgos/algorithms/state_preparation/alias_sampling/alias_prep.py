@@ -19,9 +19,6 @@ Ref:
     with linear T complexity. Physical Review X, 8(4), 041015.
 """
 
-from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
-from guppyalgos.utils.guppy.array import join_arrays, split_array
-
 from math import ceil, log2
 from typing import Protocol, no_type_check
 
@@ -38,12 +35,13 @@ from guppylang.std.builtins import (
 )
 from guppylang.std.quantum import discard, discard_array, qubit, x
 
+from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
+from guppyalgos.algorithms.state_preparation.alias_sampling.alias_table import Aliaser
 from guppyalgos.primitives.arithmetic.comparator import (
     comparator_ripple_cuccaro,
 )
-from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
 from guppyalgos.primitives.state_preparation import uniform_state
-from guppyalgos.algorithms.state_preparation.alias_sampling.alias_table import Aliaser
+from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
 from guppyalgos.primitives.utilities.gates import swap
 from guppyalgos.utils import (
     _unsafe_array_borrow,
@@ -51,6 +49,7 @@ from guppyalgos.utils import (
     float_to_fixed_point,
     int_to_bits,
 )
+from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 
 class UniformWithDagger(Protocol):

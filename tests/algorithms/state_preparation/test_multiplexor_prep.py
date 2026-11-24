@@ -14,8 +14,8 @@ from guppyalgos.algorithms.state_preparation.multiplexor_prep import (
     _state_preparation_angles,
     multiplexor_prep,
 )
-from guppyalgos.utils import qarray
 from guppyalgos.testing import assert_allclose_ignorephase, get_statevector
+from guppyalgos.utils import qarray
 
 
 @pytest.mark.parametrize(

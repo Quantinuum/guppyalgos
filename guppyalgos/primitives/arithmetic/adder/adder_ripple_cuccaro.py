@@ -16,15 +16,16 @@ References:
 from typing import no_type_check
 
 from guppylang import guppy
-from guppyalgos.primitives.utilities.gates import apply_bitstring, transversal
-from guppylang.std.quantum import qubit, cx, x, toffoli, discard
 from guppylang.std.builtins import array, frozenarray, nat
-from guppyalgos.utils import qarray
+from guppylang.std.quantum import cx, discard, qubit, toffoli, x
+
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
 from guppyalgos.primitives.subroutines.ladders import CXLadderLinear
+from guppyalgos.primitives.utilities.gates import apply_bitstring, transversal
+from guppyalgos.utils import qarray
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,

@@ -10,16 +10,16 @@ from collections.abc import Mapping
 
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
 import zixy.qubit.pauli as zqp
+from numpy.typing import NDArray
 from scipy.linalg import expm
 
+from .binary import fixed_point_to_float
 from .trotter import (
     dominant_trotterized_eigenphase,
     trotter_step_matrix,
     trotterized_eigenphases,
 )
-from .binary import fixed_point_to_float
 
 
 def analyze_qubit_pauli_operator(

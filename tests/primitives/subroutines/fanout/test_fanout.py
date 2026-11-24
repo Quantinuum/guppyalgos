@@ -17,7 +17,6 @@ from typing import no_type_check
 
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, control, dagger, output
@@ -29,6 +28,7 @@ from guppylang.std.quantum import (
     qubit,
     x,
 )
+from numpy.typing import NDArray
 
 from guppyalgos.primitives.subroutines.fanout import (
     fanout_basic,
@@ -47,7 +47,6 @@ from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,
 )
-
 
 _ZERO_BITS = [False, False, False, False, False, False]
 _ONE_BITS = [True, True, True, True, True, True]

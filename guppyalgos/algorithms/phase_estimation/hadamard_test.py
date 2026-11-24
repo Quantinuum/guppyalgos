@@ -1,10 +1,9 @@
 """Hadamard test primitive."""
 
-from guppylang.std.builtins import Function
-
 from typing import no_type_check
 
 from guppylang import guppy
+from guppylang.std.builtins import Function
 from guppylang.std.quantum import h, qubit
 
 

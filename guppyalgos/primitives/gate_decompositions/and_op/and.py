@@ -16,6 +16,7 @@ from guppylang.std.quantum import (
     t,
     tdg,
 )
+
 from guppyalgos.utils import qarray
 
 

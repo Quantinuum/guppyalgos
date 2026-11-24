@@ -1,14 +1,14 @@
 """CCU gates."""
 
+from typing import no_type_check
+
 from guppylang import guppy
 from guppylang.std.builtins import array, control, nat
-from guppylang.std.quantum import qubit, s, sdg, angle, toffoli, cx, ry
-from .ccu_rel_phase import ccz_rel_phase, ccx_rel_phase, ccu_phase_correction
-from .cnx import cnx
+from guppylang.std.quantum import angle, cx, qubit, ry, s, sdg, toffoli
+
+from .ccu_rel_phase import ccu_phase_correction, ccx_rel_phase, ccz_rel_phase
 from .cnu import MultiCntrlFunctionParams
-
-
-from typing import no_type_check
+from .cnx import cnx
 
 
 @guppy

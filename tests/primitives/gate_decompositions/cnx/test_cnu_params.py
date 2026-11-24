@@ -8,30 +8,29 @@ from guppylang import guppy
 from guppylang.std.builtins import Function, array, nat
 from guppylang.std.qsystem.random import RNG
 from guppylang.std.quantum import angle, cx, qubit, ry
+from selene_sim import QuantumReplay, Quest
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnu import MultiCntrlFunctionParams
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.primitives.gate_decompositions.cnx.cnx_approx import cnx_approx
-from selene_sim import QuantumReplay, Quest
-
-from guppyalgos.utils.guppy.unsafe_borrow import (
-    _unsafe_array_borrow,
-    _unsafe_array_unborrow,
-)
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_unitary,
 )
+from guppyalgos.utils.guppy.unsafe_borrow import (
+    _unsafe_array_borrow,
+    _unsafe_array_unborrow,
+)
+from tests.primitives.gate_decompositions.cnx.test_cnu import (
+    cnx_cca_with_clean_borrowed,
+)
 from tests.primitives.gate_decompositions.cnx.test_cnx import (
     CnxMethod,
+    _get_num_ancillas_cnx_teleportation,
     cnx_cca_logdepth,
     cnx_single_ancilla,
     cnx_teleportation,
     cnx_toffoli_ladder,
-    _get_num_ancillas_cnx_teleportation,
-)
-from tests.primitives.gate_decompositions.cnx.test_cnu import (
-    cnx_cca_with_clean_borrowed,
 )
 
 

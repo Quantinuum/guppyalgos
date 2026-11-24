@@ -1,10 +1,11 @@
 """Tests for indexed AND unitaries and their modifiers."""
 
+from typing import no_type_check
+
 import numpy as np
 import pytest
-
-from guppylang.defs import GuppyFunctionDefinition
 from guppylang.decorator import guppy
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, control, dagger, output
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
@@ -31,8 +32,6 @@ from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,
 )
 from guppyalgos.utils import int_to_bits, qarray
-
-from typing import no_type_check
 
 
 @pytest.mark.parametrize("index", [0, 1, 2, 3])

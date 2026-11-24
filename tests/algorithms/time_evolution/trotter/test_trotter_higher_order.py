@@ -4,27 +4,27 @@ from __future__ import annotations
 
 from typing import no_type_check
 
+import numpy as np
+import pytest
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.std.builtins import array
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard_array, h, qubit
-import numpy as np
-import pytest
 from scipy.linalg import expm
-import zixy.qubit.pauli as zqp
 
 from guppyalgos.algorithms.time_evolution.trotter import (
     cntrl_trotter_higher_order,
     suzuki_sequence,
     trotter_higher_order,
 )
-from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     get_unitary,
     get_unitary_projected,
 )
+from guppyalgos.utils import qarray
 
 
 def _sequence_matrix(

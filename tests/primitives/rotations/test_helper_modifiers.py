@@ -3,20 +3,20 @@
 from typing import no_type_check
 
 import numpy as np
+import zixy.qubit.pauli as zqp
 from guppylang import comptime, guppy
 from guppylang.std.builtins import array, control, dagger
-from guppylang.std.quantum import qubit, angle
+from guppylang.std.quantum import angle, qubit
 
-import zixy.qubit.pauli as zqp
 from guppyalgos.primitives.pauli import pauli_to_z_basis
 from guppyalgos.primitives.rotations import givens_rotation
+from guppyalgos.primitives.rotations.qrom_rotation import qrom_identity
 from guppyalgos.primitives.rotations.register_incremented_givens_rotation import (
     xx_basis_change,
 )
 from guppyalgos.primitives.rotations.repeat_until_success_arbitrary import (
     dummy_theta_resource_state,
 )
-from guppyalgos.primitives.rotations.qrom_rotation import qrom_identity
 from guppyalgos.testing import assert_unitary_modifiers
 
 

@@ -7,18 +7,17 @@ from guppylang import guppy
 from guppylang.std.builtins import array
 from guppylang.std.quantum import discard, discard_array, qubit
 
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
-from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
-from guppyalgos.primitives.rotations import (
-    GivensCascadePhaseGradient,
-)
 from guppyalgos.algorithms.block_encoding.thc import (
     SelectTHCCntrl,
     SelectTHCCntrlRegs,
     THCWalkTargetRegs,
 )
+from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.rotations import (
+    GivensCascadePhaseGradient,
+)
 from guppyalgos.utils import qarray
-
 
 _N_INDEX_QUBITS = 3
 _N_COMBINED_INDEX_QUBITS = _N_INDEX_QUBITS + 1

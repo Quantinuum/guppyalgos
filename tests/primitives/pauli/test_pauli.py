@@ -1,8 +1,10 @@
 """Tests for pauli utils."""
 
+from collections.abc import Iterable
+from typing import cast, no_type_check
+
 import numpy as np
 import pytest
-from collections.abc import Iterable
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
@@ -12,22 +14,19 @@ from guppylang.std.debug import state_output
 from guppylang.std.quantum import cx, cy, cz, discard, discard_array, h, qubit, x, y, z
 from selene_sim import Quest
 
-from guppyalgos.primitives.utilities.gates import apply_phase
-from guppyalgos.utils import qarray
 from guppyalgos.primitives.pauli import (
     pauli_to_cntrl_gate,
     pauli_to_gate,
     pauli_to_z_basis,
 )
+from guppyalgos.primitives.utilities.gates import apply_phase
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     assert_unitary_modifiers,
     get_statevector,
     project_state_onto_bitstring,
 )
-
-
-from typing import cast, no_type_check
+from guppyalgos.utils import qarray
 
 
 def test_pauli_to_gate() -> None:

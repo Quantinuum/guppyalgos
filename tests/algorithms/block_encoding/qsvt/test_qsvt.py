@@ -1,30 +1,22 @@
 """Tests for the QSVT implementation."""
 
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import no_type_check
 
-import pytest
-from dataclasses import dataclass
-from numpy.polynomial import Polynomial
 import numpy as np
-from scipy.linalg import svd
-from sympy.core.expr import Expr
-from numpy.typing import NDArray
-from collections.abc import Sequence
+import pytest
 import zixy.qubit.pauli as zqp
-
-from pytest_lazy_fixtures import lf as lazy_fixture
-
 from guppylang import guppy
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, dagger, nat
 from guppylang.std.quantum import qubit
-from guppylang.defs import GuppyFunctionDefinition
+from numpy.polynomial import Polynomial
+from numpy.typing import NDArray
+from pytest_lazy_fixtures import lf as lazy_fixture
+from scipy.linalg import svd
+from sympy.core.expr import Expr
 
-from guppyalgos.algorithms.block_encoding.qsvt import QSVT
-from guppyalgos.testing import (
-    Endianness,
-    assert_allclose_ignorephase,
-    get_unitary_projected,
-)
 from guppyalgos.algorithms.block_encoding.lcu import (
     LCU,
     LCUData,
@@ -32,7 +24,13 @@ from guppyalgos.algorithms.block_encoding.lcu import (
     build_single_cntrl_select,
     build_unary_iteration_select,
 )
+from guppyalgos.algorithms.block_encoding.qsvt import QSVT
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    get_unitary_projected,
+)
 from guppyalgos.utils import qsp_phase_reflection
 
 

@@ -4,28 +4,28 @@ from __future__ import annotations
 
 from typing import no_type_check
 
+import numpy as np
+import pytest
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle, pi
 from guppylang.std.builtins import array
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import crz, discard_array, h, qubit, rz
-import numpy as np
-import pytest
-import zixy.qubit.pauli as zqp
 
 from guppyalgos.primitives.pauli.pauli_exp import cntrl_pauli_exp
 from guppyalgos.primitives.subroutines.ladders import (
-    Ladder,
     CXLadderLinear,
     CXLadderLog,
+    Ladder,
 )
-from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     get_unitary_projected,
 )
+from guppyalgos.utils import qarray
 from tests.primitives.pauli.pauli_exp.pauli_exp_helpers import pauli_exp_matrix
 
 REPRESENTATIVE_CONTROLLED_2Q_STRINGS = [

@@ -12,7 +12,7 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
-from guppylang.std.quantum import cx, discard_array, qubit, discard, toffoli
+from guppylang.std.quantum import cx, discard, discard_array, qubit, toffoli
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,

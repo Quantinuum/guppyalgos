@@ -1,25 +1,23 @@
 """Utils functions to compute phases for QSP and GQSP."""
 
-from guppyalgos.errors.import_errors import NumbaImportError
-
-from enum import IntEnum
-
-from collections.abc import Callable, Sequence
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Sequence
+from enum import IntEnum
 from typing import Any
 
 import numpy as np
 from numpy import complexfloating
-from numpy.typing import NDArray
 from numpy.polynomial import Polynomial
 from numpy.polynomial.polynomial import polyfromroots
-
-from scipy.linalg import expm
+from numpy.typing import NDArray
 from scipy.fft import dct
+from scipy.linalg import expm
 from scipy.optimize import (
     OptimizeResult,
     minimize,
 )
+
+from guppyalgos.errors.import_errors import NumbaImportError
 
 
 class FunctionParity(IntEnum):

@@ -1,14 +1,14 @@
 """Check an installed wheel and compile a small program outside the source tree."""
 
-from importlib import import_module
-from pathlib import Path
 import pkgutil
 import sys
+from importlib import import_module
+from pathlib import Path
 
-import guppyalgos
 from guppylang import guppy
 from guppylang.std.quantum import discard_array
 
+import guppyalgos
 from guppyalgos.primitives.state_preparation import uniform_state
 from guppyalgos.utils import qarray
 

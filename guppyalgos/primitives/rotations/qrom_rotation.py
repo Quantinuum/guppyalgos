@@ -1,6 +1,7 @@
 """Generic QROM compute -> rotate -> uncompute helper."""
 
 from __future__ import annotations
+
 from typing import no_type_check
 
 from guppylang import guppy

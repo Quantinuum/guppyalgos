@@ -9,7 +9,7 @@ from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.emulator import EmulatorResult
 from guppylang.std.angles import angle
-from guppylang.std.builtins import array, output, dagger
+from guppylang.std.builtins import array, dagger, output
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
@@ -24,26 +24,26 @@ from guppylang.std.quantum import (
 from pytest_lazy_fixtures import lf as lazy_fixture
 from selene_sim import Quest
 
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.algorithms.block_encoding.lcu import (
     LCUCntrl,
     LCUData,
     build_cntrl_unary_iteration_select,
 )
+from guppyalgos.algorithms.block_encoding.qubitization import QubitizationCntrl
 from guppyalgos.algorithms.phase_estimation import (
     QubitizationRegs,
-    qubitized_power_oracle,
     qpe,
+    qubitized_power_oracle,
 )
-from guppyalgos.algorithms.block_encoding.qubitization import QubitizationCntrl
-from guppyalgos.primitives.subroutines.reflection import ReflectionCntrl
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.subroutines.reflection import ReflectionCntrl
 from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.utils import qarray
 from guppyalgos.utils import (
     binary_fraction,
     phase_distance_mod_2,
     phase_to_energy_qubitized_qpe,
+    qarray,
 )
 
 

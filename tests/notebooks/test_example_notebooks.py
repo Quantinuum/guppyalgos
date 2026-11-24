@@ -1,10 +1,11 @@
 """Test that all example notebooks can be executed without error."""
 
-import os
 import glob
+import os
+
 import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
 import pytest
+from nbconvert.preprocessors import ExecutePreprocessor
 
 # Parallelization can cause issues with notebook execution
 MAX_RETRIES = 5

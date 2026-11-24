@@ -1,6 +1,7 @@
 """Tests for classical util methods."""
 
 import pytest
+
 from guppyalgos.utils.python.binary import (
     bits_to_int,
     fixed_point_to_float,

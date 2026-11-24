@@ -14,6 +14,7 @@ from guppylang.std.debug import state_output
 from guppylang.std.platform import barrier
 from guppylang.std.quantum import (
     cx,
+    cy,
     discard,
     discard_array,
     h,
@@ -21,14 +22,12 @@ from guppylang.std.quantum import (
     ry,
     toffoli,
     x,
-    cy,
 )
 from hugr.qsystem.result import QsysResult
 from numpy.typing import NDArray
 from selene_quest_plugin import SeleneQuestState
 from selene_sim import Quest, build
 
-from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     SubQuestState,
     _statevector_with_zeroed_ancilla,
@@ -41,9 +40,10 @@ from guppyalgos.testing import (
     get_unitary_assumed_phase,
     get_unitary_projected,
     project_state_onto_bitstring,
-    switch_matrix_endianness,
     switch_endianness,
+    switch_matrix_endianness,
 )
+from guppyalgos.utils import qarray
 
 
 def _entangled_3reg_main() -> tuple[GuppyFunctionDefinition, int]:

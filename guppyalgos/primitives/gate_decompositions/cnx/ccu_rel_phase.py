@@ -1,11 +1,10 @@
 """CCU gates up to a relative phase."""
 
+from typing import no_type_check
+
 from guppylang import guppy
 from guppylang.std.builtins import dagger
-from guppylang.std.quantum import qubit, cx, t, tdg, h
-
-
-from typing import no_type_check
+from guppylang.std.quantum import cx, h, qubit, t, tdg
 
 
 @guppy(unitary=True)

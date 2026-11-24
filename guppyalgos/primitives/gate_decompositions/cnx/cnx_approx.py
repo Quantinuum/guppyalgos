@@ -1,17 +1,16 @@
 """Approximate multi-controlled X gate using random XOR method."""
 
 from math import ceil, log2
+from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import comptime, array, nat
+from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.mem import mem_swap
 from guppylang.std.qsystem.random import RNG
-from guppylang.std.quantum import qubit, cx, x
+from guppylang.std.quantum import cx, qubit, x
 
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
-
-from typing import no_type_check
 
 
 def cnx_approx[n_ctrl: nat](

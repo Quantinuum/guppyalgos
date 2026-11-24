@@ -19,8 +19,7 @@ from guppyalgos.primitives.subroutines.ladders.ccx_v_chain import (
     ccx_v_chain_logdepth,
 )
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @pytest.mark.parametrize("implementation", ["linear", "logdepth"])

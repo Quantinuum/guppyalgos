@@ -1,14 +1,17 @@
 """Test CCU gate decompositions."""
 
-import pytest
-import numpy as np
-from itertools import product
-from guppylang import guppy
 from collections.abc import Callable
-from guppylang.std.quantum import qubit, x, array, angle
+from itertools import product
+from typing import no_type_check
+
+import numpy as np
+import pytest
+from guppylang import guppy
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_output
-from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.quantum import angle, array, qubit, x
+
 from guppyalgos.primitives.gate_decompositions.cnx.ccu import (
     ccry_cx,
     ccry_toffoli,
@@ -21,12 +24,9 @@ from guppyalgos.primitives.gate_decompositions.cnx.ccu_rel_phase import (
     ccz_rel_phase,
 )
 from guppyalgos.testing import (
-    get_statevector,
     assert_unitary_modifiers,
+    get_statevector,
 )
-
-
-from typing import no_type_check
 
 
 @guppy

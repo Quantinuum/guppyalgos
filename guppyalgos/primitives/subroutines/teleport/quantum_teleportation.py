@@ -4,7 +4,7 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import array, nat, owned
-from guppylang.std.quantum import h, cx, x, z, qubit, measure_array
+from guppylang.std.quantum import cx, h, measure_array, qubit, x, z
 
 from guppyalgos.utils import qarray
 

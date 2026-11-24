@@ -1,6 +1,6 @@
 """Perform sums / Linear Combinations of Unitaries."""
 
-from .lcu import LCUCntrl, LCU
+from .lcu import LCU, LCUCntrl
 from .lcu_helpers import (
     LCUData,
     build_cntrl_single_cntrl_select,

@@ -17,13 +17,13 @@ from guppyalgos.primitives.rotations import (
     givens_rotation,
 )
 from guppyalgos.primitives.state_preparation.phase_gradient import phase_gradient
-from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     Endianness,
     assert_allclose_ignorephase,
     assert_unitary_modifiers,
     get_unitary,
 )
+from guppyalgos.utils import qarray
 
 
 def _expected_givens_state(theta: float, target_bits: tuple[bool, bool]) -> np.ndarray:

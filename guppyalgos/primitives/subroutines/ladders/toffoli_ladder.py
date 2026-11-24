@@ -4,14 +4,13 @@ from math import floor, log2
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.array import frozenarray
+from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import qubit, toffoli
-from guppyalgos.utils import qarray
+
 from guppyalgos.primitives.measurement.utils import discard_array
-
 from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
-
+from guppyalgos.utils import qarray
 
 LabeledIndex = tuple[int, int]
 IndexTriple = tuple[int, int, int]

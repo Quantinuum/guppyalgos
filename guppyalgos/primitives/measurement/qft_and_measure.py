@@ -12,10 +12,11 @@ References:
 from typing import no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import qubit, h, project_z
-from guppylang.std.mem import mem_swap
 from guppylang.std.angles import pi
+from guppylang.std.builtins import array, nat
+from guppylang.std.mem import mem_swap
+from guppylang.std.quantum import h, project_z, qubit
+
 from guppyalgos.primitives.utilities.gates import apply_phase
 
 

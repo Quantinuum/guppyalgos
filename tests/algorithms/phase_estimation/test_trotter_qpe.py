@@ -5,24 +5,24 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from numpy.typing import NDArray
 import pytest
+import zixy.qubit.pauli as zqp
 from guppylang.defs import GuppyFunctionDefinition
 from hugr.qsystem.result import QsysResult
+from numpy.typing import NDArray
 from pytest_lazy_fixtures import lf as lazy_fixture
-import zixy.qubit.pauli as zqp
 from selene_sim import Quest
 
 from guppyalgos.algorithms.time_evolution.trotter import cntrl_trotter_first_order
-from guppyalgos.utils import phase_distance_mod_2, trotterized_eigenphases
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import phase_distance_mod_2, trotterized_eigenphases
 from tests.algorithms.phase_estimation.qpe_test_helpers import (
     dominant_trotter_measured_phase,
     exact_kickback_state,
     make_ry_state,
+    make_trotter_power_oracle,
     make_trotter_qpe_diagnostic_program,
     make_trotter_qpe_program,
-    make_trotter_power_oracle,
     phase_key,
     ry_state_probabilities,
 )

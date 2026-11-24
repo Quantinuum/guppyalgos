@@ -1,13 +1,11 @@
 """Pauli select primitives."""
 
-from guppyalgos.algorithms.select import build_select_unary_from_data
-
-
 import zixy.qubit.pauli as zqp
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import qubit
 
+from guppyalgos.algorithms.select import build_select_unary_from_data
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,

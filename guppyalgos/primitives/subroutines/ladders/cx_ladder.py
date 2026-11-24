@@ -1,13 +1,13 @@
 """Implementations for CX ladders."""
 
-from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
-
 from typing import cast, no_type_check
 
 from guppylang import comptime, guppy
 from guppylang.std.array import frozenarray
-from guppylang.std.builtins import array, nat, control, dagger
+from guppylang.std.builtins import array, control, dagger, nat
 from guppylang.std.quantum import cx, qubit
+
+from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 
 
 @guppy.struct

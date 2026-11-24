@@ -8,8 +8,8 @@ from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard_array
 from selene_sim import Quest
 
+from guppyalgos.primitives.state_preparation import ghz_state, phase_gradient
 from guppyalgos.primitives.subroutines.teleport import quantum_teleportation
-from guppyalgos.primitives.state_preparation import phase_gradient, ghz_state
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,

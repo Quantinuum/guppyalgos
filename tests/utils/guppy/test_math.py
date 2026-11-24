@@ -1,12 +1,12 @@
 """Tests for Guppy runtime math functions."""
 
-import pytest
 from typing import no_type_check
 
+import pytest
 from guppylang import guppy
 from guppylang.std.builtins import output
 
-from guppyalgos.utils.guppy.math import get_bit, floor
+from guppyalgos.utils.guppy.math import floor, get_bit
 
 
 @pytest.mark.parametrize(

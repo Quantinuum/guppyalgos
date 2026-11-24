@@ -6,10 +6,10 @@ from typing import no_type_check
 import numpy as np
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, comptime, frozenarray, owned, nat, dagger
+from guppylang.std.builtins import array, comptime, dagger, frozenarray, nat, owned
 from guppylang.std.mem import mem_swap
 from guppylang.std.option import nothing, some
-from guppylang.std.quantum import qubit, discard_array
+from guppylang.std.quantum import discard_array, qubit
 
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,

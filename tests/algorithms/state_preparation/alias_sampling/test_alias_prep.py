@@ -1,9 +1,8 @@
 """Alias Sampling Test."""
 
-from selene_sim import Quest
-from guppyalgos.testing import project_state_onto_bitstring
-
 from math import ceil, log2
+from typing import no_type_check
+
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -11,20 +10,18 @@ from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, qubit
+from selene_sim import Quest
 
-from guppyalgos.primitives.subroutines.fanout import (
-    fanout_basic,
-    fanout_measurement_parity,
-)
 from guppyalgos.algorithms.state_preparation.alias_sampling import alias_samp_prep
 from guppyalgos.algorithms.state_preparation.alias_sampling.alias_table import (
     discretize_distribution,
 )
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
-
-
-from typing import no_type_check
+from guppyalgos.primitives.subroutines.fanout import (
+    fanout_basic,
+    fanout_measurement_parity,
+)
+from guppyalgos.testing import project_state_onto_bitstring
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @pytest.mark.parametrize(

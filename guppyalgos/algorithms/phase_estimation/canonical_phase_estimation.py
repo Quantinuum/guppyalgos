@@ -1,8 +1,9 @@
 """Phase estimation."""
 
 from typing import no_type_check
+
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, dagger, nat, Function
+from guppylang.std.builtins import Function, array, dagger, nat
 from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.subroutines.qft import qft

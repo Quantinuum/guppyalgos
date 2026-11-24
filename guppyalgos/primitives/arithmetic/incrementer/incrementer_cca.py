@@ -17,18 +17,19 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat, panic
-from guppylang.std.quantum import cx, discard, discard_array, qubit, toffoli, x
 from guppylang.std.mem import mem_swap
+from guppylang.std.quantum import cx, discard, discard_array, qubit, toffoli, x
+
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
 from guppyalgos.utils import qarray
+from guppyalgos.utils.guppy.array import join_arrays, split_array
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
 )
-from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 
 @guppy(unitary=True)

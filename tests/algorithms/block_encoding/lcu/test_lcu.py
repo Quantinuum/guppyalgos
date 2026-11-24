@@ -6,19 +6,9 @@ import pytest
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat, dagger
+from guppylang.std.builtins import array, dagger, nat
 from guppylang.std.quantum import qubit
 from pytest_lazy_fixtures import lf as lazy_fixture
-
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
-from guppyalgos.testing import (
-    get_unitary_projected,
-    assert_allclose_ignorephase,
-    Endianness,
-)
 
 from guppyalgos.algorithms.block_encoding.lcu import (
     LCU,
@@ -28,6 +18,15 @@ from guppyalgos.algorithms.block_encoding.lcu import (
     build_unary_iteration_select,
 )
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
+from guppyalgos.primitives.gate_decompositions.and_op import (
+    temp_and_compute,
+    temp_and_uncompute,
+)
+from guppyalgos.testing import (
+    Endianness,
+    assert_allclose_ignorephase,
+    get_unitary_projected,
+)
 
 
 def _assert_lcu_encodes_hamiltonian[n_prep_q: nat, n_state_q: nat](

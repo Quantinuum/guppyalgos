@@ -3,7 +3,7 @@
 from typing import no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, nat, Function
+from guppylang.std.builtins import Function, array, nat
 from guppylang.std.quantum import h, qubit
 
 

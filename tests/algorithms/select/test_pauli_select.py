@@ -1,7 +1,8 @@
 """Tests for pauli select."""
 
-from math import ceil, log2
 from collections.abc import Iterable
+from math import ceil, log2
+from typing import cast, no_type_check
 
 import pytest
 import zixy.qubit.pauli as zqp
@@ -14,18 +15,14 @@ from selene_quest_plugin import SeleneQuestState
 from selene_sim import Quest
 
 from guppyalgos.algorithms.select.pauli_select import pauli_select_unary_iteration
-from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from guppyalgos.primitives.pauli import pauli_to_gate
+from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
-    project_state_onto_bitstring,
     get_total_state_on_only_specified_registers,
+    project_state_onto_bitstring,
 )
-
-
-from typing import cast, no_type_check
+from guppyalgos.utils import int_to_bits, qarray
 
 
 def run_uniform_pauli_select_unary_iteration(

@@ -1,7 +1,5 @@
 """Tests for circ utils."""
 
-from guppyalgos.utils.guppy.array import split_array, join_arrays
-
 from typing import no_type_check
 
 import numpy as np
@@ -27,14 +25,15 @@ from pytket.circuit import Circuit
 from selene_sim import Quest
 
 from guppyalgos.primitives.utilities import t_state
-from guppyalgos.primitives.utilities.gates import swap, transversal, apply_phase
+from guppyalgos.primitives.utilities.gates import apply_phase, swap, transversal
 from guppyalgos.testing import (
     Endianness,
     assert_allclose_ignorephase,
     assert_unitary_modifiers,
     get_unitary,
 )
-from guppyalgos.utils import qarray, _unsafe_array_borrow, _unsafe_array_unborrow
+from guppyalgos.utils import _unsafe_array_borrow, _unsafe_array_unborrow, qarray
+from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 
 @pytest.mark.symbolic_alternative

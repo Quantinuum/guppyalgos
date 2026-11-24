@@ -3,10 +3,8 @@
 from typing import no_type_check
 
 import pytest
-from guppylang_internals.error import GuppyError
-
 from guppylang import guppy
-from guppylang.std.builtins import array, output, nat
+from guppylang.std.builtins import array, nat, output
 from guppylang.std.quantum import (
     collect_measurements,
     discard,
@@ -16,19 +14,19 @@ from guppylang.std.quantum import (
     qubit,
     x,
 )
+from guppylang_internals.error import GuppyError
 
 from guppyalgos.primitives.arithmetic import (
-    cntrl_multiplier_ripple_gidney_mod_in_place,
     cntrl_multiplier_ripple_gidney_mod,
-    multiplier_ripple_gidney_mod_in_place,
+    cntrl_multiplier_ripple_gidney_mod_in_place,
     multiplier_ripple_gidney_mod,
+    multiplier_ripple_gidney_mod_in_place,
 )
 from guppyalgos.primitives.arithmetic.multiplier.multiplier_ripple_gidney import (
     _shifted_controlled_adder,
 )
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @pytest.mark.parametrize("n", [0, -1])

@@ -1,8 +1,9 @@
 """Array utils."""
 
 from typing import no_type_check
-from guppylang.std.builtins import nat, owned, nothing
-from guppylang import guppy, comptime, array
+
+from guppylang import array, comptime, guppy
+from guppylang.std.builtins import nat, nothing, owned
 from guppylang.std.quantum import discard_array, qubit
 
 

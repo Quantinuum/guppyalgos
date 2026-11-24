@@ -16,8 +16,7 @@ from guppyalgos.algorithms.select.select_unary_iteration import (
 from guppyalgos.primitives.gate_decompositions.and_op import (
     and_pattern_controlled,
 )
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @guppy

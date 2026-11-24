@@ -9,12 +9,12 @@ from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, dagger, nat
 from guppylang.std.quantum import qubit
 
+from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
-from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
 from guppyalgos.primitives.subroutines.swap import swapup_linear
 
 

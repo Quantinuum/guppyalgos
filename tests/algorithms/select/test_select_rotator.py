@@ -11,33 +11,32 @@ from guppylang.std.debug import state_result
 from guppylang.std.quantum import cz, discard, discard_array, qubit, x
 from selene_sim import Quest
 
-from guppyalgos.primitives.gate_decompositions.cnx.ccu import ccz
+from guppyalgos.algorithms.select import SelectRotator
 from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
 from guppyalgos.algorithms.select.qrom.controlled_qrom_unary_iteration import (
     cntrl_qrom_unary_iteration,
 )
+from guppyalgos.primitives.gate_decompositions.cnx.ccu import ccz
 from guppyalgos.primitives.rotations import (
     GivensCascadePhaseGradient,
     QROMRotations,
     qrom_identity,
 )
-from guppyalgos.algorithms.select import SelectRotator
 from guppyalgos.primitives.state_preparation.phase_gradient import (
     Convention,
     phase_gradient,
 )
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import (
-    bits_to_int,
-    discard_nested_arrays,
-    int_to_bits,
-)
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
 )
-
+from guppyalgos.utils import (
+    bits_to_int,
+    discard_nested_arrays,
+    int_to_bits,
+    qarray,
+)
 
 _ANGLE_DATA = [
     [[False, False, False], [False, False, False]],

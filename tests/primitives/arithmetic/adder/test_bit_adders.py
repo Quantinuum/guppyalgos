@@ -9,12 +9,15 @@ from guppylang.std.builtins import control, dagger
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, h, qubit, x
 from selene_sim import Quest
+
 from guppyalgos.primitives.arithmetic.adder.bit_adders import (
     full_adder,
     half_adder,
 )
-from guppyalgos.testing import assert_allclose_ignorephase
-from guppyalgos.testing import get_total_state_on_only_specified_registers
+from guppyalgos.testing import (
+    assert_allclose_ignorephase,
+    get_total_state_on_only_specified_registers,
+)
 from guppyalgos.utils import qarray
 
 
