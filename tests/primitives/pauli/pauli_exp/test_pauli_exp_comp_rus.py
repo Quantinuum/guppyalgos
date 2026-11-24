@@ -2,34 +2,28 @@
 
 from __future__ import annotations
 
-from guppyalgos.utils import qarray
-from guppylang import guppy
+from typing import no_type_check
 
-from guppylang.std.builtins import comptime
-from guppylang.std.angles import angle
-from guppylang.std.quantum import h, discard_array
+import numpy as np
 import pytest
-
-from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
-
 import zixy.qubit.pauli as zqp
-
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import comptime
+from guppylang.std.debug import state_result
+from guppylang.std.quantum import discard_array, h
+from scipy.linalg import expm
+from selene_sim import Quest
 
 from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
-
-from scipy.linalg import expm
-import numpy as np
-from guppyalgos.testing import assert_allclose_ignorephase
 from guppyalgos.primitives.rotations import (
     comparator_based_rz_cascade,
     n_comparator_based_rz_cascade_ancillas,
 )
+from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
 from guppyalgos.primitives.utilities.gates import transversal
-from guppylang.std.debug import state_result
-from selene_sim import Quest
-
-
-from typing import no_type_check
+from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import qarray
 
 
 def pauli_exp_test_fn(

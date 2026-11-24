@@ -21,11 +21,6 @@ from .python.angle_finder import (
     QSPAngleFinder,
     qsp_phase_reflection,
 )
-from .python.trotter import (
-    dominant_trotterized_eigenphase,
-    trotter_step_matrix,
-    trotterized_eigenphases,
-)
 from .python.binary import (
     bits_to_int,
     fixed_point_to_float,
@@ -37,6 +32,11 @@ from .python.phase import (
     phase_distance_mod_2,
     phase_to_energy_qpe,
     phase_to_energy_qubitized_qpe,
+)
+from .python.trotter import (
+    dominant_trotterized_eigenphase,
+    trotter_step_matrix,
+    trotterized_eigenphases,
 )
 
 __all__ = [

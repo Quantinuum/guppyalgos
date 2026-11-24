@@ -13,8 +13,8 @@ from guppyalgos.primitives.rotations.hamming_weight_phasing import (
     hamming_weight_phase,
 )
 from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.utils import qarray
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import qarray
 
 
 @pytest.mark.parametrize(("n", "theta"), [(3, 0.1), (2, 0.5), (4, 0.25), (5, 1.0)])

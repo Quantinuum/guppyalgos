@@ -1,12 +1,13 @@
 """Pauli utils for interfacing with zixy."""
 
-import zixy.qubit.pauli as zqp
 from typing import no_type_check
+
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import cx, cy, cz, qubit, x, y, z, h, sdg, s
+from guppylang.std.quantum import cx, cy, cz, h, qubit, s, sdg, x, y, z
 
 from guppyalgos.primitives.utilities.gates import apply_phase
 

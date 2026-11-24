@@ -14,12 +14,12 @@ from guppyalgos.primitives.state_preparation.phase_gradient import (
     Convention,
     phase_gradient,
 )
-from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     switch_endianness,
 )
+from guppyalgos.utils import qarray
 
 
 def phase_gradient_state_expected_standard(n_qubits: int) -> np.ndarray:

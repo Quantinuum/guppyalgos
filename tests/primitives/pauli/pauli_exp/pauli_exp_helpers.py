@@ -1,8 +1,8 @@
 """Pauli-exponential helper functions for tests."""
 
 import numpy as np
-from numpy.typing import NDArray
 import zixy.qubit.pauli as zqp
+from numpy.typing import NDArray
 from scipy.linalg import expm
 
 

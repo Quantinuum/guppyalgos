@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from guppylang import comptime, guppy
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard_array, x, qubit, discard
+from guppylang.std.quantum import discard, discard_array, qubit, x
 from selene_sim import Quest
 
 from guppyalgos.primitives.rotations import (
@@ -15,8 +15,8 @@ from guppyalgos.primitives.rotations import (
     RotationAxisZ,
     RotationRegisterIncremented,
 )
-from guppyalgos.utils import qarray
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import qarray
 
 
 def _axis_expected_state(theta: float, axis: str) -> np.ndarray:

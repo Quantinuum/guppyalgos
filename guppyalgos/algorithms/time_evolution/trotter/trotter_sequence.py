@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import no_type_check
 
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import Function, array, comptime, nat
 from guppylang.std.quantum import crz, qubit, rz
-import zixy.qubit.pauli as zqp
 
 from guppyalgos.primitives.pauli.pauli_exp import cntrl_pauli_exp, pauli_exp
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder

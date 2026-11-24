@@ -1,12 +1,11 @@
 """Repeat-until-success Rz rotation using arbitrary resource state."""
 
-from guppylang import guppy
-from guppylang.std.builtins import output
-from guppylang.std.quantum import measure, qubit, cx, rz, angle, h
-from guppylang.defs import GuppyFunctionDefinition
-
-
 from typing import no_type_check
+
+from guppylang import guppy
+from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.builtins import output
+from guppylang.std.quantum import angle, cx, h, measure, qubit, rz
 
 
 @guppy

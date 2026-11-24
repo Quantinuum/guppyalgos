@@ -1,8 +1,7 @@
 """Single bit adder and half adders."""
 
-from guppylang.std.quantum import toffoli, cx
-
 from guppylang import guppy, qubit
+from guppylang.std.quantum import cx, toffoli
 
 
 @guppy(unitary=True)

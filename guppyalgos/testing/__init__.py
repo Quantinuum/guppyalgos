@@ -1,30 +1,29 @@
 """Helpers for inspecting Guppy programs with a statevector simulator."""
 
 from __future__ import annotations
-from guppylang.std.platform import barrier
 
 from enum import IntEnum
 from itertools import chain
 from typing import Any, no_type_check
 
 import numpy as np
-from numpy.polynomial.chebyshev import chebval
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.emulator import EmulatorInstance
 from guppylang.std.builtins import array, comptime, control, dagger, nat
 from guppylang.std.debug import state_output
+from guppylang.std.platform import barrier
 from guppylang.std.quantum import discard_array, qubit
 from hugr.package import Package
 from hugr.qsystem.result import QsysResult
+from numpy.polynomial.chebyshev import chebval
 from numpy.typing import NDArray
 from selene_core.simulator import Simulator
 from selene_quest_plugin.state import SeleneQuestState, TracedState
 from selene_sim import Quest, build
 
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from guppyalgos.utils import int_to_bits, qarray
 from guppyalgos.utils.guppy.array import join_arrays, split_array
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,

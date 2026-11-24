@@ -10,18 +10,18 @@ from guppylang.std.angles import pi
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.debug import state_result
 from guppylang.std.quantum import (
+    crz,
     cz,
     discard,
     discard_array,
-    crz,
     h,
     qubit,
     x,
 )
 
 from guppyalgos.algorithms.phase_estimation import hadamard_test
-from guppyalgos.utils import qarray
 from guppyalgos.testing import assert_allclose_ignorephase, get_statevector
+from guppyalgos.utils import qarray
 
 
 @guppy.struct

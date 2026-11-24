@@ -6,11 +6,10 @@ import pytest
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat, dagger
+from guppylang.std.builtins import array, dagger, nat
 from guppylang.std.quantum import qubit
 from pytest_lazy_fixtures import lf as lazy_fixture
 
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.algorithms.block_encoding.lcu import (
     LCU,
     LCUData,
@@ -19,8 +18,9 @@ from guppyalgos.algorithms.block_encoding.lcu import (
     build_unary_iteration_select,
 )
 from guppyalgos.algorithms.block_encoding.qubitization.qubitization import Qubitization
-from guppyalgos.primitives.subroutines.reflection import Reflection
 from guppyalgos.algorithms.state_preparation import multiplexor_prep
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.subroutines.reflection import Reflection
 from guppyalgos.testing import (
     Endianness,
     assert_allclose_ignorephase,

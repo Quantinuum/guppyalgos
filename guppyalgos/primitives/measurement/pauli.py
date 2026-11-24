@@ -13,18 +13,18 @@ from math import sqrt
 from typing import TextIO, cast, no_type_check
 
 import zixy.qubit.pauli as zqp
-
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, comptime, nat, output, owned
 from guppylang.std.quantum import collect_measurements, measure, measure_array, qubit
 
+from guppyalgos.algorithms.phase_estimation import hadamard_test
+from guppyalgos.primitives.pauli import pauli_to_cntrl_gate, pauli_to_z_basis
+
 from .stats import (
     BinaryShotEstimate,
     estimate_expectation_from_binary_samples,
 )
-from guppyalgos.algorithms.phase_estimation import hadamard_test
-from guppyalgos.primitives.pauli import pauli_to_cntrl_gate, pauli_to_z_basis
 
 
 @dataclass(frozen=True)

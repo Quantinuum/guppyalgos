@@ -7,18 +7,7 @@ from guppylang import guppy
 from guppylang.std.builtins import array, comptime
 from guppylang.std.quantum import discard, discard_array, qubit
 
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
 from guppyalgos.algorithms.block_encoding.lcu import LCUCntrl
-from guppyalgos.primitives.rotations import GivensCascadePhaseGradient
-from guppyalgos.algorithms.state_preparation.alias_sampling import (
-    AliasSamplingRegs,
-    alias_samp_prep,
-    discard_alias_sampling_garbage,
-)
-from guppyalgos.primitives.state_preparation.phase_gradient import (
-    Convention,
-    phase_gradient,
-)
 from guppyalgos.algorithms.block_encoding.thc import (
     SelectTHCCntrl,
     SelectTHCCntrlRegs,
@@ -27,8 +16,18 @@ from guppyalgos.algorithms.block_encoding.thc import (
     build_thc_lcu_data,
     load_select_registers,
 )
+from guppyalgos.algorithms.state_preparation.alias_sampling import (
+    AliasSamplingRegs,
+    alias_samp_prep,
+    discard_alias_sampling_garbage,
+)
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.rotations import GivensCascadePhaseGradient
+from guppyalgos.primitives.state_preparation.phase_gradient import (
+    Convention,
+    phase_gradient,
+)
 from guppyalgos.utils import qarray
-
 
 N_INDEX_QUBITS = 3
 N_ORBS = 3

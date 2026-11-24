@@ -11,7 +11,6 @@ from guppyalgos.algorithms.state_preparation.diagonal import (
 )
 from guppyalgos.testing import Endianness, assert_allclose_ignorephase, get_unitary
 
-
 # ---------------------------------------------------------------------------
 # Classical FWHT tests (no Guppy, fast)
 # ---------------------------------------------------------------------------

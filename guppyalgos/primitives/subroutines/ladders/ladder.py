@@ -2,8 +2,8 @@
 
 from enum import Enum
 
+from guppylang import array, guppy, qubit
 from guppylang.std.builtins import nat
-from guppylang import guppy, array, qubit
 
 
 @guppy.protocol

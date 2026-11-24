@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import zixy.qubit.pauli as zqp
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import crz, qubit, rz
-from guppylang.defs import GuppyFunctionDefinition
-import zixy.qubit.pauli as zqp
 
-from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
 from guppyalgos.algorithms.time_evolution.trotter.trotter_sequence import (
     cntrl_trotter_from_sequence,
     trotter_from_sequence,
 )
+from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
 
 
 def trotter_first_order[n_state_q: nat](

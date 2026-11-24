@@ -1,25 +1,23 @@
 """CNZ tests."""
 
-import numpy as np
-import pytest
-
 from typing import no_type_check
 
+import numpy as np
+import pytest
 from guppylang.decorator import guppy
 from guppylang.std.builtins import comptime
 from guppylang.std.debug import state_result
 from guppylang.std.quantum import discard, discard_array, h, qubit
 from selene_sim import Quest
 
-from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx_single_ancilla
 from guppyalgos.primitives.gate_decompositions.cnx.cnz import cnz
+from guppyalgos.primitives.utilities.gates import transversal
 from guppyalgos.testing import (
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )
+from guppyalgos.utils import int_to_bits, qarray
 from tests.primitives.gate_decompositions.cnx.test_cnx import CnxMethod
 
 

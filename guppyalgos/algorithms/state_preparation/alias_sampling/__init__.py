@@ -6,7 +6,6 @@ from .alias_prep import (
     discard_alias_sampling_garbage,
 )
 
-
 __all__ = [
     "AliasSamplingRegs",
     "alias_samp_prep",

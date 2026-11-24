@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
+import math
+from itertools import combinations
 from typing import no_type_check
 
 import numpy as np
-import math
-from itertools import combinations
 import pytest
 from guppylang import guppy
 from guppylang.std.debug import state_result
 from guppylang.std.quantum import discard_array
 
 from guppyalgos.primitives.state_preparation.dicke_state import dicke_nk
-from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
 )
+from guppyalgos.utils import qarray
 
 
 def get_dicke_state(n, k):

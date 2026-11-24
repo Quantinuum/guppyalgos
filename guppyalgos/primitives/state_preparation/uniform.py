@@ -1,21 +1,21 @@
 """Uniform state preparation for quantum algorithms."""
 
-from guppylang import guppy
-from guppylang.std.builtins import array, nat
-from guppylang.std.quantum import qubit, h, x, rz, discard
-from guppylang.std.angles import angle
-from guppylang.defs import GuppyFunctionDefinition
-from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
-from guppyalgos.primitives.measurement.utils import discard_array
-from guppyalgos.primitives.utilities.gates import transversal, apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from typing import no_type_check
+
 import numpy as np
+from guppylang import guppy
+from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array, nat
+from guppylang.std.quantum import discard, h, qubit, rz, x
+
 from guppyalgos.primitives.arithmetic.comparator import (
     comparator_ripple_cuccaro,
 )
-
-from typing import no_type_check
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.measurement.utils import discard_array
+from guppyalgos.primitives.utilities.gates import apply_bitstring, transversal
+from guppyalgos.utils import int_to_bits, qarray
 
 
 def uniform_state[n: nat](

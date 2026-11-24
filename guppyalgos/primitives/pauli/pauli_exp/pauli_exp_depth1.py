@@ -4,27 +4,26 @@ from __future__ import annotations
 
 from typing import no_type_check
 
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import array, comptime, nat, owned
 from guppylang.std.option import nothing, some
 from guppylang.std.quantum import (
+    collect_measurements,
     cx,
     h,
     measure,
     measure_array,
-    collect_measurements,
     qubit,
     rz,
     z,
 )
-from guppyalgos.primitives.utilities.gates import transversal, transversal2
 
-import zixy.qubit.pauli as zqp
-
-from guppyalgos.utils import qarray
 from guppyalgos.primitives.pauli import pauli_to_z_basis
+from guppyalgos.primitives.utilities.gates import transversal, transversal2
+from guppyalgos.utils import qarray
 
 
 @guppy

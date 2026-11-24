@@ -7,20 +7,20 @@ from math import ceil, log2
 from typing import no_type_check
 
 import numpy as np
-from numpy.typing import NDArray
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
 from guppylang.std.builtins import Function, array, nat
 from guppylang.std.quantum import h, qubit, s, sdg, toffoli, x
+from numpy.typing import NDArray
 
-from guppyalgos.primitives.utilities.gates import _cphase
 from guppyalgos.algorithms.select import (
     build_cntrl_select_unary_from_data,
     build_select_unary_from_data,
 )
 from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
+from guppyalgos.primitives.utilities.gates import _cphase
 
 
 @dataclass(frozen=True)

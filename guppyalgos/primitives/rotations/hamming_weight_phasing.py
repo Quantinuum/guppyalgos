@@ -2,11 +2,10 @@
 
 from typing import no_type_check
 
-from guppylang.std.builtins import nat
-
 from guppylang import array, guppy, qubit
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
+from guppylang.std.builtins import nat
 from guppylang.std.quantum import rz
 
 from guppyalgos.primitives.arithmetic.hamming_weight import (

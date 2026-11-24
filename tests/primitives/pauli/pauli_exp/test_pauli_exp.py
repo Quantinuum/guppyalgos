@@ -1,26 +1,21 @@
 """Pauli Exponential tests."""
 
 from __future__ import annotations
-from guppylang import guppy
 
-from guppylang.std.builtins import array
-from guppylang.std.angles import angle
-from guppylang.std.quantum import qubit, rz
+from typing import no_type_check
+
 import pytest
-
-from guppyalgos.primitives.subroutines.ladders import CXLadderLinear, Ladder
-
-
 import zixy.qubit.pauli as zqp
-
+from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array
+from guppylang.std.quantum import qubit, rz
 
 from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
-
-from guppyalgos.testing import get_unitary
+from guppyalgos.primitives.subroutines.ladders import CXLadderLinear, Ladder
+from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
 from tests.primitives.pauli.pauli_exp.pauli_exp_helpers import pauli_exp_matrix
-from guppyalgos.testing import assert_allclose_ignorephase
-from typing import no_type_check
 
 REPRESENTATIVE_2Q_STRINGS = [
     "X0 Y1",

@@ -6,18 +6,18 @@ from typing import no_type_check
 
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat, owned, Function
+from guppylang.std.builtins import Function, array, nat, owned
 from guppylang.std.quantum import cz, discard_array, h, measure_array, qubit, x
 
+from guppyalgos.algorithms.select import (
+    build_select_unary_from_data,
+    select_unary_iteration,
+)
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_basic, fanout_from_data
-from guppyalgos.algorithms.select import (
-    select_unary_iteration,
-    build_select_unary_from_data,
-)
 from guppyalgos.primitives.utilities.gates import transversal
 
 

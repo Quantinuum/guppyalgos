@@ -1,41 +1,37 @@
 """Tests for subtractors."""
 
-from typing import no_type_check
 from collections.abc import Callable
+from typing import no_type_check
 
-import pytest
 import numpy as np
-
+import pytest
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, output, nat
+from guppylang.defs import GuppyFunctionDefinition
+from guppylang.std.builtins import array, nat, output
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
+    discard,
     measure,
     measure_array,
-    discard,
     qubit,
     x,
 )
-from guppylang.defs import GuppyFunctionDefinition
-
 from selene_sim import Quest
 
 from guppyalgos.primitives.arithmetic import (
-    subtractor_ripple_cuccaro_carry_out,
-    subtractor_ripple_cuccaro_mod,
-    subtractor_ripple_gidney_carry_out,
-    subtractor_ripple_gidney_mod,
     cntrl_subtractor_ripple_cuccaro_carry_out,
     cntrl_subtractor_ripple_cuccaro_mod,
     cntrl_subtractor_ripple_gidney_carry_out,
     cntrl_subtractor_ripple_gidney_mod,
+    subtractor_ripple_cuccaro_carry_out,
+    subtractor_ripple_cuccaro_mod,
+    subtractor_ripple_gidney_carry_out,
+    subtractor_ripple_gidney_mod,
 )
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import project_state_onto_bitstring
-
+from guppyalgos.utils import int_to_bits, qarray
 
 ADDITION_CASES = (
     pytest.param(1, ((0, 0), (0, 1), (1, 1)), id="n1"),

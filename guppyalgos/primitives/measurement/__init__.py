@@ -1,14 +1,5 @@
 """Measurement helpers for sampling, discarding, statistics, and Pauli estimates."""
 
-from .utils import (
-    discard_nested_array,
-    discard_stack,
-    measure_stack,
-)
-from .stats import (
-    BinaryShotEstimate,
-    estimate_expectation_from_binary_samples,
-)
 from .pauli import (
     PauliObservableExpectationEstimate,
     estimate_pauli_observable_expectation_from_binary_samples,
@@ -17,7 +8,16 @@ from .pauli import (
     make_direct_measure_pauli_simple,
     make_hadamard_test_pauli,
 )
-from .qft_and_measure import qft_and_measure, iqft_and_measure
+from .qft_and_measure import iqft_and_measure, qft_and_measure
+from .stats import (
+    BinaryShotEstimate,
+    estimate_expectation_from_binary_samples,
+)
+from .utils import (
+    discard_nested_array,
+    discard_stack,
+    measure_stack,
+)
 
 __all__ = [
     "BinaryShotEstimate",

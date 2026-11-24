@@ -5,7 +5,9 @@ from __future__ import annotations
 import itertools
 from typing import no_type_check
 
+import numpy as np
 import pytest
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.std.angles import angle
 from guppylang.std.builtins import comptime
@@ -13,17 +15,11 @@ from guppylang.std.debug import state_result
 from guppylang.std.quantum import discard_array, h
 from selene_sim import QuantumReplay, Quest
 
-import zixy.qubit.pauli as zqp
-
 from guppyalgos.primitives.pauli.pauli_exp.pauli_exp_depth1 import pauli_exp_depth1
-from guppyalgos.utils import qarray
 from guppyalgos.primitives.utilities.gates import transversal
-
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import qarray
 from tests.primitives.pauli.pauli_exp.pauli_exp_helpers import pauli_exp_matrix
-
-import numpy as np
-
 
 REPRESENTATIVE_STRINGS = [
     ("I0 Z1", 2),

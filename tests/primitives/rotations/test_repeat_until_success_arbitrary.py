@@ -1,5 +1,7 @@
 """Test repeat-until-success Rz rotation with arbitrary angles."""
 
+from typing import no_type_check
+
 import numpy as np
 import pytest
 from guppylang import guppy
@@ -11,9 +13,6 @@ from guppyalgos.primitives.rotations import (
     dummy_theta_resource_state,
     repeat_until_success_rz,
 )
-
-
-from typing import no_type_check
 
 
 @pytest.mark.parametrize("ang", [0.1, 0.3, 0.5, 0.9])

@@ -23,25 +23,26 @@ from guppylang.std.quantum import (
 )
 from selene_sim import Quest
 
+from guppyalgos.algorithms.select.qrom import (
+    qrom_measure_uncompute,
+    qrom_unary_iteration,
+)
+from guppyalgos.algorithms.select.select_unary_iteration import (
+    get_index_bools,
+    msb_diff_depths,
+)
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
 from guppyalgos.primitives.subroutines.fanout import fanout_measurement_parity
-from guppyalgos.algorithms.select.qrom import qrom_unary_iteration
-from guppyalgos.algorithms.select.qrom import qrom_measure_uncompute
-from guppyalgos.algorithms.select.select_unary_iteration import (
-    get_index_bools,
-    msb_diff_depths,
-)
 from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )
+from guppyalgos.utils import int_to_bits, qarray
 
 
 def test_qrom_msb_diff_depths_follow_little_endian_order() -> None:

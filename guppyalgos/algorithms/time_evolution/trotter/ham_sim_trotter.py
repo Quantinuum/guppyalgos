@@ -1,9 +1,9 @@
 """Hamiltonian Simulation using Trotterization."""
 
 from guppylang import guppy
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, nat
 from guppylang.std.quantum import qubit
-from guppylang.defs import GuppyFunctionDefinition
 
 
 def ham_sim_trotter[n_state_q: nat](

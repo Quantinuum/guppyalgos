@@ -6,14 +6,15 @@ from typing import no_type_check
 import pytest
 from guppylang import guppy
 from guppylang.std.builtins import array, output
-from guppylang.std.quantum import measure, measure_array, qubit, x, collect_measurements
-from guppyalgos.utils import qarray
+from guppylang.std.quantum import collect_measurements, measure, measure_array, qubit, x
+
 from guppyalgos.primitives.arithmetic.incrementer.linear_depth_incrementer import (
     cntrl_linear_depth_decrementer,
     cntrl_linear_depth_incrementer,
     linear_depth_decrementer,
     linear_depth_incrementer,
 )
+from guppyalgos.utils import qarray
 
 
 def _little_endian_bits(value: int, num_bits: int) -> list[bool]:

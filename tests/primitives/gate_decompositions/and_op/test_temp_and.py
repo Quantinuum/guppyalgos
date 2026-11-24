@@ -1,34 +1,29 @@
 """Tests for temporary AND operations using different implementations."""
 
-import pytest
+from typing import no_type_check
 
+import pytest
 from guppylang.decorator import guppy
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import array, control, dagger, output
 from guppylang.std.quantum import (
-    measure_array,
-    qubit,
-    toffoli,
-    x,
-    measure,
     collect_measurements,
     cx,
     discard_array,
     h,
+    measure,
+    measure_array,
+    qubit,
+    toffoli,
+    x,
 )
-
-from guppyalgos.utils import int_to_bits
-from guppyalgos.utils import qarray
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and,
     temp_and_compute,
     temp_and_uncompute,
 )
-
-from guppylang.defs import GuppyFunctionDefinition
-
-
-from typing import no_type_check
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @pytest.mark.parametrize("comp_and_op", [toffoli, temp_and_compute])

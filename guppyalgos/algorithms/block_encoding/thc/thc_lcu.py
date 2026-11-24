@@ -18,8 +18,8 @@ from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 from .thc_helpers import (
     THCParameters,
-    build_thc_alias_terms,
     build_select_data,
+    build_thc_alias_terms,
     encode_combined_givens_rotations,
     encode_givens_rotations,
     validate_thc_parameters,

@@ -1,8 +1,8 @@
 """Initialization for the QPE module."""
 
 from .canonical_phase_estimation import (
-    qpe,
     iqpe,
+    qpe,
 )
 from .hadamard_test import hadamard_test
 from .qubitized_phase_estimation import (

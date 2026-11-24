@@ -1,19 +1,19 @@
 """Dynamic QFT tests."""
 
-import pytest
-import numpy as np
 from typing import no_type_check
+
+import numpy as np
+import pytest
 from guppylang.decorator import guppy
 from guppylang.std.builtins import array, dagger, result
+from guppylang.std.debug import state_output
+from guppylang.std.quantum import cx, discard_array, h, qubit, s
 
 from guppyalgos.primitives.measurement import iqft_and_measure, qft_and_measure
 from guppyalgos.primitives.subroutines.qft import qft
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits, bits_to_int
-from guppylang.std.quantum import discard_array, h, cx, s, qubit
-from guppylang.std.debug import state_output
 from guppyalgos.testing import get_statevector, switch_endianness
+from guppyalgos.utils import bits_to_int, int_to_bits, qarray
 
 
 @pytest.mark.parametrize("n_qubits", [1, 2, 3, 4, 5])

@@ -5,10 +5,11 @@ from typing import no_type_check
 from guppylang.decorator import guppy
 from guppylang.std.builtins import array, comptime, nat
 from guppylang.std.quantum import qubit
-from guppyalgos.algorithms.block_encoding.lcu.lcu import LCUCntrl, LCU
+
+from guppyalgos.algorithms.block_encoding.lcu.lcu import LCU, LCUCntrl
 from guppyalgos.primitives.subroutines.reflection.reflection_box import (
-    ReflectionCntrl,
     Reflection,
+    ReflectionCntrl,
 )
 
 

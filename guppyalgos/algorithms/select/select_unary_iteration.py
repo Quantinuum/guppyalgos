@@ -7,15 +7,14 @@ from typing import no_type_check
 from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.builtins import Function, Unitary, array, nat
-from guppylang.std.quantum import cx, qubit, reset, x, discard_array
+from guppylang.std.quantum import cx, discard_array, qubit, reset, x
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     and_pattern_controlled,
     temp_and_compute,
     temp_and_uncompute,
 )
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from guppyalgos.utils import int_to_bits, qarray
 
 
 def get_index_bools(

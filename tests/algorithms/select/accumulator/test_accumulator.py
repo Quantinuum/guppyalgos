@@ -13,9 +13,6 @@ correctness is validated on the final index and state registers.
 """
 
 from functools import cache
-
-from guppylang.emulator import EmulatorInstance
-
 from math import ceil, log2
 from typing import no_type_check
 
@@ -23,6 +20,7 @@ import numpy as np
 import pytest
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
+from guppylang.emulator import EmulatorInstance
 from guppylang.std.builtins import Function, array, output
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
@@ -49,14 +47,13 @@ from guppyalgos.primitives.gate_decompositions.and_op import (
 )
 from guppyalgos.primitives.state_preparation import uniform_state
 from guppyalgos.primitives.utilities.gates import transversal
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
     switch_endianness,
 )
+from guppyalgos.utils import int_to_bits, qarray
 
 
 # -----------------------------------------------------------------------------

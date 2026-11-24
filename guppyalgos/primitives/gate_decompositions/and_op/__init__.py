@@ -2,8 +2,9 @@
 
 from importlib import import_module
 
-from .and_pattern_controlled import and_pattern_controlled
 from guppyalgos.primitives.utilities.t_state import t_state
+
+from .and_pattern_controlled import and_pattern_controlled
 
 _and = import_module(".and", __name__)
 temp_and = _and.temp_and

@@ -2,9 +2,10 @@
 
 from typing import no_type_check
 
-from guppylang import guppy, qubit, comptime
+from guppylang import comptime, guppy, qubit
 from guppylang.std.builtins import array, nat, owned, panic
-from guppyalgos.utils.guppy.array import split_array, join_arrays
+
+from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 
 @guppy

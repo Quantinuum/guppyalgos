@@ -1,13 +1,13 @@
 """QFT tests."""
 
-import pytest
-import numpy as np
 from typing import no_type_check
 
+import numpy as np
+import pytest
 from guppylang.decorator import guppy
 from guppylang.std.builtins import array, control, dagger
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import qubit, x
+from guppylang.std.quantum import discard_array, h, qubit, x
 from numpy.typing import NDArray
 from selene_sim import QuantumReplay, Quest
 
@@ -15,13 +15,13 @@ from guppyalgos.primitives.state_preparation.uniform import uniform_state
 from guppyalgos.primitives.subroutines.qft import qft
 from guppyalgos.testing import (
     Endianness,
+    _statevector_with_zeroed_ancilla,
     assert_allclose_ignorephase,
     assert_unitary_modifiers,
     get_statevector,
     get_unitary,
     get_unitary_assumed_phase,
     switch_endianness,
-    _statevector_with_zeroed_ancilla,
 )
 from guppyalgos.utils import qarray
 from guppyalgos.utils.guppy.array import join_arrays, split_array
@@ -29,7 +29,6 @@ from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow,
     _unsafe_array_unborrow,
 )
-from guppylang.std.quantum import discard_array, h
 
 
 def qft_unitary_algebra(n_qubits: int) -> NDArray[np.complex128]:

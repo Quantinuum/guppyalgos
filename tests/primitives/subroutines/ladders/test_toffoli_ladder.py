@@ -8,9 +8,9 @@ from typing import Any, no_type_check
 import numpy as np
 import pytest
 from guppylang import guppy
-from guppylang.std.builtins import array, output
-from guppylang.std.debug import state_output
 from guppylang.std.angles import angle
+from guppylang.std.builtins import array, comptime, output
+from guppylang.std.debug import state_output
 from guppylang.std.quantum import (
     collect_measurements,
     discard_array,
@@ -18,12 +18,10 @@ from guppylang.std.quantum import (
     qubit,
     ry,
 )
-from guppylang.std.builtins import comptime
-from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from selene_sim import Quest
 
+from guppyalgos.primitives.state_preparation.uniform import uniform_state
+from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
 from guppyalgos.primitives.subroutines.ladders.toffoli_ladder import (
     ToffoliLadderLinear,
     ToffoliLadderLog,
@@ -31,10 +29,9 @@ from guppyalgos.primitives.subroutines.ladders.toffoli_ladder import (
     _lin_toffoli_ladder_indices,
     log_toffoli_ladder_num_ancilla,
 )
-from guppyalgos.primitives.subroutines.ladders.ladder import LadderIndexing
-from guppyalgos.primitives.state_preparation.uniform import uniform_state
-
+from guppyalgos.primitives.utilities.gates import apply_bitstring
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @pytest.mark.parametrize(

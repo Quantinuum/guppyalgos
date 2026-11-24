@@ -1,19 +1,18 @@
 """Pauli Exponential Gadget Implementation."""
 
 from __future__ import annotations
-from guppylang import guppy
 
-from guppylang.std.builtins import array, nat
+from typing import no_type_check
+
+import zixy.qubit.pauli as zqp
+from guppylang import guppy
+from guppylang.defs import GuppyFunctionDefinition
 from guppylang.std.angles import angle
-from guppylang.std.quantum import qubit, rz, crz
+from guppylang.std.builtins import array, nat
+from guppylang.std.quantum import crz, qubit, rz
 
 from guppyalgos.primitives.pauli import pauli_to_z_basis
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
-
-import zixy.qubit.pauli as zqp
-from typing import no_type_check
-
-from guppylang.defs import GuppyFunctionDefinition
 
 
 def pauli_exp[n_state_q: nat](

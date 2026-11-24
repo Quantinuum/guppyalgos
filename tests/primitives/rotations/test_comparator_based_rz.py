@@ -1,15 +1,15 @@
 """Tests for single-qubit rotation algorithm."""
 
-import numpy as np
-import pytest
 from math import ceil, log2, pi
 from typing import no_type_check
 
-from guppylang import guppy, comptime
+import numpy as np
+import pytest
+from guppylang import comptime, guppy
+from guppylang.std.angles import angle
 from guppylang.std.builtins import nothing, output, some
 from guppylang.std.debug import state_output
-from guppylang.std.angles import angle
-from guppylang.std.quantum import qubit, h, discard, toffoli
+from guppylang.std.quantum import discard, h, qubit, toffoli
 from selene_sim import QuantumReplay, Quest
 
 from guppyalgos.primitives.rotations import (

@@ -1,20 +1,19 @@
 """Tests for angle finder utils."""
 
+from collections.abc import Callable
 from typing import Any
 
-import pytest
-
 import numpy as np
+import pytest
 from numpy.typing import NDArray
-from collections.abc import Callable
 
 from guppyalgos.utils import (
     ChebyshevPolynomial,
-    FourierPolynomial,
-    QSPAngleFinder,
-    GQSPAngleFinder,
     CompilerPhasesNumba,
+    FourierPolynomial,
     FunctionParity,
+    GQSPAngleFinder,
+    QSPAngleFinder,
 )
 
 coeffs_dict: dict[int, NDArray[np.float64]] = {

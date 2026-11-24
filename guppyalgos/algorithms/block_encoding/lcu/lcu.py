@@ -1,6 +1,7 @@
 """LCU (Linear Combination of Unitaries) Guppy struct."""
 
 from typing import no_type_check
+
 from guppylang.decorator import guppy
 from guppylang.std.builtins import Function
 

@@ -1,10 +1,12 @@
 """Fanout based on log depth cx ladder."""
 
-from guppyalgos.primitives.subroutines.ladders import CXLadderLog
-from guppylang.std.builtins import nat
 from typing import no_type_check
-from guppylang import guppy, qubit, array
+
+from guppylang import array, guppy, qubit
+from guppylang.std.builtins import nat
 from guppylang.std.quantum import cx
+
+from guppyalgos.primitives.subroutines.ladders import CXLadderLog
 
 
 @guppy

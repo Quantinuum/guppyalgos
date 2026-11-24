@@ -1,15 +1,14 @@
 """Tests for the controlled adders."""
 
-from typing import no_type_check
 from collections.abc import Callable
+from typing import no_type_check
 
 import numpy as np
 import pytest
-
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, output, nat
-from guppylang.std.debug import state_result, state_output
+from guppylang.std.builtins import array, nat, output
+from guppylang.std.debug import state_output, state_result
 from guppylang.std.quantum import (
     collect_measurements,
     discard,
@@ -22,24 +21,22 @@ from guppylang.std.quantum import (
 from selene_sim import Quest
 
 from guppyalgos.primitives.arithmetic import (
-    cntrl_adder_ripple_gidney_mod,
-    cntrl_adder_ripple_gidney_carry_out,
-    cntrl_adder_ripple_gidney_mod_dagger,
-    cntrl_adder_ripple_gidney_carry_out_dagger,
-    cntrl_adder_ripple_cuccaro_mod,
     cntrl_adder_ripple_cuccaro_carry_out,
-    cntrl_adder_ripple_cuccaro_mod_dagger,
     cntrl_adder_ripple_cuccaro_carry_out_dagger,
+    cntrl_adder_ripple_cuccaro_mod,
+    cntrl_adder_ripple_cuccaro_mod_dagger,
+    cntrl_adder_ripple_gidney_carry_out,
+    cntrl_adder_ripple_gidney_carry_out_dagger,
+    cntrl_adder_ripple_gidney_mod,
+    cntrl_adder_ripple_gidney_mod_dagger,
 )
 from guppyalgos.primitives.utilities.gates import apply_bitstring
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )
-
+from guppyalgos.utils import int_to_bits, qarray
 
 ADDITION_CASES = (
     pytest.param(1, ((0, 0), (0, 1), (1, 1)), id="n1"),

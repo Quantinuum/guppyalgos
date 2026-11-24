@@ -8,10 +8,10 @@ from math import sqrt
 from typing import no_type_check
 
 import pytest
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.std.builtins import array, comptime
 from guppylang.std.quantum import discard_array, h, qubit, s, x
-import zixy.qubit.pauli as zqp
 
 from guppyalgos.primitives.measurement.pauli import (
     PauliObservableExpectationEstimate,

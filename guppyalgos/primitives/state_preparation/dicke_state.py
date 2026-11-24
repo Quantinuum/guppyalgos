@@ -5,9 +5,7 @@ from typing import no_type_check
 import numpy as np
 from guppylang import guppy
 from guppylang.std.builtins import array, comptime, nat
-from guppylang.std.quantum import angle, cx, qubit, x
-
-from guppylang.std.quantum import crz, rx
+from guppylang.std.quantum import angle, crz, cx, qubit, rx, x
 
 from guppyalgos.primitives.gate_decompositions.cnx.ccu import ccry_toffoli
 

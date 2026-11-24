@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from guppylang.decorator import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat, control, dagger
+from guppylang.std.builtins import array, control, dagger, nat
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import discard, discard_array, h, qubit
 from selene_sim import Quest
@@ -17,8 +17,8 @@ from guppyalgos.primitives.gate_decompositions.cnx.cnx import (
     _rtof4,
     _tof5,
     cnx,
-    cnx_toffoli_ladder,
     cnx_single_ancilla,
+    cnx_toffoli_ladder,
 )
 from guppyalgos.primitives.gate_decompositions.cnx.cnx_cca import (
     cat_cca,
@@ -26,16 +26,15 @@ from guppyalgos.primitives.gate_decompositions.cnx.cnx_cca import (
     cnx_cca_logdepth_dirty,
 )
 from guppyalgos.primitives.gate_decompositions.cnx.cnx_teleportation import (
-    cnx_teleportation,
     _get_num_ancillas_cnx_teleportation,
+    cnx_teleportation,
 )
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
 from guppyalgos.testing import (
     assert_unitary_modifiers,
     get_total_state_on_only_specified_registers,
     project_state_onto_bitstring,
 )
+from guppyalgos.utils import int_to_bits, qarray
 
 
 @dataclass

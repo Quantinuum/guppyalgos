@@ -1,18 +1,17 @@
 """Tests for first-order Trotterization implementation."""
 
-from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
+from typing import no_type_check
+
+import pytest
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.std.builtins import array
-from guppyalgos.testing import get_unitary
-from guppyalgos.testing import assert_allclose_ignorephase
-from guppyalgos.utils import trotter_step_matrix
 from guppylang.std.quantum import qubit
-import pytest
 from pytest_lazy_fixtures import lf as lazy_fixture
-import zixy.qubit.pauli as zqp
 
-
-from typing import no_type_check
+from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
+from guppyalgos.testing import assert_allclose_ignorephase, get_unitary
+from guppyalgos.utils import trotter_step_matrix
 
 
 @pytest.mark.parametrize(

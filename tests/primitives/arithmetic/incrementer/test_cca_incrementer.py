@@ -8,22 +8,22 @@ from guppylang import guppy
 from guppylang.std.builtins import array, control, dagger, output
 from guppylang.std.quantum import (
     collect_measurements,
+    discard_array,
     measure,
     measure_array,
-    x,
-    discard_array,
     qubit,
+    x,
 )
-from guppyalgos.utils import qarray
 
 from guppyalgos.primitives.arithmetic.incrementer.incrementer_cca import (
     cat_cca,
-    cca_incrementer,
     cca_decrementer,
-    cntrl_cca_incrementer,
+    cca_incrementer,
     cntrl_cca_decrementer,
+    cntrl_cca_incrementer,
     required_clean_ancillas,
 )
+from guppyalgos.utils import qarray
 
 
 def _little_endian_bits(value: int, num_bits: int) -> list[bool]:

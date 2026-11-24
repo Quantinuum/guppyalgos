@@ -23,16 +23,15 @@ from guppylang.std.builtins import Function, array, comptime, control, nat
 from guppylang.std.mem import mem_swap
 from guppylang.std.quantum import discard, qubit
 
+from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
+    cntrl_adder_ripple_gidney_mod,
+)
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
-from guppyalgos.primitives.arithmetic.adder.adder_ripple_gidney import (
-    cntrl_adder_ripple_gidney_mod,
-)
 from guppyalgos.primitives.utilities.gates import apply_bitstring, swap
-from guppyalgos.utils import qarray
-from guppyalgos.utils import int_to_bits
+from guppyalgos.utils import int_to_bits, qarray
 from guppyalgos.utils.guppy.unsafe_borrow import (
     _unsafe_array_borrow_slice,
     _unsafe_array_unborrow_slice,

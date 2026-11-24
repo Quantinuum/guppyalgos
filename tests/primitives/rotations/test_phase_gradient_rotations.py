@@ -10,18 +10,18 @@ from guppylang.std.quantum import discard, discard_array, qubit, x
 from selene_sim import Quest
 
 from guppyalgos.primitives.rotations import (
-    RotationPhaseGradient,
     RotationAxis,
     RotationAxisX,
     RotationAxisY,
     RotationAxisZ,
+    RotationPhaseGradient,
 )
 from guppyalgos.primitives.state_preparation.phase_gradient import (
     Convention,
     phase_gradient,
 )
-from guppyalgos.utils import qarray
 from guppyalgos.testing import assert_allclose_ignorephase
+from guppyalgos.utils import qarray
 
 
 def _axis_expected_state(theta: float, axis: str) -> np.ndarray:

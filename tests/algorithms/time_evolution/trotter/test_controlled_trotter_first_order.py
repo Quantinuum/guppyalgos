@@ -4,25 +4,24 @@ from __future__ import annotations
 
 from typing import no_type_check
 
+import numpy as np
+import pytest
+import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.std.angles import pi
 from guppylang.std.builtins import array
 from guppylang.std.debug import state_output
 from guppylang.std.quantum import crz, discard_array, h, qubit
-import numpy as np
-import pytest
 from pytest_lazy_fixtures import lf as lazy_fixture
-import zixy.qubit.pauli as zqp
 from scipy.linalg import expm
 
 from guppyalgos.algorithms.time_evolution.trotter import cntrl_trotter_first_order
-from guppyalgos.utils import qarray
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     get_statevector,
     get_unitary_projected,
 )
-from guppyalgos.utils import trotter_step_matrix
+from guppyalgos.utils import qarray, trotter_step_matrix
 
 
 def cntrl_trotter_blocks(

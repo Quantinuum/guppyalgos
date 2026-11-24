@@ -7,9 +7,9 @@ tests, and notebook analysis.
 
 from __future__ import annotations
 
-from numpy.typing import NDArray
 import numpy as np
 import zixy.qubit.pauli as zqp
+from numpy.typing import NDArray
 from scipy.linalg import expm
 
 
