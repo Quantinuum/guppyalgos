@@ -21,6 +21,7 @@ from guppylang.std.quantum import qubit, cx, x, toffoli, discard
 from guppylang.std.builtins import array, frozenarray, nat
 from guppyalgos.utils import qarray
 from guppyalgos.primitives.gate_decompositions.and_op import (
+    temp_and,
     temp_and_compute,
     temp_and_uncompute,
 )
@@ -87,7 +88,7 @@ def _unmajority_gate(a: qubit, b: qubit, c: qubit) -> None:
     cx(c, b)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def _maj_umaj_bottom_carry_out_gate(
     a: qubit, b: qubit, c: qubit, carry_out: qubit
@@ -123,62 +124,11 @@ def _maj_umaj_bottom_carry_out_gate(
     cx(a, b)
     cx(a, c)
 
-    temp_and_compute(c, b, carry_out)
+    temp_and(c, b, carry_out)
     cx(a, carry_out)
 
     cx(a, c)
     cx(c, b)
-
-
-@guppy
-@no_type_check
-def _maj_umaj_bottom_carry_out_inverse_gate(
-    a: qubit, b: qubit, c: qubit, carry_out: qubit, uncompute_carry_out: bool
-) -> None:
-    """Apply the merged final MAJ/UMAJ step of a ripple-carry subtractor.
-
-    This gate acts on the most-significant bit of the subtraction. It is
-    equivalent to applying a majority† gate, copying the resulting final
-    carry into ``carry_out``, and then applying the corresponding
-    unmajority gate.
-
-    The common operations in the MAJ and UMAJ gates are canceled, giving
-    the reduced sequence implemented below. The input qubits ``a``
-    and ``c`` are restored as required by the surrounding ripple, while
-    ``carry_out`` is flipped iff the addition produces a final carry.
-
-    Args:
-        a: Most-significant qubit of the first input register.
-        b: Most-significant qubit of the second input/output register.
-        c: Carry qubit from the preceding ripple stage.
-        carry_out: Output qubit receiving the final carry bit.
-        uncompute_carry_out: If `True`, uncompute the carry-out already stored in
-            `carry_out`. If `False`, `carry_out` must be a clean ancilla and is
-            populated with the carry-out produced by the inverse circuit.
-
-
-    Circuit:
-        a: ───────■───────■────■────■────
-                  │       │    │    │
-        b: ──X────┼───■───┼────┼────X─────
-             │    │   │   │    │    │
-        c: ──■────X───■───┼────X────■─────
-                      │   │
-        0: ───────────X───X───────────────
-
-    """
-    cx(c, b)
-    cx(a, c)
-
-    if uncompute_carry_out:
-        cx(a, carry_out)
-        temp_and_uncompute(c, b, carry_out)
-    else:
-        temp_and_compute(c, b, carry_out)
-        cx(a, carry_out)
-
-    cx(a, c)
-    cx(a, b)
 
 
 @guppy(unitary=True)
@@ -633,9 +583,13 @@ def _adder_ripple_cuccaro_carry_out_dagger_impl[n: nat](
         cx(a_reg[0], b_reg[0])
         temp_and_compute(a_reg[0], b_reg[0], ancilla)
 
-        _maj_umaj_bottom_carry_out_inverse_gate(
-            a_reg[1], b_reg[1], ancilla, carry_out, uncompute_carry_out
-        )
+        if uncompute_carry_out:
+            with dagger:
+                _maj_umaj_bottom_carry_out_gate(a_reg[1], b_reg[1], ancilla, carry_out)
+        else:
+            x(b_reg[1])
+            _maj_umaj_bottom_carry_out_gate(a_reg[1], b_reg[1], ancilla, carry_out)
+            x(b_reg[1])
 
         # Boundary MAJ†: uncompute the clean ancilla.
         temp_and_uncompute(a_reg[0], b_reg[0], ancilla)
