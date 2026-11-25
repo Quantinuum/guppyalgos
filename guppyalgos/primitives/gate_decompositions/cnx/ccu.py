@@ -11,7 +11,7 @@ from .cnu import MultiCntrlFunctionParams
 from typing import no_type_check
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccx(control1: qubit, control2: qubit, target: qubit) -> None:
     """CCX gate implementation.
@@ -38,22 +38,22 @@ def ccx(control1: qubit, control2: qubit, target: qubit) -> None:
     ccu_phase_correction(control1, control2)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccy(control1: qubit, control2: qubit, target: qubit) -> None:
     """CCY gate implementation.
 
     .. code-block:: text
 
-                                                                         ┌───┐
-        control1:  ——──────────────────────■─────—──────────────■────■───┤ T ├───■──
-                                          │                     │    │   └───┘   │
-                                          │             ┌───┐   │  ┌─┴─┐┌─────┐┌─┴─┐
-        control2:  ───────────■───────────┼─────────■───┤ T ├───┼──┤ X ├┤ Tdg ├┤ X ├─
-                              │           │         │   └───┘   │  └───┘└─────┘└───┘
-                  ┌───┐┌───┐┌─┴─┐┌─────┐┌─┴─┐┌───┐┌─┴─┐┌─────┐┌─┴─┐┌───┐┌───┐┌─────┐
-        target:   ┤ S ├┤ H ├┤ X ├┤ Tdg ├┤ X ├┤ T ├┤ X ├┤ Tdg ├┤ X ├┤ T ├┤ H ├┤ Sdg ├
-                  └───┘└───┘└───┘└─────┘└───┘└───┘└───┘└─────┘└───┘└───┘└───┘└─────┘
+                                                                           ┌───┐
+        control1: ──────────────────────────■─────────────────────■────■───┤ T ├───■──
+                                            │                     │    │   └───┘   │
+                                            │             ┌───┐   │  ┌─┴─┐┌─────┐┌─┴─┐
+        control2: ──────────────■───────────┼─────────■───┤ T ├───┼──┤ X ├┤ Tdg ├┤ X ├─
+                                │           │         │   └───┘   │  └───┘└─────┘└───┘
+                  ┌─────┐┌───┐┌─┴─┐┌─────┐┌─┴─┐┌───┐┌─┴─┐┌─────┐┌─┴─┐┌───┐┌───┐┌───┐
+        target:   ┤ Sdg ├┤ H ├┤ X ├┤ Tdg ├┤ X ├┤ T ├┤ X ├┤ Tdg ├┤ X ├┤ T ├┤ H ├┤ S ├───
+                  └─────┘└───┘└───┘└─────┘└───┘└───┘└───┘└─────┘└───┘└───┘└───┘└───┘
 
     Args:
         target: The target qubit.
@@ -61,12 +61,12 @@ def ccy(control1: qubit, control2: qubit, target: qubit) -> None:
         control2: The second control qubit.
 
     """
-    s(target)
-    ccx(control1, control2, target)
     sdg(target)
+    ccx(control1, control2, target)
+    s(target)
 
 
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def ccz(control1: qubit, control2: qubit, target: qubit) -> None:
     """CCZ gate implementation.
