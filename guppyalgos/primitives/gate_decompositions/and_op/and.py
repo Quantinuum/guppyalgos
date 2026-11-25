@@ -20,7 +20,7 @@ from guppyalgos.utils import qarray
 
 
 @guppy.unitary
-class temp_and:  # noqa: D101 -- Guppy requires the docstring on __call__.
+class temp_and:  # noqa
     @guppy
     @no_type_check
     def __call__(q0: qubit, q1: qubit, target_q: qubit) -> None:
