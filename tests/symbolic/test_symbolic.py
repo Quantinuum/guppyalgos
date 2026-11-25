@@ -1,4 +1,5 @@
 """Verify the classical reversible circuits of guppyalgos against their specs."""
+
 from enum import Enum, auto
 
 import gc
@@ -161,7 +162,9 @@ class UnitaryFlags(Enum):
 
     Unitary = Control | Dagger
 
+
 def unitary_flags_to_kwargs(flag: UnitaryFlags):
+    """Convert UnitaryFlags into kwargs to pass into `guppy` decorator."""
     match flag:
         case UnitaryFlags.NoFlags:
             return {}
@@ -170,9 +173,9 @@ def unitary_flags_to_kwargs(flag: UnitaryFlags):
         case UnitaryFlags.Dagger:
             return {"daggerable", True}
         case UnitaryFlags.Unitary:
-            return {"unitary" :True}
-    
-        
+            return {"unitary": True}
+
+
 # wrappers of library functions that wrap() cannot call as they are
 
 

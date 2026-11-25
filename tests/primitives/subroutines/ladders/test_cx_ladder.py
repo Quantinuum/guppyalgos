@@ -7,13 +7,12 @@ from typing import Any, no_type_check
 import numpy as np
 import pytest
 from guppylang import comptime, guppy
-from guppylang.std.builtins import array, control, dagger
+from guppylang.std.builtins import array, dagger
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import discard, discard_array, qubit
+from guppylang.std.quantum import discard_array, qubit
 from selene_sim import Quest
 
 from guppyalgos.primitives.state_preparation.uniform import uniform_state
-from guppyalgos.primitives.subroutines.ladders import Ladder
 from guppyalgos.primitives.subroutines.ladders.cx_ladder import (
     CXLadderLinear,
     CXLadderLog,
