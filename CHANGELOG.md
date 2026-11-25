@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.3.0](https://github.com/Quantinuum/guppyalgos/compare/v0.2.0...v0.3.0) (2026-11-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate ccx_rel_phase to unitary modifiers ([#216](https://github.com/Quantinuum/guppyalgos/issues/216))
+* migrate rotation helpers to unitary modifiers ([#133](https://github.com/Quantinuum/guppyalgos/issues/133))
+* migrate qft to public modifier API ([#205](https://github.com/Quantinuum/guppyalgos/issues/205))
+* Modify phase gate, merging it with cphase ([#167](https://github.com/Quantinuum/guppyalgos/issues/167))
+* migrate phase primitives to unitary modifiers ([#119](https://github.com/Quantinuum/guppyalgos/issues/119))
+* migrate half-adder inverse calls to dagger ([#121](https://github.com/Quantinuum/guppyalgos/issues/121))
+* use guppylang built-in tan for ComparatorBasedRz ([#159](https://github.com/Quantinuum/guppyalgos/issues/159))
+* Add unitary modifiers to transversal ([#137](https://github.com/Quantinuum/guppyalgos/issues/137))
+* reflection type level arithmetic ([#152](https://github.com/Quantinuum/guppyalgos/issues/152))
+
+### Features
+
+* add conjugation boxes with custom unitary modifiers ([#201](https://github.com/Quantinuum/guppyalgos/issues/201)) ([2273019](https://github.com/Quantinuum/guppyalgos/commit/2273019996a3e16cf9c4edec2e3413f6c55300d6))
+* add explicit qubitized power oracle modifiers ([#204](https://github.com/Quantinuum/guppyalgos/issues/204)) ([af0c210](https://github.com/Quantinuum/guppyalgos/commit/af0c2100f86569dad3fdc1438e61eef98d475d65))
+* add modifiers to basic fanout and parity ([#132](https://github.com/Quantinuum/guppyalgos/issues/132)) ([6f27fb0](https://github.com/Quantinuum/guppyalgos/commit/6f27fb04fc0f196a0d5bc964de83a4e0cab25af1))
+* add parameterized multi-controlled function composition ([#110](https://github.com/Quantinuum/guppyalgos/issues/110)) ([ad11380](https://github.com/Quantinuum/guppyalgos/commit/ad11380c865e8fa86cf4f53f664497d6d2cf32e9))
+* add unitary modifiers to bitstring operations ([#131](https://github.com/Quantinuum/guppyalgos/issues/131)) ([bef3dee](https://github.com/Quantinuum/guppyalgos/commit/bef3deef3af2d77b0ce595402c5e829923dba584))
+* Add unitary modifiers to transversal ([#137](https://github.com/Quantinuum/guppyalgos/issues/137)) ([f941ec1](https://github.com/Quantinuum/guppyalgos/commit/f941ec1f2b74352f8441a44b70b85b34c29281b4))
+* Add unitary swap gate ([#138](https://github.com/Quantinuum/guppyalgos/issues/138)) ([311f0d4](https://github.com/Quantinuum/guppyalgos/commit/311f0d4e2240fd8c90329733423e29234ce51e6d))
+* expose unitary modifiers for controlled rotations ([#120](https://github.com/Quantinuum/guppyalgos/issues/120)) ([a556416](https://github.com/Quantinuum/guppyalgos/commit/a556416f7bdf89e119c6209751df58be6cd3c22d))
+* generate modifiers for preparation circuits ([#134](https://github.com/Quantinuum/guppyalgos/issues/134)) ([8bac733](https://github.com/Quantinuum/guppyalgos/commit/8bac733142314f50f9a5cc5e436d792179fd8630))
+* migrate ccx, ccy, ccz to unitary modifiers and fix the ccy sign ([#219](https://github.com/Quantinuum/guppyalgos/issues/219)) ([9f5e703](https://github.com/Quantinuum/guppyalgos/commit/9f5e70324b7c26c1123d265a57e135312f3e15ea))
+* migrate half-adder inverse calls to dagger ([#121](https://github.com/Quantinuum/guppyalgos/issues/121)) ([158a5e5](https://github.com/Quantinuum/guppyalgos/commit/158a5e50a00f66584884347c72f7e1e2aabca8b4))
+* migrate phase primitives to unitary modifiers ([#119](https://github.com/Quantinuum/guppyalgos/issues/119)) ([1ddc121](https://github.com/Quantinuum/guppyalgos/commit/1ddc12130b16a78294d3894eb4b27ce40de1bada))
+* migrate qft to public modifier API ([#205](https://github.com/Quantinuum/guppyalgos/issues/205)) ([5a8e506](https://github.com/Quantinuum/guppyalgos/commit/5a8e506c99ef2cc45a82d25a859ea0480d5e95a0))
+* migrate rotation helpers to unitary modifiers ([#133](https://github.com/Quantinuum/guppyalgos/issues/133)) ([36ea102](https://github.com/Quantinuum/guppyalgos/commit/36ea102fe108579fc4f363bcc9429b3b70437003))
+* migrate small CNX helpers to unitary modifiers ([#130](https://github.com/Quantinuum/guppyalgos/issues/130)) ([7399b08](https://github.com/Quantinuum/guppyalgos/commit/7399b080f60f5414dbcd2f9912d284d75ed03f32))
+* modify cnxs ([#199](https://github.com/Quantinuum/guppyalgos/issues/199)) ([0b574c5](https://github.com/Quantinuum/guppyalgos/commit/0b574c5dac9c23e8e38c6c927778d1ba45bb0cb0))
+* modify fanout_log ([#221](https://github.com/Quantinuum/guppyalgos/issues/221)) ([c8d14d0](https://github.com/Quantinuum/guppyalgos/commit/c8d14d0f190d6d32d4eaf2ac223d5fad895fe1ee))
+* Modify phase gate, merging it with cphase ([#167](https://github.com/Quantinuum/guppyalgos/issues/167)) ([793f5ed](https://github.com/Quantinuum/guppyalgos/commit/793f5edf229038da933641fb0ff00e658c34b220))
+* partial toffoli ladder cnx ([#158](https://github.com/Quantinuum/guppyalgos/issues/158)) ([ac3852d](https://github.com/Quantinuum/guppyalgos/commit/ac3852d7a960ab69c71cf76766e7a165b1e21f8e))
+* unitary indexed and ([#206](https://github.com/Quantinuum/guppyalgos/issues/206)) ([7fd16ee](https://github.com/Quantinuum/guppyalgos/commit/7fd16eeeac9ba2a10a69a77b3c74c67ef177c28c))
+
+
+### Bug Fixes
+
+* **docs:** fixes to LaTeX syntax in docstrings ([#214](https://github.com/Quantinuum/guppyalgos/issues/214)) ([d2b8d05](https://github.com/Quantinuum/guppyalgos/commit/d2b8d0522329c4a30cfcde6a8bc233bd7403bf5c))
+* **docs:** remove large output from notebook ([#226](https://github.com/Quantinuum/guppyalgos/issues/226)) ([df133ca](https://github.com/Quantinuum/guppyalgos/commit/df133ca86ff750ad9a4604f8cc1c4ba858c32fcf))
+* remove the relative phase of the controlled Cuccaro carry-out dagger at n=1 ([#97](https://github.com/Quantinuum/guppyalgos/issues/97)) ([ef34480](https://github.com/Quantinuum/guppyalgos/commit/ef344803f0772e7c4ecbb76ce905ed9136f460b7))
+* support descending Toffoli ladders on 1 qubit ([#123](https://github.com/Quantinuum/guppyalgos/issues/123)) ([3798877](https://github.com/Quantinuum/guppyalgos/commit/3798877a8474047216a913852d5af7cbd3a9c04a))
+
+
+### Code Refactoring
+
+* migrate ccx_rel_phase to unitary modifiers ([#216](https://github.com/Quantinuum/guppyalgos/issues/216)) ([fdf9611](https://github.com/Quantinuum/guppyalgos/commit/fdf9611456605bc6f12bda7faa8e5e24d96b00c8))
+* reflection type level arithmetic ([#152](https://github.com/Quantinuum/guppyalgos/issues/152)) ([6d0ef48](https://github.com/Quantinuum/guppyalgos/commit/6d0ef4888b39fa0b3d2c34431680f60fde1cd43d))
+* use guppylang built-in tan for ComparatorBasedRz ([#159](https://github.com/Quantinuum/guppyalgos/issues/159)) ([c2bf4e7](https://github.com/Quantinuum/guppyalgos/commit/c2bf4e7f540e12e89040d2e50baa416091f3de3b))
+
 ## [0.2.0](https://github.com/Quantinuum/guppyalgos/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
