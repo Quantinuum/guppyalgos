@@ -19,9 +19,6 @@ from guppyalgos.utils import qarray
 from guppyalgos.primitives.arithmetic.incrementer.incrementer_cca import (
     cat_cca,
     cca_incrementer,
-    cca_decrementer,
-    cntrl_cca_incrementer,
-    cntrl_cca_decrementer,
     required_clean_ancillas,
 )
 
@@ -116,7 +113,7 @@ def test_cca_incrementer(num_bits: int, values: list[int]) -> None:
     ],
 )
 @pytest.mark.symbolic_alternative
-def test_cca_decrementer(num_bits: int, values: list[int]) -> None:
+def test_cca_incrementer_dagger(num_bits: int, values: list[int]) -> None:
     """Decrement an m-bit register using conditionally clean ancillas."""
     num_ancillas = required_clean_ancillas(num_bits)
 
@@ -129,7 +126,8 @@ def test_cca_decrementer(num_bits: int, values: list[int]) -> None:
             if bits[i]:
                 x(q[i])
 
-        cca_decrementer(q)
+        with dagger:
+            cca_incrementer(q)
 
         output(
             "out",
@@ -153,39 +151,39 @@ def test_cca_decrementer(num_bits: int, values: list[int]) -> None:
         (6, [1, 63, 126, 127]),
     ],
 )
-@pytest.mark.parametrize("dagger", [False, True])
+@pytest.mark.parametrize("inverse", [False, True])
 @pytest.mark.symbolic_alternative
 def test_cntrl_cca_incrementer(
     num_bits: int,
     values: list[int],
-    dagger: bool,
+    inverse: bool,
 ) -> None:
     """Increment/decrement iff all control qubits are set."""
     num_controls = 1
 
-    num_ancillas_big = required_clean_ancillas(num_bits + num_controls)
-    num_ancillas_small = required_clean_ancillas(num_controls)
-    num_ancillas = num_ancillas_big + num_ancillas_small + 1
+    num_ancillas = required_clean_ancillas(num_bits + num_controls)
 
     @guppy
     @no_type_check
     def main(bits: array[bool, num_bits], control_on: bool) -> None:
-        control = qubit()
+        ctrl = qubit()
         q = qarray(num_bits)
 
         if control_on:
-            x(control)
+            x(ctrl)
 
         for i in range(num_bits):
             if bits[i]:
                 x(q[i])
 
-        if not dagger:
-            cntrl_cca_incrementer(control, q)
-        else:
-            cntrl_cca_decrementer(control, q)
+        with control(ctrl):
+            if inverse:
+                with dagger:
+                    cca_incrementer(q)
+            else:
+                cca_incrementer(q)
 
-        output("ctrl", measure(control).read())
+        output("ctrl", measure(ctrl).read())
         output("out", collect_measurements(measure_array(q)))
 
     emulator = (
@@ -196,7 +194,7 @@ def test_cntrl_cca_incrementer(
     for control_on in [False, True]:
         for value in values:
             value %= 1 << num_bits
-            delta = -1 if dagger else 1
+            delta = -1 if inverse else 1
             expected_value = (value + delta) % (1 << num_bits) if control_on else value
             expected = _output_string(expected_value, num_bits)
             expected_ctrl = _output_string(control_on, num_controls)
@@ -205,7 +203,7 @@ def test_cntrl_cca_incrementer(
             )
             assert result.collated_counts() == Counter(
                 {(("ctrl", expected_ctrl), ("out", expected)): 10}
-            ), (value, control_on, dagger)
+            ), (value, control_on, inverse)
 
 
 def test_cat_cca_modifier_compilation() -> None:

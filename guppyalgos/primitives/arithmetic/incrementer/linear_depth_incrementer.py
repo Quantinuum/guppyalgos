@@ -3,13 +3,12 @@
 from typing import no_type_check
 
 from guppylang.decorator import guppy
-from guppylang.std.builtins import array, comptime, nat
+from guppylang.std.builtins import array, comptime, dagger, nat
 from guppylang.std.quantum import cx, discard, qubit, x
 
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.gate_decompositions.cnx.cnu import MultiCntrlFunctionParams
 
 
 @guppy
@@ -26,9 +25,10 @@ def _incrementer_aux[n_q: nat](
         return
 
     next_carry = qubit()
-    temp_and_compute(carry, q[bit_idx], next_carry)
+    temp_and(carry, q[bit_idx], next_carry)
     _incrementer_aux(q, next_carry, bit_idx + 1, last_idx)
-    temp_and_uncompute(carry, q[bit_idx], next_carry)
+    with dagger:
+        temp_and(carry, q[bit_idx], next_carry)
     discard(next_carry)
     cx(carry, q[bit_idx])
 
@@ -46,28 +46,18 @@ def _compute_active_bits(max_value: int, n_q: nat @ comptime) -> int:
     return active_bits
 
 
-@guppy
-@no_type_check
-def _get_max_value(n: nat @ comptime) -> int:
-    result = 1
-    for _ in range(n):
-        result = result * 2
-
-    return result
-
-
-@guppy
+@guppy(unitary=True)
 @no_type_check
 def linear_depth_incrementer_1[n_q: nat](
     q: array[qubit, n_q],
 ) -> None:
     """Call the incrementer using the full register range."""
-    linear_depth_incrementer(q, _get_max_value(n_q))
+    linear_depth_incrementer(q, comptime(2**n_q - 1))
 
 
 @guppy
 @no_type_check
-def linear_depth_incrementer_2[n_q: nat](
+def _linear_depth_incrementer_kernel[n_q: nat](
     q: array[qubit, n_q],
     max_value: int,
 ) -> None:
@@ -92,33 +82,18 @@ def linear_depth_incrementer_2[n_q: nat](
         return
 
     carry = qubit()
-    temp_and_compute(q[0], q[1], carry)
+    temp_and(q[0], q[1], carry)
     _incrementer_aux(q, carry, 2, active_bits - 1)
-    temp_and_uncompute(q[0], q[1], carry)
+    with dagger:
+        temp_and(q[0], q[1], carry)
     discard(carry)
     cx(q[0], q[1])
     x(q[0])
 
 
-@guppy.overload(linear_depth_incrementer_1, linear_depth_incrementer_2)
-def linear_depth_incrementer() -> None:
-    """Support incrementer calls with or without `max_value`."""
-    ...
-
-
 @guppy
 @no_type_check
-def cntrl_linear_depth_incrementer_1[n_q: nat](
-    control: qubit,
-    q: array[qubit, n_q],
-) -> None:
-    """Call the controlled incrementer using the full register range."""
-    cntrl_linear_depth_incrementer(control, q, _get_max_value(n_q))
-
-
-@guppy
-@no_type_check
-def cntrl_linear_depth_incrementer_2[n_q: nat](
+def _controlled_incrementer_kernel[n_q: nat](
     control: qubit,
     q: array[qubit, n_q],
     max_value: int,
@@ -144,91 +119,85 @@ def cntrl_linear_depth_incrementer_2[n_q: nat](
         return
 
     carry = qubit()
-    temp_and_compute(control, q[0], carry)
+    temp_and(control, q[0], carry)
     _incrementer_aux(q, carry, 1, active_bits - 1)
-    temp_and_uncompute(control, q[0], carry)
+    with dagger:
+        temp_and(control, q[0], carry)
     discard(carry)
     cx(control, q[0])
 
 
-@guppy.overload(cntrl_linear_depth_incrementer_1, cntrl_linear_depth_incrementer_2)
-def cntrl_linear_depth_incrementer() -> None:
-    """Overloaded function to support different signatures."""
-    ...
-
-
 @guppy
 @no_type_check
-def linear_depth_decrementer_1[n_q: nat](
-    q: array[qubit, n_q],
-) -> None:
-    """Call the decrementer using the full register range."""
-    linear_depth_decrementer(q, _get_max_value(n_q))
-
-
-@guppy
-@no_type_check
-def linear_depth_decrementer_2[n_q: nat](
+def _controlled_incrementer[n_q: nat, n_controls: nat](
     q: array[qubit, n_q],
     max_value: int,
+    controls: array[qubit, n_controls],
+    inverse: bool @ comptime,
 ) -> None:
-    """Decrement a little-endian register via X-increment-X.
-
-    Args:
-        q (array[qubit, n_q]): qubit array to decrement
-        max_value (int): maximum value held on q at the time this function is called.
-
-    """
+    """Share the optimized carry chain and compute the joint control only once."""
     active_bits = _compute_active_bits(max_value, n_q)
+    if inverse:
+        for i in range(active_bits):
+            x(q[i])
 
-    for i in range(active_bits):
-        x(q[i])
-    linear_depth_incrementer(q, max_value)
-    for i in range(active_bits):
-        x(q[i])
+    operation = MultiCntrlFunctionParams[n_controls, array[qubit, n_q], int](
+        _controlled_incrementer_kernel[n_q], cnx[n_controls]
+    )
+    operation.compose(controls, q, max_value)
 
-
-@guppy.overload(linear_depth_decrementer_1, linear_depth_decrementer_2)
-def linear_depth_decrementer() -> None:
-    """Support decrementer calls with or without `max_value`."""
-    ...
-
-
-@guppy
-@no_type_check
-def cntrl_linear_depth_decrementer_1[n_q: nat](
-    control: qubit,
-    q: array[qubit, n_q],
-) -> None:
-    """Call the controlled decrementer using the full register range."""
-    cntrl_linear_depth_decrementer(control, q, _get_max_value(n_q))
+    if inverse:
+        for i in range(active_bits):
+            x(q[i])
 
 
-@guppy
-@no_type_check
-def cntrl_linear_depth_decrementer_2[n_q: nat](
-    control: qubit,
-    q: array[qubit, n_q],
-    max_value: int,
-) -> None:
-    """Decrement a quantum register iff a control qubit is 1.
+@guppy.unitary
+class linear_depth_incrementer_2[n_q: nat]:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(q: array[qubit, n_q], max_value: int) -> None:
+        """Increment the active low bits, preserving higher bits.
 
-    Args:
-        control (qubit): control qubit
-        q (array[qubit, n_q]): qubit array to decrement
-        max_value (int): maximum value held on q at the time this function is called.
+        ``max_value`` is the inclusive bound on the input value. The active
+        width includes room for ``max_value + 1``, capped at the register width.
+        Arithmetic wraps modulo that active width; at least one qubit is required.
+        Temporary carries are cleaned with measurement-based temporary ANDs.
+        """
+        _linear_depth_incrementer_kernel(q, max_value)
 
-    """
-    active_bits = _compute_active_bits(max_value, n_q)
+    @guppy
+    @no_type_check
+    def daggered(q: array[qubit, n_q], max_value: int) -> None:
+        """Decrement over the same active width using X-increment-X.
 
-    for i in range(active_bits):
-        x(q[i])
-    cntrl_linear_depth_incrementer(control, q, max_value)
-    for i in range(active_bits):
-        x(q[i])
+        The bound selects the same width in both directions, including underflow.
+        Custom reversal preserves measurement-based cleanup in the recursive chain.
+        """
+        active_bits = _compute_active_bits(max_value, n_q)
+        for i in range(active_bits):
+            x(q[i])
+        linear_depth_incrementer(q, max_value)
+        for i in range(active_bits):
+            x(q[i])
+
+    @guppy
+    @no_type_check
+    def controlled[n_controls: nat](
+        q: array[qubit, n_q], max_value: int, controls: array[qubit, n_controls]
+    ) -> None:
+        """Increment iff every external control is set, restoring all workspace."""
+        _controlled_incrementer(q, max_value, controls, False)
+
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n_controls: nat](
+        q: array[qubit, n_q], max_value: int, controls: array[qubit, n_controls]
+    ) -> None:
+        """Decrement iff every external control is set."""
+        _controlled_incrementer(q, max_value, controls, True)
 
 
-@guppy.overload(cntrl_linear_depth_decrementer_1, cntrl_linear_depth_decrementer_2)
-def cntrl_linear_depth_decrementer() -> None:
-    """Support controlled decrementer calls with or without `max_value`."""
+@guppy.overload(linear_depth_incrementer_1, linear_depth_incrementer_2)
+def linear_depth_incrementer() -> None:
+    """Increment with optional `max_value`, supporting `control` and `dagger`."""
     ...

@@ -16,19 +16,12 @@ from __future__ import annotations
 from typing import no_type_check
 
 from guppylang import guppy
-from guppylang.std.builtins import array, comptime, nat, panic
-from guppylang.std.quantum import cx, discard, discard_array, qubit, toffoli, x
-from guppylang.std.mem import mem_swap
-from guppyalgos.primitives.gate_decompositions.and_op import (
-    temp_and_compute,
-    temp_and_uncompute,
-)
+from guppylang.std.builtins import array, comptime, dagger, nat, panic
+from guppylang.std.quantum import cx, discard_array, qubit, toffoli, x
+from guppyalgos.primitives.gate_decompositions.and_op import temp_and
+from guppyalgos.primitives.gate_decompositions.cnx.cnx import cnx
+from guppyalgos.primitives.gate_decompositions.cnx.cnu import MultiCntrlFunction
 from guppyalgos.utils import qarray
-from guppyalgos.utils.guppy.unsafe_borrow import (
-    _unsafe_array_borrow,
-    _unsafe_array_unborrow,
-)
-from guppyalgos.utils.guppy.array import join_arrays, split_array
 
 
 @guppy(unitary=True)
@@ -276,22 +269,22 @@ def _temp_and_compute_at[n_q: nat, n_a: nat](
 
     if control0 < n_q:
         if control1 < n_q:
-            temp_and_compute(q[control0], q[control1], ancilla[ancilla_target])
+            temp_and(q[control0], q[control1], ancilla[ancilla_target])
         else:
-            temp_and_compute(
+            temp_and(
                 q[control0],
                 ancilla[control1 - n_q],
                 ancilla[ancilla_target],
             )
     else:
         if control1 < n_q:
-            temp_and_compute(
+            temp_and(
                 ancilla[control0 - n_q],
                 q[control1],
                 ancilla[ancilla_target],
             )
         else:
-            temp_and_compute(
+            temp_and(
                 ancilla[control0 - n_q],
                 ancilla[control1 - n_q],
                 ancilla[ancilla_target],
@@ -324,26 +317,30 @@ def _temp_and_uncompute_at[n_q: nat, n_a: nat](
 
     if control0 < n_q:
         if control1 < n_q:
-            temp_and_uncompute(q[control0], q[control1], ancilla[ancilla_target])
+            with dagger:
+                temp_and(q[control0], q[control1], ancilla[ancilla_target])
         else:
-            temp_and_uncompute(
-                q[control0],
-                ancilla[control1 - n_q],
-                ancilla[ancilla_target],
-            )
+            with dagger:
+                temp_and(
+                    q[control0],
+                    ancilla[control1 - n_q],
+                    ancilla[ancilla_target],
+                )
     else:
         if control1 < n_q:
-            temp_and_uncompute(
-                ancilla[control0 - n_q],
-                q[control1],
-                ancilla[ancilla_target],
-            )
+            with dagger:
+                temp_and(
+                    ancilla[control0 - n_q],
+                    q[control1],
+                    ancilla[ancilla_target],
+                )
         else:
-            temp_and_uncompute(
-                ancilla[control0 - n_q],
-                ancilla[control1 - n_q],
-                ancilla[ancilla_target],
-            )
+            with dagger:
+                temp_and(
+                    ancilla[control0 - n_q],
+                    ancilla[control1 - n_q],
+                    ancilla[ancilla_target],
+                )
 
 
 @guppy.struct
@@ -1092,7 +1089,7 @@ def _cca_incrementer_with_ancillas[
 
 @guppy
 @no_type_check
-def cca_incrementer[n_q: nat](
+def _cca_incrementer_kernel[n_q: nat](
     q: array[qubit, n_q],
 ) -> None:
     """Increment ``q`` using the required number of clean CCA ancillas."""
@@ -1194,7 +1191,7 @@ def _apply_cca_plan_dagger[
 
 @guppy
 @no_type_check
-def cca_decrementer[n_q: nat](
+def _cca_incrementer_dagger_kernel[n_q: nat](
     q: array[qubit, n_q],
 ) -> None:
     """Decrement ``q`` using the inverse CCA incrementer construction."""
@@ -1235,134 +1232,92 @@ def cca_decrementer[n_q: nat](
     discard_array(ancilla)
 
 
-# TODO: this is a general method for controlling any incrementer
-@guppy
+@guppy.comptime(unitary=True)
 @no_type_check
-def cntrl_cca_incrementer[n_q: nat](
-    control: qubit,
-    q: array[qubit, n_q],
+def _controlled_cca_incrementer_kernel[n_q: nat](
+    control: qubit, q: array[qubit, n_q]
 ) -> None:
-    """Call the controlled CCA-based incrementer.
+    """Increment with the control as the low bit, then restore the control.
 
-    This constructs a controlled incrementer by treating the `n_c` control qubits as
-    the least-significant qubits of an `(n_c + n_q)`-qubit incrementer, followed by an
-    `n_c`-qubit decrementer acting on the controls.
-
-    A multiply controlled incrementer can therefore be constructed recursively by
-    adding one control qubit at a time.
-
-    For example, starting from an `n`-qubit incrementer:
-
-    ```
-    Inc_n(q_{n-1} ... q_0)
-    ```
-
-    adding one control `c_0` gives
-
-    ```
-    Inc_{n+1}(c_0 q_{n-1} ... q_0) Dec_1(c_0).
-    ```
-
-    Adding a second control `c_1` recursively gives
-
-    ```
-    Inc_{n+2}(c_1 c_0 q_{n-1} ... q_0)
-    Dec_1(c_1)
-    Dec_2(c_1 c_0)
-    Inc_1(c_1).
-    ```
-
-    Since `Dec_1(c_1)` and `Inc_1(c_1)` cancel, we are left with the expected doubly
-    controlled construction:
-
-    ```
-    Inc_{n+2}(c_1 c_0 q_{n-1} ... q_0) Dec_2(c_1 c_0).
-    ```
-
-    `Dec_1(c_1)` and `Inc_1(c_1)` are single-qubit X gates. More generally, each
-    additional control introduces a canceling pair of single-qubit X gates at the
-    corresponding recursion level. A compiler can remove these pairs provided it
-    optimizes the circuit at each recursive level where the cancellation is exposed.
+    Comptime packing retains the borrowed qubit references, avoiding an extra
+    swapped-in control ancilla. The small-width optimized circuits are preserved.
+    This static composition has an automatically generated dagger.
     """
-    if comptime(n_q == 1):
+    if n_q == 1:
         cx(control, q[0])
-        return
-
-    if comptime(n_q == 2):
+    elif n_q == 2:
         toffoli(control, q[0], q[1])
         cx(control, q[0])
-        return
-
-    # TODO: this uses one extra ancilla than necessary
-    control_owned = qubit()
-    mem_swap(control_owned, control)
-    controls = array(control_owned)
-
-    controls_borrowed = _unsafe_array_borrow(controls)
-    q_borrowed = _unsafe_array_borrow(q)
-
-    flat = join_arrays(controls_borrowed, q_borrowed, comptime(n_q + 1))
-
-    cca_incrementer(flat)
-
-    controls_borrowed, q_borrowed = split_array(flat, 1, n_q)
-
-    _unsafe_array_unborrow(controls, controls_borrowed)
-    _unsafe_array_unborrow(q, q_borrowed)
-
-    cca_decrementer(controls)
-
-    control_owned = controls.take(0)
-    controls.discard_all_taken()
-
-    mem_swap(control_owned, control)
-    discard(control_owned)
+    else:
+        combined = [control, *q]
+        cca_incrementer(combined)
+        x(control)
 
 
-# TODO: this is a general method for controlling any decrementer
 @guppy
 @no_type_check
-def cntrl_cca_decrementer[n_q: nat](
-    control: qubit,
-    q: array[qubit, n_q],
+def _controlled_cca_incrementer_dagger_kernel[n_q: nat](
+    control: qubit, q: array[qubit, n_q]
 ) -> None:
-    """Call the controlled CCA-based decrementer.
+    """Use the public incrementer's dagger through the packed composition."""
+    with dagger:
+        _controlled_cca_incrementer_kernel(control, q)
 
-    This is a general method for returning a controlled decrementer. The ``n_c`` control
-    qubits become the least significant qubits of a (n_c + n_q)-qubit decrementer.
 
-    It should be possible to define this recursively, i.e. with one control.
-    """
-    if comptime(n_q == 1):
-        cx(control, q[0])
-        return
+@guppy
+@no_type_check
+def _controlled_cca_incrementer[n_q: nat, n_controls: nat](
+    q: array[qubit, n_q],
+    controls: array[qubit, n_controls],
+    inverse: bool @ comptime,
+) -> None:
+    """Compute a joint external control once, preserving all borrowed registers."""
+    if inverse:
+        operation = MultiCntrlFunction[n_controls, array[qubit, n_q]](
+            _controlled_cca_incrementer_dagger_kernel[n_q], cnx[n_controls]
+        )
+    else:
+        operation = MultiCntrlFunction[n_controls, array[qubit, n_q]](
+            _controlled_cca_incrementer_kernel[n_q], cnx[n_controls]
+        )
+    operation.compose(controls, q)
 
-    if comptime(n_q == 2):
-        cx(control, q[0])
-        toffoli(control, q[0], q[1])
-        return
 
-    # TODO: this uses one extra ancilla than necessary
-    control_owned = qubit()
-    mem_swap(control_owned, control)
-    controls = array(control_owned)
+@guppy.unitary
+class cca_incrementer[n_q: nat]:  # noqa: D101
+    @guppy
+    @no_type_check
+    def __call__(q: array[qubit, n_q]) -> None:
+        """Increment a nonempty little-endian register modulo its full width.
 
-    cca_incrementer(controls)
+        Uses ``required_clean_ancillas(n_q)`` clean ancillas and returns them to
+        zero. Custom modifiers retain the planned CCA schedule, runtime loops,
+        and measurement-based temporary-AND cleanup.
+        """
+        _cca_incrementer_kernel(q)
 
-    controls_borrowed = _unsafe_array_borrow(controls)
-    q_borrowed = _unsafe_array_borrow(q)
+    @guppy
+    @no_type_check
+    def daggered(q: array[qubit, n_q]) -> None:
+        """Apply the existing reverse CCA schedule with the same clean workspace."""
+        _cca_incrementer_dagger_kernel(q)
 
-    flat = join_arrays(controls_borrowed, q_borrowed, comptime(n_q + 1))
+    @guppy
+    @no_type_check
+    def controlled[n_controls: nat](
+        q: array[qubit, n_q], controls: array[qubit, n_controls]
+    ) -> None:
+        """Increment iff all external controls are set, restoring their states.
 
-    cca_decrementer(flat)
+        For three or more target bits, use a CCA incrementer one bit wider.
+        Multiple controls add the shared composer's conjunction workspace.
+        """
+        _controlled_cca_incrementer(q, controls, False)
 
-    controls_borrowed, q_borrowed = split_array(flat, 1, n_q)
-
-    _unsafe_array_unborrow(controls, controls_borrowed)
-    _unsafe_array_unborrow(q, q_borrowed)
-
-    control_owned = controls.take(0)
-    controls.discard_all_taken()
-
-    mem_swap(control_owned, control)
-    discard(control_owned)
+    @guppy
+    @no_type_check
+    def ctrl_daggered[n_controls: nat](
+        q: array[qubit, n_q], controls: array[qubit, n_controls]
+    ) -> None:
+        """Apply the adjoint of the controlled incrementer, restoring workspace."""
+        _controlled_cca_incrementer(q, controls, True)

@@ -60,16 +60,10 @@ from guppyalgos.primitives.arithmetic.hamming_weight import (
     hamming_weight_func_inv,
 )
 from guppyalgos.primitives.arithmetic.incrementer.incrementer_cca import (
-    cca_decrementer,
     cca_incrementer,
-    cntrl_cca_decrementer,
-    cntrl_cca_incrementer,
     required_clean_ancillas,
 )
 from guppyalgos.primitives.arithmetic.incrementer.linear_depth_incrementer import (
-    cntrl_linear_depth_decrementer,
-    cntrl_linear_depth_incrementer,
-    linear_depth_decrementer,
     linear_depth_incrementer,
 )
 from guppyalgos.primitives.gate_decompositions.and_op import (
@@ -242,24 +236,87 @@ def partial_comparator[n: nat](
     discard(ancilla)
 
 
-def with_size_as_max_value(incrementer):
-    """Return ``incrementer`` with its register's size as the bound on its value."""
-
-    def f[n: nat](q: array[qubit, n]) -> None:
-        incrementer(q, n)
-
-    f.__name__ = f"{incrementer.wrapped.name}_bounded"
-    return guppy(f)
+@guppy
+@no_type_check
+def linear_depth_decrementer[n: nat](q: array[qubit, n]) -> None:
+    """Decrement all bits with the unitary incrementer's adjoint."""
+    with dagger:
+        linear_depth_incrementer(q)
 
 
-def cntrl_with_size_as_max_value(incrementer):
-    """Return ``with_size_as_max_value`` for a controlled incrementer."""
+@guppy
+@no_type_check
+def cca_decrementer[n: nat](q: array[qubit, n]) -> None:
+    """Decrement with the CCA incrementer's adjoint."""
+    with dagger:
+        cca_incrementer(q)
 
-    def f[n: nat](c: qubit, q: array[qubit, n]) -> None:
-        incrementer(c, q, n)
 
-    f.__name__ = f"{incrementer.wrapped.name}_bounded"
-    return guppy(f)
+@guppy
+@no_type_check
+def cntrl_linear_depth_incrementer[n: nat](c: qubit, q: array[qubit, n]) -> None:
+    """Increment all bits when the control is set."""
+    with control(c):
+        linear_depth_incrementer(q)
+
+
+@guppy
+@no_type_check
+def cntrl_cca_incrementer[n: nat](c: qubit, q: array[qubit, n]) -> None:
+    """Apply the CCA incrementer when the control is set."""
+    with control(c):
+        cca_incrementer(q)
+
+
+@guppy
+@no_type_check
+def cntrl_linear_depth_decrementer[n: nat](c: qubit, q: array[qubit, n]) -> None:
+    """Decrement all bits when the control is set."""
+    with control(c), dagger:
+        linear_depth_incrementer(q)
+
+
+@guppy
+@no_type_check
+def cntrl_cca_decrementer[n: nat](c: qubit, q: array[qubit, n]) -> None:
+    """Apply the CCA incrementer's adjoint when the control is set."""
+    with control(c), dagger:
+        cca_incrementer(q)
+
+
+@guppy
+@no_type_check
+def linear_depth_incrementer_bounded[n: nat](q: array[qubit, n]) -> None:
+    """Increment with the register size as the value bound."""
+    linear_depth_incrementer(q, n)
+
+
+@guppy
+@no_type_check
+def linear_depth_decrementer_bounded[n: nat](q: array[qubit, n]) -> None:
+    """Decrement with the register size as the value bound."""
+    with dagger:
+        linear_depth_incrementer(q, n)
+
+
+@guppy
+@no_type_check
+def cntrl_linear_depth_incrementer_bounded[n: nat](
+    c: qubit, q: array[qubit, n]
+) -> None:
+    """Increment with the register size as the value bound when controlled."""
+    with control(c):
+        linear_depth_incrementer(q, n)
+
+
+@guppy
+@no_type_check
+def cntrl_linear_depth_decrementer_bounded[n: nat](
+    c: qubit, q: array[qubit, n]
+) -> None:
+    """Decrement with the register size as the value bound when controlled."""
+    with control(c), dagger:
+        linear_depth_incrementer(q, n)
 
 
 @guppy
@@ -605,7 +662,7 @@ CASES: list[tuple] = [
         with_control(inc),
         SIZES,
         (),
-        lambda n: required_clean_ancillas(n + 1) + 1 if n > 2 else 0,
+        lambda n: required_clean_ancillas(n + 1) if n > 2 else 0,
     ),
     (
         cntrl_linear_depth_decrementer,
@@ -621,10 +678,10 @@ CASES: list[tuple] = [
         with_control(dec),
         SIZES,
         (),
-        lambda n: required_clean_ancillas(n + 1) + 1 if n > 2 else 0,
+        lambda n: required_clean_ancillas(n + 1) if n > 2 else 0,
     ),
     (
-        with_size_as_max_value(linear_depth_incrementer),
+        linear_depth_incrementer_bounded,
         "n",
         on_low_bits(inc),
         SIZES,
@@ -632,7 +689,7 @@ CASES: list[tuple] = [
         None,
     ),
     (
-        with_size_as_max_value(linear_depth_decrementer),
+        linear_depth_decrementer_bounded,
         "n",
         on_low_bits(dec),
         SIZES,
@@ -640,7 +697,7 @@ CASES: list[tuple] = [
         None,
     ),
     (
-        cntrl_with_size_as_max_value(cntrl_linear_depth_incrementer),
+        cntrl_linear_depth_incrementer_bounded,
         "qn",
         on_low_bits(with_control(inc)),
         SIZES,
@@ -648,7 +705,7 @@ CASES: list[tuple] = [
         None,
     ),
     (
-        cntrl_with_size_as_max_value(cntrl_linear_depth_decrementer),
+        cntrl_linear_depth_decrementer_bounded,
         "qn",
         on_low_bits(with_control(dec)),
         SIZES,
