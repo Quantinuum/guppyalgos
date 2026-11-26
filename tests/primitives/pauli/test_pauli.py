@@ -6,23 +6,19 @@ from collections.abc import Iterable
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.angles import angle
-from guppylang.std.builtins import array, nat
+from guppylang.std.builtins import array, control, nat
 from guppylang.std.debug import state_output
-from guppylang.std.quantum import cx, cy, cz, discard, discard_array, h, qubit, x, y, z
+from guppylang.std.quantum import cx, cy, cz, discard, discard_array, qubit, x, y, z
 from selene_sim import Quest
 
-from guppyalgos.primitives.utilities.gates import apply_phase
 from guppyalgos.utils import qarray
 from guppyalgos.primitives.pauli import (
-    pauli_to_cntrl_gate,
     pauli_to_gate,
     pauli_to_z_basis,
 )
 from guppyalgos.testing import (
     assert_allclose_ignorephase,
     assert_unitary_modifiers,
-    get_statevector,
     project_state_onto_bitstring,
 )
 
@@ -88,8 +84,8 @@ def test_pauli_to_gate() -> None:
         assert_allclose_ignorephase(states["state"].state, zero_state_vec)
 
 
-def test_pauli_to_cntrl_gate() -> None:
-    """Test pauli_to_cntrl_gate produces the same effect as manual."""
+def test_controlled_pauli_gate() -> None:
+    """Check the public control modifier against manual controlled gates."""
     inp_string = "X0 X1 X3, X1 Y2 Z3, X3, Y2 Z3"
     pl = cast(Iterable[zqp.String], zqp.Strings.from_str(inp_string, 4))
 
@@ -123,7 +119,7 @@ def test_pauli_to_cntrl_gate() -> None:
     zero_state_vec[0] = 1
 
     def make_main[n_q: nat](
-        p: GuppyFunctionDefinition[[qubit, array[qubit, n_q]], None],
+        p: GuppyFunctionDefinition[[array[qubit, n_q]], None],
         pmanual: GuppyFunctionDefinition[[qubit, array[qubit, n_q]], None],
         turn_on_control: bool = True,
     ) -> GuppyFunctionDefinition[[], None]:
@@ -134,7 +130,8 @@ def test_pauli_to_cntrl_gate() -> None:
             if turn_on_control:
                 x(c)
             q = qarray(4)
-            p(c, q)
+            with control(c):
+                p(q)
             pmanual(c, q)
             state_output("state", c)
             discard_array(q)
@@ -142,9 +139,9 @@ def test_pauli_to_cntrl_gate() -> None:
 
         return main
 
-    # test manual is dagger of pauli_to_cntrl_gate
+    # The manual gates undo the controlled Pauli.
     for i, pauli in enumerate(pl):
-        p = pauli_to_cntrl_gate(pauli, 4)
+        p = pauli_to_gate(pauli, 4)
         pmanual = manual_paulis[i]
         main = make_main(p, pmanual)
         res = main.emulator(n_qubits=5).run()
@@ -154,51 +151,13 @@ def test_pauli_to_cntrl_gate() -> None:
 
     # test when the control qubit is 0
     for i, pauli in enumerate(pl):
-        p = pauli_to_cntrl_gate(pauli, 4)
+        p = pauli_to_gate(pauli, 4)
         pmanual = manual_paulis[i]
         main = make_main(p, pmanual, False)
         res = main.emulator(n_qubits=5).run()
         states = Quest.extract_states_dict(res.results[0].entries)
         projstate = project_state_onto_bitstring(states["state"], [False])
         assert_allclose_ignorephase(projstate.state.state, zero_state_vec)
-
-
-def test_pauli_to_cntrl_gate_applies_phase_once() -> None:
-    """Apply one coefficient phase to a controlled Pauli string."""
-    coefficient_phase = 0.37
-    controlled_pauli = pauli_to_cntrl_gate(
-        zqp.String.from_str("X0 Z1", 2), 2, coefficient_phase
-    )
-
-    @guppy
-    @no_type_check
-    def cntrl_pauli_with_phase() -> None:
-        control = qubit()
-        targets = qarray(2)
-        h(control)
-        controlled_pauli(control, targets)
-        state_output("result_state", control, targets[0], targets[1])
-        discard(control)
-        discard_array(targets)
-
-    @guppy
-    @no_type_check
-    def manual_cntrl_pauli_with_phase() -> None:
-        control = qubit()
-        targets = qarray(2)
-        h(control)
-        cx(control, targets[0])
-        cz(control, targets[1])
-        apply_phase(control, angle(coefficient_phase))
-        state_output("result_state", control, targets[0], targets[1])
-        discard(control)
-        discard_array(targets)
-
-    np.testing.assert_allclose(
-        get_statevector(cntrl_pauli_with_phase, 3),
-        get_statevector(manual_cntrl_pauli_with_phase, 3),
-        atol=1e-12,
-    )
 
 
 @pytest.mark.parametrize("paulis", ["X0 Y1", "Y0 I1", "Z0 I1"])

@@ -11,16 +11,14 @@ from numpy.typing import NDArray
 import zixy.qubit.pauli as zqp
 from guppylang import guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.angles import angle
-from guppylang.std.builtins import Function, array, nat
-from guppylang.std.quantum import h, qubit, s, sdg, toffoli, x
+from guppylang.std.builtins import Function, Unitary, array, comptime, control, nat
+from guppylang.std.quantum import qubit, toffoli, x
 
-from guppyalgos.primitives.utilities.gates import _cphase
 from guppyalgos.algorithms.select import (
     build_cntrl_select_unary_from_data,
     build_select_unary_from_data,
 )
-from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
+from guppyalgos.algorithms.select.pauli_select import _select_pauli_term
 
 
 @dataclass(frozen=True)
@@ -88,7 +86,7 @@ def select_with_cntrl_paulis[n_state_q: nat](
 
     """
     controlled_paulis_list = [
-        pauli_to_cntrl_gate(p, n_state_qubits, phase)
+        _select_pauli_term(p, n_state_qubits, phase)
         for p, phase in zip(pauli_strings_le, coefficient_phases, strict=True)
     ]
 
@@ -112,59 +110,6 @@ def select_with_cntrl_paulis[n_state_q: nat](
         controlled_paulis[1](prep[0], state)
 
     return select
-
-
-def get_doubly_cntrl_paulis[n_state_q: nat](
-    pauli_string: zqp.String,
-    size: int,
-    phase: float = 0.0,
-) -> GuppyFunctionDefinition[[qubit, qubit, array[qubit, n_state_q]], None]:
-    r"""Build a gate that applies :math:`P` when both controls are on.
-
-    For each nonidentity Pauli acting on target :math:`q_j`, the
-    doubly-controlled operation is decomposed as
-
-    .. math::
-
-        \begin{aligned}
-        \operatorname{CCX}_{c_0,c_1,q_j} &=
-            \operatorname{Toffoli}(c_0,c_1,q_j), \\
-        \operatorname{CCZ}_{c_0,c_1,q_j} &=
-            H_{q_j}\operatorname{Toffoli}(c_0,c_1,q_j)H_{q_j}, \\
-        \operatorname{CCY}_{c_0,c_1,q_j} &=
-            S_{q_j}\operatorname{Toffoli}(c_0,c_1,q_j)S^\dagger_{q_j}.
-        \end{aligned}
-
-    Args:
-        pauli_string: zixy Pauli string.
-        size: Number of qubits in the state register.
-        phase: Coefficient phase in half-turns.
-
-    Returns:
-        GuppyFunctionDefinition for (ctrl0, ctrl1, state) -> None.
-
-    """
-
-    @guppy.comptime
-    @no_type_check
-    def doubly_cntrl_paulis(ctrl0: qubit, ctrl1: qubit, q: array[qubit, size]) -> None:
-        for idx, p in pauli_string.get_dict().items():
-            match p:
-                case zqp.X:
-                    toffoli(ctrl0, ctrl1, q[idx])
-                case zqp.Z:
-                    h(q[idx])
-                    toffoli(ctrl0, ctrl1, q[idx])
-                    h(q[idx])
-                case zqp.Y:
-                    # CCY = S · CCX · S† on target
-                    sdg(q[idx])
-                    toffoli(ctrl0, ctrl1, q[idx])
-                    s(q[idx])
-        # using internal cphase as with control not supported in comptime https://github.com/Quantinuum/guppylang/issues/1701
-        _cphase(ctrl0, ctrl1, angle(phase))
-
-    return doubly_cntrl_paulis
 
 
 def select_with_doubly_cntrl_paulis[n_state_q: nat](
@@ -191,27 +136,44 @@ def select_with_doubly_cntrl_paulis[n_state_q: nat](
         GuppyFunctionDefinition for SELECT: (prep: array[qubit,2], state) -> None.
 
     """
-    cc_gates_list = [
-        get_doubly_cntrl_paulis(p, n_state_qubits, phase)
+
+    def add_address_control(
+        term: Unitary[[qubit, array[qubit, n_state_q]], None],
+        size: int,
+    ) -> GuppyFunctionDefinition[[qubit, qubit, array[qubit, n_state_q]], None]:
+        @guppy
+        @no_type_check
+        def apply_term(
+            flag: qubit, address: qubit, state: array[qubit, comptime(size)]
+        ) -> None:
+            with control(flag):
+                term(address, state)
+
+        return apply_term
+
+    pauli_terms = [
+        add_address_control(
+            _select_pauli_term(p, n_state_qubits, phase), n_state_qubits
+        )
         for p, phase in zip(pauli_strings_le, coefficient_phases, strict=True)
     ]
 
     @guppy.comptime
     @no_type_check
-    def _build_cc_paulis() -> array[
+    def _build_pauli_terms() -> array[
         Function[[qubit, qubit, array[qubit, n_state_qubits]], None], n_terms
     ]:
-        return cc_gates_list
+        return pauli_terms
 
     @guppy
     @no_type_check
     def select(prep: array[qubit, 2], state: array[qubit, n_state_qubits]) -> None:
-        cc_paulis = _build_cc_paulis()
+        terms = _build_pauli_terms()
         for i in range(n_terms):
             for bit in range(2):
                 if not ((i >> bit) & 1):
                     x(prep[bit])
-            cc_paulis[i](prep[0], prep[1], state)
+            terms[i](prep[0], prep[1], state)
             for bit in range(2):
                 if not ((i >> bit) & 1):
                     x(prep[bit])
@@ -244,8 +206,8 @@ def build_cntrl_single_cntrl_select[n_state_q: nat](
     assert data.n_prep_qubits == 1
     n_state_qubits = data.n_state_qubits
 
-    controlled_paulis = [
-        get_doubly_cntrl_paulis(pauli_string, n_state_qubits, phase)
+    first, second = [
+        _select_pauli_term(pauli_string, n_state_qubits, phase)
         for pauli_string, phase in zip(
             data.pauli_strings,
             data.coefficient_phases,
@@ -253,25 +215,19 @@ def build_cntrl_single_cntrl_select[n_state_q: nat](
         )
     ]
 
-    @guppy.comptime
-    @no_type_check
-    def cntrl_pauli_gates() -> array[
-        Function[[qubit, qubit, array[qubit, n_state_qubits]], None], 2
-    ]:
-        return controlled_paulis
-
     @guppy
     @no_type_check
     def cntrl_select(
-        control: qubit,
+        flag: qubit,
         prep: array[qubit, 1],
         state: array[qubit, n_state_qubits],
     ) -> None:
-        gates = cntrl_pauli_gates()
         x(prep[0])
-        gates[0](control, prep[0], state)
+        with control(flag):
+            first(prep[0], state)
         x(prep[0])
-        gates[1](control, prep[0], state)
+        with control(flag):
+            second(prep[0], state)
 
     return cntrl_select
 
@@ -323,7 +279,7 @@ def build_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
 
     select_unary = build_select_unary_from_data(
         list(zip(data.pauli_strings, data.coefficient_phases, strict=True)),
-        lambda item: pauli_to_cntrl_gate(item[0], n_state_qubits, item[1]),
+        lambda item: _select_pauli_term(item[0], n_state_qubits, item[1]),
         comp_and_op=comp_and_op,
         uncomp_and_op=uncomp_and_op,
     )
@@ -365,7 +321,7 @@ def build_cntrl_unary_iteration_select[n_prep_q: nat, n_state_q: nat](
 
     controlled_select_unary = build_cntrl_select_unary_from_data(
         list(zip(data.pauli_strings, data.coefficient_phases, strict=True)),
-        lambda item: pauli_to_cntrl_gate(item[0], n_state_qubits, item[1]),
+        lambda item: _select_pauli_term(item[0], n_state_qubits, item[1]),
         comp_and_op=comp_and_op,
         uncomp_and_op=uncomp_and_op,
     )

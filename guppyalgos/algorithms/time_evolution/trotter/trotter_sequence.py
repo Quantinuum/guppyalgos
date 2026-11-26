@@ -11,7 +11,10 @@ from guppylang.std.builtins import Function, array, comptime, nat
 from guppylang.std.quantum import crz, qubit, rz
 import zixy.qubit.pauli as zqp
 
-from guppyalgos.primitives.pauli.pauli_exp import cntrl_pauli_exp, pauli_exp
+from guppyalgos.primitives.pauli.pauli_exp._trotter_terms import (
+    _controlled_pauli_exp,
+    _forward_pauli_exp,
+)
 from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
 
 
@@ -66,7 +69,7 @@ def trotter_from_sequence[n_state_q: nat](
         Function[[array[qubit, n_state_qubits], angle], None], n_terms
     ]:
         return [
-            pauli_exp(term.string, n_state_qubits, cx_ladder, rz_method)
+            _forward_pauli_exp(term.string, n_state_qubits, cx_ladder, rz_method)
             for term in ham_terms
         ]
 
@@ -146,7 +149,7 @@ def cntrl_trotter_from_sequence[n_state_q: nat](
         Function[[qubit, array[qubit, n_state_qubits], angle], None], n_terms
     ]:
         return [
-            cntrl_pauli_exp(
+            _controlled_pauli_exp(
                 term.string,
                 n_state_qubits,
                 cx_ladder,

@@ -54,10 +54,17 @@ U_P(\theta)=e^{-i\theta P/2}.
 $$
 
 ```{code-cell} ipython3
-from guppyalgos.primitives.pauli.pauli_exp import cntrl_pauli_exp, pauli_exp
+from guppylang import guppy
+from guppylang.std.angles import angle
+from guppylang.std.builtins import array, control
+from guppylang.std.quantum import qubit
+from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
 
 pauli_gadget = pauli_exp(pauli_string, n_qubits=2)
-controlled_pauli_gadget = cntrl_pauli_exp(pauli_string, n_qubits=2)
+@guppy
+def controlled_pauli_gadget(flag: qubit, qs: array[qubit, 2], theta: angle) -> None:
+    with control(flag):
+        pauli_gadget(qs, theta)
 ```
 
 The input may contain any tensor product of $I$, $X$, $Y$, and $Z$. Only its
@@ -102,11 +109,12 @@ $$
 - Basis changes map every non-identity Pauli to the Z basis.
 - A CX ladder computes the joint parity onto its target qubit.
 - `pauli_exp` applies `R_Z` to the parity target.
-- `cntrl_pauli_exp` replaces it with `CR_Z`, leaving the target operation
+- `with control` applied to the gadget controls its terminal rotation, leaving it
   inactive when the external control is zero.
 - The CX ladder and basis changes are then uncomputed.
-- The uncontrolled factory rejects an identity string. The controlled factory
-  preserves its observable relative phase by rotating the control qubit.
+- `pauli_exp` rejects an all-identity string. For a controlled identity term,
+  apply `rz(flag, -theta / 2)` to preserve its relative phase. Controlled
+  Trotter builders handle this case directly.
 
 ### Choose the circuit construction
 
@@ -119,22 +127,24 @@ the gadget is built:
 | `pauli_string` | Required `zqp.String` | Any $I/X/Y/Z$ tensor product; `pauli_exp` requires at least one non-identity Pauli. |
 | `n_qubits` | Required integer | May be larger than the Pauli support, provided every Pauli index is in range. |
 | `cx_ladder` | `CXLadderLog` | `CXLadderLinear`, or another implementation of the `Ladder` protocol. |
-| `rz_method` | `rz` | Any compatible `(qubit, angle) -> None` guppy function, including an RUS $R_Z$ construction. |
-| `controlled_rz_method` | `crz` | For `cntrl_pauli_exp`, any compatible `(control, target, angle) -> None` guppy function. |
+| `rz_method` | `rz` | A compatible unitary Guppy function with signature `(qubit, angle) -> None`. |
 
-For example, this keeps the same $e^{-i\theta P/2}$ operation while choosing a
+For forward execution with a measurement-based rotation, build a one-term
+Trotter step. This keeps the same $e^{-i\theta P/2}$ operation while choosing a
 linear CX ladder and a repeat-until-success rotation:
 
 ```{code-cell} ipython3
+from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
 from guppyalgos.primitives.rotations import (
     dummy_theta_resource_state, repeat_until_success_rz,
 )
 from guppyalgos.primitives.subroutines.ladders import CXLadderLinear
 
 rus_rz = repeat_until_success_rz(dummy_theta_resource_state)
-rus_pauli_gadget = pauli_exp(
-    pauli_string,
-    n_qubits=2,
+term = zqp.RealTermSum.from_str(f"(1.0, {pauli_string})", 2)
+rus_step = trotter_first_order(
+    term,
+    n_state_qubits=2,
     cx_ladder=CXLadderLinear,
     rz_method=rus_rz,
 )
@@ -142,7 +152,8 @@ rus_pauli_gadget = pauli_exp(
 
 The RUS implementation changes how the central $R_Z$ is synthesized. The
 basis changes, parity ladder, angle convention, and resulting Pauli
-exponential remain the same.
+exponential remain the same. The Trotter step takes the evolution angle as a
+float in half-turns and supports forward execution.
 
 See the {doc}`Pauli-exponential notebook
 <examples/pauli_exponential/pauli_exponential>` for a

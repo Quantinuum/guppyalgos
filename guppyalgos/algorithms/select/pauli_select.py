@@ -1,18 +1,38 @@
 """Pauli select primitives."""
 
-from guppyalgos.algorithms.select import build_select_unary_from_data
-
+from typing import no_type_check
 
 import zixy.qubit.pauli as zqp
+from guppylang import comptime, guppy
 from guppylang.defs import GuppyFunctionDefinition
-from guppylang.std.builtins import array, nat
+from guppylang.std.angles import angle
+from guppylang.std.builtins import Unitary, array, control, nat
 from guppylang.std.quantum import qubit
 
 from guppyalgos.primitives.gate_decompositions.and_op import (
     temp_and_compute,
     temp_and_uncompute,
 )
-from guppyalgos.primitives.pauli import pauli_to_cntrl_gate
+from guppyalgos.primitives.pauli import pauli_to_gate
+from guppyalgos.primitives.utilities.gates import apply_phase
+
+from .select_unary_iteration import build_select_unary_from_data
+
+
+def _select_pauli_term[n: nat](
+    pauli_string: zqp.String, size: int, phase: float = 0.0
+) -> Unitary[[qubit, array[qubit, n]], None]:
+    """Apply a Pauli and a phase in half-turns on the selected branch."""
+    pauli = pauli_to_gate(pauli_string, size)
+
+    @guppy(unitary=True)
+    @no_type_check
+    def select_term(flag: qubit, qs: array[qubit, comptime(size)]) -> None:
+        with control(flag):
+            pauli(qs)
+        apply_phase(flag, angle(comptime(phase)))
+
+    return select_term
 
 
 def pauli_select_unary_iteration[n_i_q: nat, n_s_q: nat](
@@ -45,7 +65,7 @@ def pauli_select_unary_iteration[n_i_q: nat, n_s_q: nat](
     """
     return build_select_unary_from_data(
         pauli_strings,
-        lambda p: pauli_to_cntrl_gate(p, n_state_qubits),
+        lambda term: _select_pauli_term(term, n_state_qubits),
         comp_and_op,
         uncomp_and_op,
     )

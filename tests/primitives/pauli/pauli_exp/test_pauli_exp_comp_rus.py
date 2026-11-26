@@ -6,7 +6,6 @@ from guppyalgos.utils import qarray
 from guppylang import guppy
 
 from guppylang.std.builtins import comptime
-from guppylang.std.angles import angle
 from guppylang.std.quantum import h, discard_array
 import pytest
 
@@ -15,7 +14,7 @@ from guppyalgos.primitives.subroutines.ladders import CXLadderLog, Ladder
 import zixy.qubit.pauli as zqp
 
 
-from guppyalgos.primitives.pauli.pauli_exp import pauli_exp
+from guppyalgos.algorithms.time_evolution.trotter import trotter_first_order
 
 from scipy.linalg import expm
 import numpy as np
@@ -39,7 +38,8 @@ def pauli_exp_test_fn(
     epsilon = 0.001
     rus_rz = comparator_based_rz_cascade(epsilon)
 
-    pauli_g = pauli_exp(paulis, n_state_qubits, cx_ladder, rus_rz)
+    hamiltonian = zqp.RealTermSum.from_str(f"(1.0, {paulis})", n_state_qubits)
+    pauli_g = trotter_first_order(hamiltonian, n_state_qubits, cx_ladder, rus_rz)
 
     theta = 0.7
 
@@ -48,7 +48,7 @@ def pauli_exp_test_fn(
     def main() -> None:
         state_qreg = qarray(comptime(n_state_qubits))
         transversal(h, state_qreg)
-        pauli_g(state_qreg, angle(comptime(theta)))
+        pauli_g(state_qreg, comptime(theta))
         state_result("result_state", state_qreg)
         discard_array(state_qreg)
 
